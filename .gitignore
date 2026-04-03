@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Typst binary (downloaded at dev time)
+src-tauri/resources/typst
+src-tauri/resources/typst.exe
+src-tauri/resources/LICENSE
+src-tauri/resources/NOTICE
+src-tauri/resources/README.md

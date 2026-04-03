@@ -15,15 +15,23 @@ fn find_typst_binary() -> Option<String> {
     // Check next to the executable
     if let Ok(exe) = std::env::current_exe() {
         if let Some(exe_dir) = exe.parent() {
-            // resources/typst next to exe
+            // resources/typst next to exe (release bundle)
             let p = exe_dir.join("resources").join(bin);
             if p.exists() {
                 return Some(p.to_string_lossy().to_string());
             }
-            // Also check directly next to exe
+            // Directly next to exe
             let p = exe_dir.join(bin);
             if p.exists() {
                 return Some(p.to_string_lossy().to_string());
+            }
+            // Dev mode: exe is at src-tauri/target/debug/lextyp
+            // Resources are at src-tauri/resources/typst
+            let dev_path = exe_dir.join("../../resources").join(bin);
+            if let Ok(canonical) = dev_path.canonicalize() {
+                if canonical.exists() {
+                    return Some(canonical.to_string_lossy().to_string());
+                }
             }
         }
     }

@@ -1,19 +1,20 @@
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
-import { getDefaultReactSlashMenuItems } from "@blocknote/react";
 import { insertOrUpdateBlockForSlashMenu } from "@blocknote/core/extensions";
 import type { BlockNoteEditorType } from "./schema";
 
+/**
+ * Curated slash menu items for academic document editing.
+ * Only includes block types relevant to Typst document + citation workflow.
+ */
 export function getSlashMenuItems(
   editor: BlockNoteEditorType
 ): DefaultReactSuggestionItem[] {
-  const defaults = getDefaultReactSlashMenuItems(editor as any);
-
-  const customItems: DefaultReactSuggestionItem[] = [
+  return [
     {
       title: "Section",
       subtext: "Large section heading",
       aliases: ["section", "heading", "h1"],
-      group: "Headings",
+      group: "Structure",
       onItemClick: () => {
         insertOrUpdateBlockForSlashMenu(editor as any, {
           type: "heading",
@@ -25,7 +26,7 @@ export function getSlashMenuItems(
       title: "Subsection",
       subtext: "Medium subsection heading",
       aliases: ["subsection", "heading2", "h2"],
-      group: "Headings",
+      group: "Structure",
       onItemClick: () => {
         insertOrUpdateBlockForSlashMenu(editor as any, {
           type: "heading",
@@ -37,7 +38,7 @@ export function getSlashMenuItems(
       title: "Sub-subsection",
       subtext: "Small sub-subsection heading",
       aliases: ["subsubsection", "heading3", "h3"],
-      group: "Headings",
+      group: "Structure",
       onItemClick: () => {
         insertOrUpdateBlockForSlashMenu(editor as any, {
           type: "heading",
@@ -45,7 +46,51 @@ export function getSlashMenuItems(
         });
       },
     },
+    {
+      title: "Paragraph",
+      subtext: "Plain text paragraph",
+      aliases: ["paragraph", "text", "p"],
+      group: "Structure",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "paragraph",
+        });
+      },
+    },
+    {
+      title: "Citation",
+      subtext: "Insert inline citation reference",
+      aliases: ["citation", "cite", "reference", "footnote", "oscola"],
+      group: "References",
+      onItemClick: () => {
+        // Insert a placeholder citation — user types the key
+        editor.insertInlineContent([
+          { type: "citation" as any, props: { key: "key" } },
+          " ",
+        ]);
+      },
+    },
+    {
+      title: "Bullet List",
+      subtext: "Unordered list item",
+      aliases: ["bullet", "list", "ul"],
+      group: "Lists",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "bulletListItem",
+        });
+      },
+    },
+    {
+      title: "Numbered List",
+      subtext: "Ordered list item",
+      aliases: ["numbered", "ordered", "ol"],
+      group: "Lists",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "numberedListItem",
+        });
+      },
+    },
   ];
-
-  return [...customItems, ...defaults];
 }
