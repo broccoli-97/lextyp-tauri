@@ -9,7 +9,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { schema } from "../editor/schema";
 import { getSlashMenuItems } from "../editor/slash-items";
 import { serializeToTypst } from "../lib/typst-serializer";
+import { getFormatter } from "../lib/citation/registry";
 import { useAppStore } from "../stores/app-store";
+import { useReferenceStore } from "../stores/reference-store";
 import { FloatingOutline } from "./FloatingOutline";
 
 export function Editor() {
@@ -22,15 +24,17 @@ export function Editor() {
   const compileDocument = useCallback(async () => {
     try {
       const blocks = editor.document;
-      const source = serializeToTypst(blocks as any);
+      const { entries, citationStyle } = useReferenceStore.getState();
+      const formatter = getFormatter(citationStyle);
+      const source = serializeToTypst(blocks as any, entries, formatter);
       setCapturedSource(source);
       setCompiling(true);
 
-      const result = await invoke<{ pdf_path: string; duration_ms: number }>(
+      const result = await invoke<{ pdf_base64: string; duration_ms: number }>(
         "compile_typst",
         { content: source }
       );
-      setCompilationResult(result.pdf_path, result.duration_ms);
+      setCompilationResult(result.pdf_base64, result.duration_ms);
     } catch (err: any) {
       setCompilationError(String(err), 0);
     }
@@ -49,7 +53,7 @@ export function Editor() {
   const insertCitation = useCallback(
     (key: string) => {
       editor.insertInlineContent([
-        { type: "citation", props: { key } },
+        { type: "citation", props: { key } } as any,
         " ",
       ]);
     },
@@ -63,7 +67,6 @@ export function Editor() {
 
   return (
     <div className="h-full overflow-auto relative bg-[var(--bg-primary)]">
-      {/* Centered editor with max-width like Notion */}
       <div className="max-w-[720px] mx-auto px-12 py-8">
         <BlockNoteView
           editor={editor}

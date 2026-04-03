@@ -1,8 +1,15 @@
+import type { BibEntry, CitationHistoryEntry } from "../types/bib";
+import type { CitationFormatter } from "./citation/formatter";
+
 /**
  * Serialize BlockNote document to Typst source.
- * Walks the block tree and produces Typst markup.
+ * Citation @keys are expanded to #footnote[...] using the active formatter.
  */
-export function serializeToTypst(blocks: any[]): string {
+export function serializeToTypst(
+  blocks: any[],
+  entries?: BibEntry[],
+  formatter?: CitationFormatter
+): string {
   let output = "";
 
   // Preamble
@@ -10,46 +17,70 @@ export function serializeToTypst(blocks: any[]): string {
   output += "#set text(size: 11pt)\n";
   output += "#set par(justify: true, leading: 0.65em)\n\n";
 
+  const history: CitationHistoryEntry[] = [];
+  let footnoteCounter = 0;
+
   for (const block of blocks) {
-    output += serializeBlock(block);
+    output += serializeBlock(block, entries, formatter, history, footnoteCounter);
+    // Count footnotes produced in this block
+    const content = Array.isArray(block.content) ? block.content : [];
+    for (const item of content) {
+      if (item.type === "citation" && item.props?.key) {
+        footnoteCounter++;
+      }
+    }
   }
 
   return output;
 }
 
-function serializeBlock(block: any): string {
+function serializeBlock(
+  block: any,
+  entries?: BibEntry[],
+  formatter?: CitationFormatter,
+  history?: CitationHistoryEntry[],
+  fnStart?: number
+): string {
   const content = Array.isArray(block.content) ? block.content : [];
 
   switch (block.type) {
     case "heading": {
       const level = block.props?.level ?? 1;
       const prefix = "=".repeat(level);
-      const text = serializeInlineContent(content);
+      const text = serializeInlineContent(content, entries, formatter, history, fnStart);
       return `${prefix} ${text}\n`;
     }
     case "paragraph": {
-      const text = serializeInlineContent(content);
+      const text = serializeInlineContent(content, entries, formatter, history, fnStart);
       if (!text.trim()) return "\n";
       return text + "\n\n";
     }
     case "bulletListItem":
-      return `- ${serializeInlineContent(content)}\n`;
+      return `- ${serializeInlineContent(content, entries, formatter, history, fnStart)}\n`;
     case "numberedListItem":
-      return `+ ${serializeInlineContent(content)}\n`;
+      return `+ ${serializeInlineContent(content, entries, formatter, history, fnStart)}\n`;
     case "checkListItem": {
       const checked = block.props?.checked ? "[x]" : "[ ]";
-      return `- ${checked} ${serializeInlineContent(content)}\n`;
+      return `- ${checked} ${serializeInlineContent(content, entries, formatter, history, fnStart)}\n`;
     }
     default:
       if (content.length > 0) {
-        return serializeInlineContent(content) + "\n\n";
+        return serializeInlineContent(content, entries, formatter, history, fnStart) + "\n\n";
       }
       return "";
   }
 }
 
-function serializeInlineContent(content: any[]): string {
+function serializeInlineContent(
+  content: any[],
+  entries?: BibEntry[],
+  formatter?: CitationFormatter,
+  history?: CitationHistoryEntry[],
+  fnStart?: number
+): string {
   if (!content || !Array.isArray(content)) return "";
+
+  let fnCounter = fnStart ?? 0;
 
   return content
     .map((item) => {
@@ -58,7 +89,25 @@ function serializeInlineContent(content: any[]): string {
       }
       if (item.type === "citation") {
         const key = item.props?.key ?? "";
-        return `@${key}`;
+        if (!key) return "";
+
+        // If we have a formatter and entries, produce a proper footnote
+        if (formatter && entries) {
+          const entry = entries.find((e) => e.key === key);
+          if (entry) {
+            fnCounter++;
+            const footnoteText = formatter.formatFootnote(
+              entry, "", history ?? [], fnCounter
+            );
+            if (history) {
+              history.push({ key, footnoteNumber: fnCounter });
+            }
+            return `#footnote[${footnoteText}]`;
+          }
+        }
+
+        // Fallback: Typst native cite syntax
+        return `#cite(<${key}>)`;
       }
       if (item.type === "link") {
         const href = item.href ?? "";

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -8,18 +8,17 @@ import { useAppStore } from "../stores/app-store";
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function PdfPreview() {
-  const { lastPdfPath, lastError, compiling } = useAppStore();
+  const { pdfBase64, lastError, compiling } = useAppStore();
   const [numPages, setNumPages] = useState(0);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (lastPdfPath) {
-      setPdfUrl(`https://asset.localhost/${encodeURIComponent(lastPdfPath)}`);
-    }
-  }, [lastPdfPath]);
+  // Convert base64 to data URL for react-pdf
+  const pdfData = useMemo(() => {
+    if (!pdfBase64) return null;
+    return `data:application/pdf;base64,${pdfBase64}`;
+  }, [pdfBase64]);
 
   // Empty state
-  if (!pdfUrl && !lastError) {
+  if (!pdfData && !lastError) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3 text-[var(--text-tertiary)]">
         {compiling ? (
@@ -54,7 +53,7 @@ export function PdfPreview() {
   return (
     <div className="h-full overflow-auto bg-[var(--bg-secondary)] p-5">
       <Document
-        file={pdfUrl}
+        file={pdfData}
         onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         onLoadError={(err) => console.error("PDF load error:", err)}
         loading={

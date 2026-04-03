@@ -3,30 +3,29 @@ use std::fs;
 use std::process::Command;
 use std::time::Instant;
 
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
+
 #[derive(Serialize)]
 pub struct CompileResult {
-    pub pdf_path: String,
+    pub pdf_base64: String,
     pub duration_ms: u64,
 }
 
 fn find_typst_binary() -> Option<String> {
     let bin = if cfg!(windows) { "typst.exe" } else { "typst" };
 
-    // Check next to the executable
     if let Ok(exe) = std::env::current_exe() {
         if let Some(exe_dir) = exe.parent() {
-            // resources/typst next to exe (release bundle)
             let p = exe_dir.join("resources").join(bin);
             if p.exists() {
                 return Some(p.to_string_lossy().to_string());
             }
-            // Directly next to exe
             let p = exe_dir.join(bin);
             if p.exists() {
                 return Some(p.to_string_lossy().to_string());
             }
-            // Dev mode: exe is at src-tauri/target/debug/lextyp
-            // Resources are at src-tauri/resources/typst
+            // Dev mode: src-tauri/target/debug → src-tauri/resources
             let dev_path = exe_dir.join("../../resources").join(bin);
             if let Ok(canonical) = dev_path.canonicalize() {
                 if canonical.exists() {
@@ -36,7 +35,6 @@ fn find_typst_binary() -> Option<String> {
         }
     }
 
-    // Fallback to system PATH
     let which_cmd = if cfg!(windows) { "where" } else { "which" };
     if let Ok(output) = Command::new(which_cmd).arg(bin).output() {
         if output.status.success() {
@@ -83,8 +81,13 @@ pub fn compile_typst(content: String) -> Result<CompileResult, String> {
     let duration_ms = start.elapsed().as_millis() as u64;
 
     if output.status.success() {
+        // Read PDF and return as base64
+        let pdf_bytes = fs::read(&output_path)
+            .map_err(|e| format!("Failed to read PDF: {}", e))?;
+        let pdf_base64 = BASE64.encode(&pdf_bytes);
+
         Ok(CompileResult {
-            pdf_path: output_path.to_string_lossy().to_string(),
+            pdf_base64,
             duration_ms,
         })
     } else {
