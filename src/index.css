@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "@blocknote/mantine/style.css";
 @import "@mantine/core/styles.css";
+@import "@blocknote/mantine/style.css";
+@import "tailwindcss";
 
 :root {
   --accent: #2979FF;
