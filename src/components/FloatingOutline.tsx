@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { List } from "lucide-react";
 
 interface OutlineEntry {
   id: string;
@@ -7,11 +8,12 @@ interface OutlineEntry {
 }
 
 interface FloatingOutlineProps {
-  editor: any; // BlockNote editor instance
+  editor: any;
 }
 
 export function FloatingOutline({ editor }: FloatingOutlineProps) {
   const [entries, setEntries] = useState<OutlineEntry[]>([]);
+  const [hovered, setHovered] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rebuild = useCallback(() => {
@@ -20,16 +22,13 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
     const result: OutlineEntry[] = [];
     for (const block of blocks) {
       if (block.type === "heading") {
-        const text = block.content
-          ?.filter((c: any) => c.type === "text")
-          .map((c: any) => c.text)
-          .join("") || "";
+        const text =
+          block.content
+            ?.filter((c: any) => c.type === "text")
+            .map((c: any) => c.text)
+            .join("") || "";
         if (text.trim()) {
-          result.push({
-            id: block.id,
-            text,
-            level: block.props?.level ?? 1,
-          });
+          result.push({ id: block.id, text, level: block.props?.level ?? 1 });
         }
       }
     }
@@ -37,13 +36,11 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
   }, [editor]);
 
   useEffect(() => {
-    // Rebuild on mount and periodically when editor changes
     rebuild();
     const interval = setInterval(rebuild, 1000);
     return () => clearInterval(interval);
   }, [rebuild]);
 
-  // Also rebuild on editor change via subscription
   useEffect(() => {
     if (!editor) return;
     const handler = () => {
@@ -56,12 +53,21 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
   if (entries.length === 0) return null;
 
   return (
-    <div className="absolute top-4 right-2 w-40 max-h-[60%] rounded-lg bg-[#F8F8F8]/60 hover:bg-[#F8F8F8]/95 border border-[#E8E8E8] z-50 transition-all duration-200 overflow-hidden">
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={`absolute top-5 right-4 w-44 max-h-[55%] rounded-lg border border-[var(--border)] z-50 transition-all duration-300 overflow-hidden backdrop-blur-sm ${
+        hovered ? "bg-white/95 shadow-lg" : "bg-white/50"
+      }`}
+    >
       <div className="p-3 overflow-auto max-h-full">
-        <div className="text-[10px] font-bold uppercase text-[#9E9E9E] mb-1.5 tracking-wide">
-          Outline
+        <div className="flex items-center gap-1.5 mb-2">
+          <List size={12} className="text-[var(--text-tertiary)]" />
+          <span className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)] tracking-wider">
+            On this page
+          </span>
         </div>
-        <div className="space-y-0.5">
+        <div className="space-y-px">
           {entries.map((entry) => (
             <button
               key={entry.id}
@@ -69,8 +75,16 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
                 const block = editor.getBlock(entry.id);
                 if (block) editor.setTextCursorPosition(block, "start");
               }}
-              className="block w-full text-left text-[11px] text-[#616161] hover:text-[#1565C0] truncate transition-colors"
-              style={{ paddingLeft: `${(entry.level - 1) * 10}px` }}
+              className={`block w-full text-left py-1 rounded transition-colors truncate ${
+                hovered
+                  ? "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]"
+                  : "text-[var(--text-tertiary)]"
+              }`}
+              style={{
+                paddingLeft: `${(entry.level - 1) * 12 + 4}px`,
+                fontSize: entry.level === 1 ? "12px" : "11px",
+                fontWeight: entry.level === 1 ? 500 : 400,
+              }}
             >
               {entry.text}
             </button>

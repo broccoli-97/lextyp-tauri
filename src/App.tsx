@@ -1,17 +1,15 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { Editor } from "./components/Editor";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
-import { NavigationBar } from "./components/NavigationBar";
-import { ReferencePanel } from "./components/ReferencePanel";
-import { useAppStore } from "./stores/app-store";
+import { Sidebar } from "./components/Sidebar";
 import { useReferenceStore } from "./stores/reference-store";
 import { parseBibtex } from "./lib/bib-parser";
 
 function App() {
-  const { sidebarVisible } = useAppStore();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { setEntries } = useReferenceStore();
 
   const handleLoadBib = useCallback(async () => {
@@ -33,35 +31,44 @@ function App() {
     if (fn) fn(key);
   }, []);
 
+  const handleAction = useCallback(
+    (action: string) => {
+      switch (action) {
+        case "loadbib":
+          handleLoadBib();
+          break;
+        default:
+          console.log("Action:", action);
+      }
+    },
+    [handleLoadBib]
+  );
+
   return (
-    <div className="flex flex-col h-screen select-none">
+    <div className="flex h-screen bg-[var(--bg-primary)]">
+      {/* Sidebar */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onAction={handleAction}
+        onInsertCitation={handleInsertCitation}
+      />
+
+      {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        <NavigationBar onLoadBib={handleLoadBib} />
-
-        {/* Side panel (references) */}
-        {sidebarVisible && (
-          <div className="w-56 min-w-[180px] max-w-[320px] border-r border-[#E0E0E0] overflow-hidden shrink-0">
-            <ReferencePanel onInsertCitation={handleInsertCitation} />
-          </div>
-        )}
-
-        {/* Editor + PDF split */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Editor */}
-          <div className="flex-1 min-w-[300px] bg-white overflow-hidden relative">
+        {/* Editor panel */}
+        <div className="flex flex-col flex-1 min-w-0">
+          <div className="flex-1 overflow-hidden">
             <Editor />
           </div>
+          <StatusBar />
+        </div>
 
-          {/* Resize handle */}
-          <div className="w-px bg-[#E0E0E0] cursor-col-resize" />
-
-          {/* PDF Preview */}
-          <div className="w-[35%] min-w-[200px] overflow-hidden">
-            <PdfPreview />
-          </div>
+        {/* PDF Preview panel */}
+        <div className="w-[38%] min-w-[240px] border-l border-[var(--border)] overflow-hidden">
+          <PdfPreview />
         </div>
       </div>
-      <StatusBar />
     </div>
   );
 }

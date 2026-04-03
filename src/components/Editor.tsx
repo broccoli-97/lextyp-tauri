@@ -46,7 +46,6 @@ export function Editor() {
     return () => clearTimeout(timer);
   }, [compileDocument]);
 
-  // Insert citation inline at current cursor
   const insertCitation = useCallback(
     (key: string) => {
       editor.insertInlineContent([
@@ -57,27 +56,29 @@ export function Editor() {
     [editor]
   );
 
-  // Expose insertCitation globally so ReferencePanel can use it
   useEffect(() => {
     (window as any).__lextyp_insertCitation = insertCitation;
     return () => { delete (window as any).__lextyp_insertCitation; };
   }, [insertCitation]);
 
   return (
-    <div className="h-full overflow-auto relative">
-      <BlockNoteView
-        editor={editor}
-        theme="light"
-        slashMenu={false}
-        onChange={handleChange}
-      >
-        <SuggestionMenuController
-          triggerCharacter="/"
-          getItems={async (query) =>
-            filterSuggestionItems(getSlashMenuItems(editor), query)
-          }
-        />
-      </BlockNoteView>
+    <div className="h-full overflow-auto relative bg-[var(--bg-primary)]">
+      {/* Centered editor with max-width like Notion */}
+      <div className="max-w-[720px] mx-auto px-12 py-8">
+        <BlockNoteView
+          editor={editor}
+          theme="light"
+          slashMenu={false}
+          onChange={handleChange}
+        >
+          <SuggestionMenuController
+            triggerCharacter="/"
+            getItems={async (query) =>
+              filterSuggestionItems(getSlashMenuItems(editor), query)
+            }
+          />
+        </BlockNoteView>
+      </div>
       <FloatingOutline editor={editor} />
     </div>
   );

@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import { FileWarning, Loader2 } from "lucide-react";
 import { useAppStore } from "../stores/app-store";
 
-// Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function PdfPreview() {
@@ -12,48 +12,63 @@ export function PdfPreview() {
   const [numPages, setNumPages] = useState(0);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  // Convert local file path to a URL that react-pdf can load
   useEffect(() => {
     if (lastPdfPath) {
-      // Tauri serves local files via asset protocol
-      const url = `https://asset.localhost/${encodeURIComponent(lastPdfPath)}`;
-      setPdfUrl(url);
+      setPdfUrl(`https://asset.localhost/${encodeURIComponent(lastPdfPath)}`);
     }
   }, [lastPdfPath]);
 
+  // Empty state
   if (!pdfUrl && !lastError) {
     return (
-      <div className="h-full flex items-center justify-center text-sm text-[#BDBDBD]">
-        {compiling ? "Compiling..." : "PDF preview will appear here"}
+      <div className="h-full flex flex-col items-center justify-center gap-3 text-[var(--text-tertiary)]">
+        {compiling ? (
+          <Loader2 size={24} className="animate-spin" />
+        ) : (
+          <>
+            <div className="w-16 h-20 rounded-lg border-2 border-dashed border-[var(--border)] flex items-center justify-center">
+              <span className="text-[10px] font-medium">PDF</span>
+            </div>
+            <span className="text-[12px]">Preview will appear here</span>
+          </>
+        )}
       </div>
     );
   }
 
+  // Error state
   if (lastError) {
     return (
-      <div className="h-full p-4 overflow-auto">
-        <div className="text-xs font-bold text-red-600 mb-2">Compilation Error</div>
-        <pre className="text-xs text-red-500 whitespace-pre-wrap font-mono">{lastError}</pre>
+      <div className="h-full flex flex-col p-5 overflow-auto">
+        <div className="flex items-center gap-2 mb-3">
+          <FileWarning size={16} className="text-red-500 shrink-0" />
+          <span className="text-[13px] font-medium text-red-600">Compilation Error</span>
+        </div>
+        <pre className="text-[11px] text-red-500/80 whitespace-pre-wrap font-mono leading-relaxed bg-red-50 rounded-lg p-3">
+          {lastError}
+        </pre>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-auto bg-[#F5F5F5] p-4">
+    <div className="h-full overflow-auto bg-[var(--bg-secondary)] p-5">
       <Document
         file={pdfUrl}
         onLoadSuccess={({ numPages: n }) => setNumPages(n)}
         onLoadError={(err) => console.error("PDF load error:", err)}
         loading={
-          <div className="text-xs text-[#9E9E9E] text-center py-8">Loading PDF...</div>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
+          </div>
         }
       >
         {Array.from({ length: numPages }, (_, i) => (
           <Page
             key={i}
             pageNumber={i + 1}
-            width={500}
-            className="mb-4 shadow-md"
+            width={480}
+            className="mb-5 shadow-sm rounded-sm overflow-hidden"
           />
         ))}
       </Document>

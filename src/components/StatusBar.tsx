@@ -3,23 +3,27 @@ import { useAppStore } from "../stores/app-store";
 export function StatusBar() {
   const { compiling, lastError, lastDuration } = useAppStore();
 
-  const statusColor = compiling ? "#2196F3" : lastError ? "#F44336" : "#4CAF50";
   const statusText = compiling
-    ? "Compiling\u2026"
+    ? "Compiling..."
     : lastError
       ? "Error"
       : lastDuration > 0
-        ? `Compiled in ${lastDuration}ms`
+        ? `${lastDuration}ms`
         : "Ready";
 
   return (
-    <div className="h-[26px] bg-[#F5F5F5] border-t border-[#E0E0E0] flex items-center px-3 text-[11px] text-[#9E9E9E] shrink-0">
-      <div className="flex items-center gap-1.5">
+    <div className="h-7 border-t border-[var(--border)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-primary)]">
+      <div className="flex items-center gap-2">
         <div
-          className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: statusColor }}
+          className={`w-1.5 h-1.5 rounded-full ${
+            compiling
+              ? "bg-[var(--accent)] animate-pulse"
+              : lastError
+                ? "bg-red-500"
+                : "bg-emerald-500"
+          }`}
         />
-        <span>{statusText}</span>
+        <span className="text-[11px] text-[var(--text-tertiary)]">{statusText}</span>
       </div>
     </div>
   );

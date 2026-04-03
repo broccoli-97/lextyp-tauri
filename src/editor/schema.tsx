@@ -20,7 +20,12 @@ export const Citation = createReactInlineContentSpec(
       const key = props.inlineContent.props.key;
       return (
         <span
-          className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold cursor-default select-none"
+          className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold cursor-default select-none"
+          style={{
+            backgroundColor: "var(--accent-light)",
+            color: "var(--accent)",
+            border: "1px solid rgba(35, 131, 226, 0.2)",
+          }}
           data-citation-key={key}
         >
           @{key}
