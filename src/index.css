@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@import "@blocknote/mantine/style.css";
+@import "@mantine/core/styles.css";
+
+:root {
+  --accent: #2979FF;
+  --border: #E0E0E0;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* BlockNote overrides for clean Notion-style look */
+.bn-editor {
+  font-size: 14px;
+  color: #424242;
+}
+
+.bn-block-group .bn-block-outer {
+  padding: 1px 0;
+}
