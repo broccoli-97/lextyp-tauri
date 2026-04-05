@@ -1,10 +1,23 @@
 use serde::Serialize;
 use std::fs;
+use std::io::{Cursor, Read};
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
+use reqwest::blocking::Client;
+use tauri::{AppHandle, Manager};
+use tar::Archive as TarArchive;
+use xz2::read::XzDecoder;
+use zip::ZipArchive;
+
+const TYPST_VERSION: &str = "0.14.0";
+const TYPST_REPO_BASE: &str = "https://github.com/typst/typst/releases/download";
+
+static DOWNLOAD_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 
 #[derive(Serialize)]
 pub struct CompileResult {
@@ -12,51 +25,237 @@ pub struct CompileResult {
     pub duration_ms: u64,
 }
 
-fn find_typst_binary() -> Option<String> {
-    let bin = if cfg!(windows) { "typst.exe" } else { "typst" };
+enum ArchiveKind {
+    Zip,
+    TarXz,
+}
+
+fn typst_binary_name() -> &'static str {
+    if cfg!(windows) { "typst.exe" } else { "typst" }
+}
+
+fn current_target() -> Result<(&'static str, ArchiveKind), String> {
+    match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("windows", "x86_64") => Ok(("x86_64-pc-windows-msvc", ArchiveKind::Zip)),
+        ("linux", "x86_64") => Ok(("x86_64-unknown-linux-musl", ArchiveKind::TarXz)),
+        ("linux", "aarch64") => Ok(("aarch64-unknown-linux-musl", ArchiveKind::TarXz)),
+        ("macos", "x86_64") => Ok(("x86_64-apple-darwin", ArchiveKind::TarXz)),
+        ("macos", "aarch64") => Ok(("aarch64-apple-darwin", ArchiveKind::TarXz)),
+        (os, arch) => Err(format!("Unsupported Typst platform: {os}/{arch}")),
+    }
+}
+
+fn cached_binary_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let (target, _) = current_target()?;
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?
+        .join("typst")
+        .join(TYPST_VERSION)
+        .join(target);
+    Ok(dir.join(typst_binary_name()))
+}
+
+fn bundled_binary_candidates() -> Vec<PathBuf> {
+    let mut candidates = Vec::new();
+    let bin = typst_binary_name();
 
     if let Ok(exe) = std::env::current_exe() {
         if let Some(exe_dir) = exe.parent() {
-            let p = exe_dir.join("resources").join(bin);
-            if p.exists() {
-                return Some(p.to_string_lossy().to_string());
-            }
-            let p = exe_dir.join(bin);
-            if p.exists() {
-                return Some(p.to_string_lossy().to_string());
-            }
-            // Dev mode: src-tauri/target/debug → src-tauri/resources
+            candidates.push(exe_dir.join("resources").join(bin));
+            candidates.push(exe_dir.join(bin));
+
             let dev_path = exe_dir.join("../../resources").join(bin);
             if let Ok(canonical) = dev_path.canonicalize() {
-                if canonical.exists() {
-                    return Some(canonical.to_string_lossy().to_string());
-                }
+                candidates.push(canonical);
             }
         }
     }
 
+    candidates
+}
+
+fn path_binary_candidate() -> Option<PathBuf> {
+    let bin = typst_binary_name();
     let which_cmd = if cfg!(windows) { "where" } else { "which" };
-    if let Ok(output) = Command::new(which_cmd).arg(bin).output() {
-        if output.status.success() {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
+    let output = Command::new(which_cmd).arg(bin).output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(PathBuf::from)
+}
+
+fn existing_binary_path(app: Option<&AppHandle>) -> Option<PathBuf> {
+    if let Some(app) = app {
+        if let Ok(path) = cached_binary_path(app) {
+            if path.exists() {
                 return Some(path);
             }
         }
     }
 
-    None
+    for candidate in bundled_binary_candidates() {
+        if candidate.exists() {
+            return Some(candidate);
+        }
+    }
+
+    path_binary_candidate()
+}
+
+fn download_url() -> Result<String, String> {
+    let (target, archive_kind) = current_target()?;
+    let ext = match archive_kind {
+        ArchiveKind::Zip => "zip",
+        ArchiveKind::TarXz => "tar.xz",
+    };
+    Ok(format!(
+        "{TYPST_REPO_BASE}/v{TYPST_VERSION}/typst-{target}.{ext}"
+    ))
+}
+
+fn ensure_parent_dir(path: &Path) -> Result<(), String> {
+    let Some(parent) = path.parent() else {
+        return Err("Invalid Typst destination path".to_string());
+    };
+    fs::create_dir_all(parent).map_err(|e| format!("Failed to create Typst directory: {e}"))
+}
+
+fn extract_zip(bytes: &[u8], dest: &Path) -> Result<(), String> {
+    let reader = Cursor::new(bytes);
+    let mut archive = ZipArchive::new(reader).map_err(|e| format!("Failed to open zip: {e}"))?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).map_err(|e| format!("Failed to read zip entry: {e}"))?;
+        let Some(name) = Path::new(file.name()).file_name() else {
+            continue;
+        };
+        if name == typst_binary_name() {
+            let mut out = fs::File::create(dest)
+                .map_err(|e| format!("Failed to create Typst binary: {e}"))?;
+            std::io::copy(&mut file, &mut out)
+                .map_err(|e| format!("Failed to write Typst binary: {e}"))?;
+            return Ok(());
+        }
+    }
+
+    Err(format!("Typst binary {} not found in zip archive", typst_binary_name()))
+}
+
+fn extract_tar_xz(bytes: &[u8], dest: &Path) -> Result<(), String> {
+    let reader = Cursor::new(bytes);
+    let decoder = XzDecoder::new(reader);
+    let mut archive = TarArchive::new(decoder);
+
+    let entries = archive
+        .entries()
+        .map_err(|e| format!("Failed to read tar archive: {e}"))?;
+
+    for entry in entries {
+        let mut entry = entry.map_err(|e| format!("Failed to read tar entry: {e}"))?;
+        let path = entry
+            .path()
+            .map_err(|e| format!("Failed to read tar entry path: {e}"))?;
+        let Some(name) = path.file_name() else {
+            continue;
+        };
+        if name == typst_binary_name() {
+            let mut out = fs::File::create(dest)
+                .map_err(|e| format!("Failed to create Typst binary: {e}"))?;
+            std::io::copy(&mut entry, &mut out)
+                .map_err(|e| format!("Failed to write Typst binary: {e}"))?;
+            return Ok(());
+        }
+    }
+
+    Err(format!("Typst binary {} not found in tar archive", typst_binary_name()))
+}
+
+#[cfg(unix)]
+fn make_executable(path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut perms = fs::metadata(path)
+        .map_err(|e| format!("Failed to read Typst permissions: {e}"))?
+        .permissions();
+    perms.set_mode(0o755);
+    fs::set_permissions(path, perms).map_err(|e| format!("Failed to set Typst permissions: {e}"))
+}
+
+#[cfg(not(unix))]
+fn make_executable(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
+fn download_typst(dest: &Path) -> Result<(), String> {
+    let url = download_url()?;
+    let client = Client::builder()
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
+    let mut response = client
+        .get(&url)
+        .send()
+        .map_err(|e| format!("Failed to download Typst from {url}: {e}"))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "Failed to download Typst from {url}: HTTP {}",
+            response.status()
+        ));
+    }
+
+    let mut bytes = Vec::new();
+    response
+        .read_to_end(&mut bytes)
+        .map_err(|e| format!("Failed to read Typst download: {e}"))?;
+
+    match current_target()?.1 {
+        ArchiveKind::Zip => extract_zip(&bytes, dest)?,
+        ArchiveKind::TarXz => extract_tar_xz(&bytes, dest)?,
+    }
+
+    make_executable(dest)
+}
+
+fn ensure_typst_binary(app: &AppHandle) -> Result<PathBuf, String> {
+    if let Some(path) = existing_binary_path(Some(app)) {
+        return Ok(path);
+    }
+
+    let _guard = DOWNLOAD_MUTEX
+        .get_or_init(|| Mutex::new(()))
+        .lock()
+        .map_err(|_| "Failed to lock Typst download mutex".to_string())?;
+
+    if let Some(path) = existing_binary_path(Some(app)) {
+        return Ok(path);
+    }
+
+    let dest = cached_binary_path(app)?;
+    ensure_parent_dir(&dest)?;
+    download_typst(&dest)?;
+
+    if dest.exists() {
+        Ok(dest)
+    } else {
+        Err("Typst download completed but binary was not found".to_string())
+    }
 }
 
 #[tauri::command]
-pub fn resolve_typst_path() -> Result<String, String> {
-    find_typst_binary().ok_or_else(|| "Typst binary not found".to_string())
+pub fn resolve_typst_path(app: AppHandle) -> Result<String, String> {
+    ensure_typst_binary(&app).map(|p| p.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub fn compile_typst(content: String) -> Result<CompileResult, String> {
-    let typst_bin = find_typst_binary()
-        .ok_or_else(|| "Typst binary not found".to_string())?;
+pub fn compile_typst(app: AppHandle, content: String) -> Result<CompileResult, String> {
+    let typst_bin = ensure_typst_binary(&app)?;
 
     let exe_dir = std::env::current_exe()
         .map_err(|e| e.to_string())?
@@ -81,7 +280,6 @@ pub fn compile_typst(content: String) -> Result<CompileResult, String> {
     let duration_ms = start.elapsed().as_millis() as u64;
 
     if output.status.success() {
-        // Read PDF and return as base64
         let pdf_bytes = fs::read(&output_path)
             .map_err(|e| format!("Failed to read PDF: {}", e))?;
         let pdf_base64 = BASE64.encode(&pdf_bytes);
