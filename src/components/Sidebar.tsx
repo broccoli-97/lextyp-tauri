@@ -15,7 +15,9 @@ import {
   FileText,
 } from "lucide-react";
 import { useReferenceStore } from "../stores/reference-store";
-import { getStyleNames } from "../lib/citation/registry";
+import { getFormatter, getStyleNames } from "../lib/citation/registry";
+import { filterBibEntries, formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
+import { CitationEntryCard } from "./CitationEntryCard";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -29,16 +31,10 @@ export function Sidebar({ collapsed, onToggle, onAction, onInsertCitation }: Sid
     useReferenceStore();
   const [refsExpanded, setRefsExpanded] = useState(true);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const formatter = useMemo(() => getFormatter(citationStyle), [citationStyle]);
 
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return entries;
-    const q = searchQuery.toLowerCase();
-    return entries.filter(
-      (e) =>
-        e.key.toLowerCase().includes(q) ||
-        (e.fields.title || "").toLowerCase().includes(q) ||
-        (e.fields.author || "").toLowerCase().includes(q)
-    );
+    return filterBibEntries(entries, searchQuery);
   }, [entries, searchQuery]);
 
   const selectedEntry = selectedKey ? entries.find((e) => e.key === selectedKey) : null;
@@ -114,70 +110,76 @@ export function Sidebar({ collapsed, onToggle, onAction, onInsertCitation }: Sid
 
                 {/* Detail view */}
                 {selectedEntry ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <button
                       onClick={() => setSelectedKey(null)}
-                      className="text-[11px] text-[var(--accent)] hover:underline"
+                      className="text-[11px] font-medium text-[var(--accent)] hover:underline"
                     >
                       Back to list
                     </button>
-                    <div className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase">
-                      {selectedEntry.type}
+                    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-3">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-md bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+                          {selectedEntry.type}
+                        </span>
+                        <span className="text-[10px] font-mono text-[var(--text-tertiary)]">
+                          @{selectedEntry.key}
+                        </span>
+                      </div>
+                      <div className="mt-2 text-[12px] leading-[1.5] text-[var(--text-primary)]">
+                        {formatCitationPreview(selectedEntry, formatter)}
+                      </div>
+                      <div className="mt-2 text-[11px] text-[var(--text-secondary)]">
+                        {formatEntryMeta(selectedEntry)}
+                      </div>
                     </div>
-                    <div className="text-[11px] font-mono text-[var(--accent)]">
-                      @{selectedEntry.key}
-                    </div>
-                    <div className="text-[13px] font-semibold text-[var(--text-primary)] leading-snug">
-                      {selectedEntry.fields.title || selectedEntry.key}
-                    </div>
-                    {Object.entries(selectedEntry.fields)
+
+                    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-3">
+                      <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
+                        Metadata
+                      </div>
+                      <div className="space-y-2">
+                        {Object.entries(selectedEntry.fields)
                       .filter(([, v]) => v)
-                      .slice(0, 5)
+                      .slice(0, 6)
                       .map(([k, v]) => (
-                        <div key={k} className="text-[11px]">
-                          <span className="font-medium text-[var(--text-tertiary)] uppercase">{k}: </span>
-                          <span className="text-[var(--text-secondary)]">{v}</span>
+                        <div key={k} className="border-b border-[var(--border)] pb-2 last:border-b-0 last:pb-0">
+                          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-tertiary)]">
+                            {k}
+                          </div>
+                          <div className="mt-0.5 text-[11px] leading-[1.45] text-[var(--text-secondary)]">
+                            {v}
+                          </div>
                         </div>
                       ))}
+                      </div>
+                    </div>
                     <button
                       onClick={() => onInsertCitation(selectedEntry.key)}
-                      className="w-full h-7 mt-1 text-[12px] font-medium bg-[var(--accent)] text-white rounded-md hover:opacity-90 transition-opacity"
+                      className="w-full h-8 rounded-lg bg-[var(--accent)] text-[12px] font-medium text-white transition-opacity hover:opacity-90"
                     >
                       Insert Citation
                     </button>
                   </div>
                 ) : (
                   /* Reference list */
-                  <div className="space-y-1 max-h-[300px] overflow-auto">
+                  <div className="space-y-2 max-h-[360px] overflow-auto pr-1">
                     {filtered.length === 0 ? (
-                      <div className="text-[11px] text-[var(--text-tertiary)] text-center py-4">
+                      <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-primary)] py-5 text-[11px] text-[var(--text-tertiary)] text-center">
                         No matches
                       </div>
                     ) : (
                       filtered.map((entry) => (
-                        <div
+                        <CitationEntryCard
                           key={entry.key}
+                          entry={entry}
+                          preview={formatCitationPreview(entry, formatter)}
+                          meta={formatEntryMeta(entry)}
+                          active={selectedKey === entry.key}
+                          compact
                           onClick={() => setSelectedKey(entry.key)}
-                          className="group p-2 rounded-md hover:bg-[var(--hover)] cursor-pointer transition-colors"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-secondary)] uppercase">
-                              {entry.type}
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--text-tertiary)]">
-                              {entry.key}
-                            </span>
-                          </div>
-                          <div className="text-[12px] font-medium text-[var(--text-primary)] truncate mt-0.5">
-                            {entry.fields.title || entry.key}
-                          </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onInsertCitation(entry.key); }}
-                            className="mt-1 text-[10px] text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
-                          >
-                            Insert @{entry.key}
-                          </button>
-                        </div>
+                          onInsert={() => onInsertCitation(entry.key)}
+                        />
                       ))
                     )}
                   </div>

@@ -3,7 +3,7 @@ import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { filterSuggestionItems } from "@blocknote/core/extensions";
 import { SuggestionMenuController } from "@blocknote/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import { schema } from "../editor/schema";
@@ -13,19 +13,30 @@ import { getFormatter } from "../lib/citation/registry";
 import { useAppStore } from "../stores/app-store";
 import { useReferenceStore } from "../stores/reference-store";
 import { FloatingOutline } from "./FloatingOutline";
+import { CitationPicker } from "./CitationPicker";
 
 export function Editor() {
   const { setCompiling, setCompilationResult, setCompilationError, setCapturedSource } =
     useAppStore();
   const compileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [citationPickerOpen, setCitationPickerOpen] = useState(false);
 
   const editor = useCreateBlockNote({ schema });
+  const { entries, citationStyle } = useReferenceStore();
+
+  const openCitationPicker = useCallback(() => {
+    setCitationPickerOpen(true);
+  }, []);
+
+  const closeCitationPicker = useCallback(() => {
+    setCitationPickerOpen(false);
+  }, []);
 
   const compileDocument = useCallback(async () => {
     try {
       const blocks = editor.document;
-      const { entries, citationStyle } = useReferenceStore.getState();
-      const formatter = getFormatter(citationStyle);
+      const formatter = getFormatter(useReferenceStore.getState().citationStyle);
+      const { entries } = useReferenceStore.getState();
       const source = serializeToTypst(blocks as any, entries, formatter);
       setCapturedSource(source);
       setCompiling(true);
@@ -56,14 +67,19 @@ export function Editor() {
         { type: "citation", props: { key } } as any,
         " ",
       ]);
+      setCitationPickerOpen(false);
     },
     [editor]
   );
 
   useEffect(() => {
     (window as any).__lextyp_insertCitation = insertCitation;
-    return () => { delete (window as any).__lextyp_insertCitation; };
-  }, [insertCitation]);
+    (window as any).__lextyp_openCitationPicker = openCitationPicker;
+    return () => {
+      delete (window as any).__lextyp_insertCitation;
+      delete (window as any).__lextyp_openCitationPicker;
+    };
+  }, [insertCitation, openCitationPicker]);
 
   return (
     <div className="h-full overflow-auto relative bg-[var(--bg-primary)]">
@@ -77,12 +93,19 @@ export function Editor() {
           <SuggestionMenuController
             triggerCharacter="/"
             getItems={async (query) =>
-              filterSuggestionItems(getSlashMenuItems(editor), query)
+              filterSuggestionItems(getSlashMenuItems(editor, openCitationPicker), query)
             }
           />
         </BlockNoteView>
       </div>
       <FloatingOutline editor={editor} />
+      <CitationPicker
+        open={citationPickerOpen}
+        entries={entries}
+        formatter={getFormatter(citationStyle)}
+        onClose={closeCitationPicker}
+        onSelect={insertCitation}
+      />
     </div>
   );
 }

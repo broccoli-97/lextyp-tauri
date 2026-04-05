@@ -7,7 +7,8 @@ import type { BlockNoteEditorType } from "./schema";
  * Only includes block types relevant to Typst document + citation workflow.
  */
 export function getSlashMenuItems(
-  editor: BlockNoteEditorType
+  editor: BlockNoteEditorType,
+  onOpenCitationPicker: () => void
 ): DefaultReactSuggestionItem[] {
   return [
     {
@@ -63,11 +64,7 @@ export function getSlashMenuItems(
       aliases: ["citation", "cite", "reference", "footnote", "oscola"],
       group: "References",
       onItemClick: () => {
-        // Insert a placeholder citation — user types the key
-        editor.insertInlineContent([
-          { type: "citation" as any, props: { key: "key" } },
-          " ",
-        ]);
+        onOpenCitationPicker();
       },
     },
     {
