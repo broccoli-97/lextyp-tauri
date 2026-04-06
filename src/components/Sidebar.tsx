@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   FilePlus,
   FolderOpen,
@@ -12,7 +12,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  FileText,
+  Sparkles,
 } from "lucide-react";
 import { useReferenceStore } from "../stores/reference-store";
 import { getFormatter, getStyleNames } from "../lib/citation/registry";
@@ -33,6 +33,17 @@ export function Sidebar({ collapsed, onToggle, onAction, onInsertCitation }: Sid
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const formatter = useMemo(() => getFormatter(citationStyle), [citationStyle]);
 
+  // Auto-collapse on small screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 700 && !collapsed) {
+        onToggle();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [collapsed, onToggle]);
+
   const filtered = useMemo(() => {
     return filterBibEntries(entries, searchQuery);
   }, [entries, searchQuery]);
@@ -41,167 +52,160 @@ export function Sidebar({ collapsed, onToggle, onAction, onInsertCitation }: Sid
 
   if (collapsed) {
     return (
-      <div className="w-[44px] bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col items-center pt-3 shrink-0">
-        <button onClick={onToggle} className="sidebar-icon-btn" title="Expand sidebar">
-          <ChevronsRight size={16} />
+      <div className="w-[48px] bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col items-center pt-4 shrink-0">
+        <button
+          onClick={onToggle}
+          className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+          title="Expand sidebar"
+        >
+          <ChevronsRight size={18} />
         </button>
       </div>
     );
   }
 
   return (
-    <div className="w-[240px] bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col shrink-0 select-none transition-all duration-200">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 h-11 shrink-0">
+    <div className="w-[240px] min-w-[200px] max-w-[280px] bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col shrink-0 select-none">
+      {/* Header - fixed */}
+      <div className="flex items-center justify-between px-3 h-12 shrink-0 border-b border-[var(--border-light)]">
         <div className="flex items-center gap-2">
-          <FileText size={16} className="text-[var(--text-secondary)]" />
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] flex items-center justify-center shadow-sm">
+            <Sparkles size={12} className="text-white" />
+          </div>
           <span className="text-[13px] font-semibold text-[var(--text-primary)] tracking-tight">
             LexTyp
           </span>
         </div>
-        <button onClick={onToggle} className="sidebar-icon-btn" title="Collapse sidebar">
+        <button
+          onClick={onToggle}
+          className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+          title="Collapse sidebar"
+        >
           <ChevronsLeft size={16} />
         </button>
       </div>
 
-      {/* Document section */}
-      <div className="px-1.5 mt-1">
-        <div className="px-2 py-1 text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-          Document
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        {/* Document section */}
+        <div className="px-2 mt-3">
+          <SectionLabel>Document</SectionLabel>
+          <div className="mt-1 space-y-0.5">
+            <SidebarItem icon={<FilePlus size={15} />} label="New" onClick={() => onAction("new")} />
+            <SidebarItem icon={<FolderOpen size={15} />} label="Open" onClick={() => onAction("open")} />
+            <SidebarItem icon={<Save size={15} />} label="Save" onClick={() => onAction("save")} />
+            <SidebarItem icon={<FileDown size={15} />} label="Import" onClick={() => onAction("import")} />
+            <SidebarItem icon={<FileUp size={15} />} label="Export" onClick={() => onAction("export")} />
+          </div>
         </div>
-        <SidebarItem icon={<FilePlus size={15} />} label="New" onClick={() => onAction("new")} />
-        <SidebarItem icon={<FolderOpen size={15} />} label="Open Project" onClick={() => onAction("open")} />
-        <SidebarItem icon={<Save size={15} />} label="Save" onClick={() => onAction("save")} />
-        <SidebarItem icon={<FileDown size={15} />} label="Import .typ" onClick={() => onAction("import")} />
-        <SidebarItem icon={<FileUp size={15} />} label="Export .typ" onClick={() => onAction("export")} />
-      </div>
 
-      {/* References section */}
-      <div className="px-1.5 mt-4">
-        <button
-          onClick={() => setRefsExpanded(!refsExpanded)}
-          className="w-full flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider hover:text-[var(--text-secondary)] transition-colors"
-        >
-          {refsExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          References
-        </button>
+        {/* References section */}
+        <div className="px-2 mt-4">
+          <CollapsibleSection
+            label="References"
+            expanded={refsExpanded}
+            onToggle={() => setRefsExpanded(!refsExpanded)}
+          />
 
-        {refsExpanded && (
-          <>
-            <SidebarItem
-              icon={<BookOpen size={15} />}
-              label="Load Bibliography"
-              onClick={() => onAction("loadbib")}
-            />
+          {refsExpanded && (
+            <div className="mt-1 space-y-0.5">
+              <SidebarItem
+                icon={<BookOpen size={15} />}
+                label="Load Bibliography"
+                onClick={() => onAction("loadbib")}
+                highlight
+              />
 
-            {entries.length > 0 && (
-              <div className="mt-2 px-1">
-                {/* Search */}
-                <div className="relative mb-2">
-                  <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); setSelectedKey(null); }}
-                    className="w-full h-7 pl-7 pr-2 text-[12px] bg-[var(--bg-primary)] border border-[var(--border)] rounded-md focus:border-[var(--accent)] focus:outline-none text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
-                  />
-                </div>
+              {entries.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-[var(--border-light)]">
+                  {/* Search */}
+                  <div className="relative mb-2">
+                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); setSelectedKey(null); }}
+                      className="input pl-8 h-7 text-[11px]"
+                    />
+                  </div>
 
-                {/* Detail view */}
-                {selectedEntry ? (
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => setSelectedKey(null)}
-                      className="text-[11px] font-medium text-[var(--accent)] hover:underline"
-                    >
-                      Back to list
-                    </button>
-                    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-3">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-md bg-[var(--bg-tertiary)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-                          {selectedEntry.type}
-                        </span>
-                        <span className="text-[10px] font-mono text-[var(--text-tertiary)]">
-                          @{selectedEntry.key}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-[12px] leading-[1.5] text-[var(--text-primary)]">
-                        {formatCitationPreview(selectedEntry, formatter)}
-                      </div>
-                      <div className="mt-2 text-[11px] text-[var(--text-secondary)]">
-                        {formatEntryMeta(selectedEntry)}
-                      </div>
-                    </div>
+                  {/* Entry count */}
+                  <div className="flex items-center justify-between px-1 mb-1">
+                    <span className="text-[10px] text-[var(--text-tertiary)]">
+                      {filtered.length}/{entries.length}
+                    </span>
+                  </div>
 
-                    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] p-3">
-                      <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">
-                        Metadata
-                      </div>
-                      <div className="space-y-2">
-                        {Object.entries(selectedEntry.fields)
-                      .filter(([, v]) => v)
-                      .slice(0, 6)
-                      .map(([k, v]) => (
-                        <div key={k} className="border-b border-[var(--border)] pb-2 last:border-b-0 last:pb-0">
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-tertiary)]">
-                            {k}
-                          </div>
-                          <div className="mt-0.5 text-[11px] leading-[1.45] text-[var(--text-secondary)]">
-                            {v}
-                          </div>
+                  {/* Detail view */}
+                  {selectedEntry ? (
+                    <div className="space-y-2 animate-fade-in">
+                      <button
+                        onClick={() => setSelectedKey(null)}
+                        className="text-[10px] font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors flex items-center gap-0.5"
+                      >
+                        <ChevronRight size={10} />
+                        Back
+                      </button>
+                      <div className="card p-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="badge badge-accent text-[8px]">
+                            {selectedEntry.type}
+                          </span>
+                          <span className="text-[9px] font-mono text-[var(--text-tertiary)] truncate">
+                            @{selectedEntry.key}
+                          </span>
                         </div>
-                      ))}
+                        <div className="mt-1.5 text-[11px] leading-[1.5] text-[var(--text-primary)] line-clamp-3">
+                          {formatCitationPreview(selectedEntry, formatter)}
+                        </div>
                       </div>
+                      <button
+                        onClick={() => onInsertCitation(selectedEntry.key)}
+                        className="btn btn-primary w-full h-7 text-[11px]"
+                      >
+                        Insert
+                      </button>
                     </div>
-                    <button
-                      onClick={() => onInsertCitation(selectedEntry.key)}
-                      className="w-full h-8 rounded-lg bg-[var(--accent)] text-[12px] font-medium text-white transition-opacity hover:opacity-90"
-                    >
-                      Insert Citation
-                    </button>
-                  </div>
-                ) : (
-                  /* Reference list */
-                  <div className="space-y-2 max-h-[360px] overflow-auto pr-1">
-                    {filtered.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-primary)] py-5 text-[11px] text-[var(--text-tertiary)] text-center">
-                        No matches
-                      </div>
-                    ) : (
-                      filtered.map((entry) => (
-                        <CitationEntryCard
-                          key={entry.key}
-                          entry={entry}
-                          preview={formatCitationPreview(entry, formatter)}
-                          meta={formatEntryMeta(entry)}
-                          active={selectedKey === entry.key}
-                          compact
-                          onClick={() => setSelectedKey(entry.key)}
-                          onInsert={() => onInsertCitation(entry.key)}
-                        />
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
+                  ) : (
+                    /* Reference list */
+                    <div className="space-y-1 max-h-[200px] overflow-auto pr-0.5">
+                      {filtered.length === 0 ? (
+                        <div className="card py-4 text-[10px] text-[var(--text-tertiary)] text-center border-dashed">
+                          No matches
+                        </div>
+                      ) : (
+                        filtered.map((entry) => (
+                          <CitationEntryCard
+                            key={entry.key}
+                            entry={entry}
+                            preview={formatCitationPreview(entry, formatter)}
+                            meta={formatEntryMeta(entry)}
+                            active={selectedKey === entry.key}
+                            compact
+                            onClick={() => setSelectedKey(entry.key)}
+                            onInsert={() => onInsertCitation(entry.key)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Bottom: citation style + settings */}
-      <div className="px-1.5 pb-2 space-y-1">
+      {/* Bottom section - fixed at bottom */}
+      <div className="shrink-0 px-2 py-2 border-t border-[var(--border-light)] bg-[var(--bg-secondary)]">
         {entries.length > 0 && (
-          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-[var(--bg-tertiary)]">
-            <span className="text-[10px] font-medium text-[var(--text-secondary)]">Style</span>
+          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-[var(--bg-tertiary)] mb-1.5">
+            <span className="text-[9px] font-semibold text-[var(--text-secondary)] uppercase">Style</span>
             <select
               value={citationStyle}
               onChange={(e) => setCitationStyle(e.target.value)}
-              className="flex-1 bg-transparent text-[11px] font-semibold text-[var(--text-primary)] uppercase outline-none cursor-pointer"
+              className="flex-1 bg-transparent text-[10px] font-semibold text-[var(--text-primary)] uppercase outline-none cursor-pointer"
             >
               {getStyleNames().map((s) => (
                 <option key={s} value={s}>{s.toUpperCase()}</option>
@@ -215,22 +219,56 @@ export function Sidebar({ collapsed, onToggle, onAction, onInsertCitation }: Sid
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-2 py-1 text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.08em]">
+      {children}
+    </div>
+  );
+}
+
+function CollapsibleSection({
+  label,
+  expanded,
+  onToggle,
+}: {
+  label: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-1 px-2 py-1 text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.08em] hover:text-[var(--text-primary)] transition-colors rounded-md hover:bg-[var(--bg-hover)]"
+    >
+      {expanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+      {label}
+    </button>
+  );
+}
+
 function SidebarItem({
   icon,
   label,
   onClick,
+  highlight = false,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  highlight?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-2 py-[5px] rounded-md text-[13px] text-[var(--text-secondary)] hover:bg-[var(--hover)] active:bg-[var(--active)] transition-colors"
+      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-all ${
+        highlight
+          ? "text-[var(--accent)] hover:bg-[var(--accent-light)]"
+          : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)]"
+      }`}
     >
-      <span className="text-[var(--text-tertiary)] shrink-0">{icon}</span>
-      {label}
+      <span className={`shrink-0 ${highlight ? "text-[var(--accent)]" : "text-[var(--text-secondary)]"}`}>{icon}</span>
+      <span className="truncate">{label}</span>
     </button>
   );
 }

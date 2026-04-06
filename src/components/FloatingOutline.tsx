@@ -13,7 +13,8 @@ interface FloatingOutlineProps {
 
 export function FloatingOutline({ editor }: FloatingOutlineProps) {
   const [entries, setEntries] = useState<OutlineEntry[]>([]);
-  const [hovered, setHovered] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rebuild = useCallback(() => {
@@ -54,43 +55,60 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`absolute top-5 right-4 w-44 max-h-[55%] rounded-lg border border-[var(--border)] z-50 transition-all duration-300 overflow-hidden backdrop-blur-sm ${
-        hovered ? "bg-white/95 shadow-lg" : "bg-white/50"
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => {
+        setExpanded(false);
+        setHoveredIndex(null);
+      }}
+      className={`absolute top-4 right-4 z-50 transition-all duration-200 ${
+        expanded
+          ? "w-52 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl shadow-lg"
+          : "w-9 h-9 bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-lg"
       }`}
     >
-      <div className="p-3 overflow-auto max-h-full">
-        <div className="flex items-center gap-1.5 mb-2">
-          <List size={12} className="text-[var(--text-tertiary)]" />
-          <span className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)] tracking-wider">
-            On this page
-          </span>
+      {/* Collapsed state - icon only */}
+      {!expanded && (
+        <div className="w-full h-full flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer">
+          <List size={16} />
         </div>
-        <div className="space-y-px">
-          {entries.map((entry) => (
-            <button
-              key={entry.id}
-              onClick={() => {
-                const block = editor.getBlock(entry.id);
-                if (block) editor.setTextCursorPosition(block, "start");
-              }}
-              className={`block w-full text-left py-1 rounded transition-colors truncate ${
-                hovered
-                  ? "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover)]"
-                  : "text-[var(--text-tertiary)]"
-              }`}
-              style={{
-                paddingLeft: `${(entry.level - 1) * 12 + 4}px`,
-                fontSize: entry.level === 1 ? "12px" : "11px",
-                fontWeight: entry.level === 1 ? 500 : 400,
-              }}
-            >
-              {entry.text}
-            </button>
-          ))}
+      )}
+
+      {/* Expanded state - full outline */}
+      {expanded && (
+        <div className="p-3 max-h-[50vh] overflow-auto animate-fade-in">
+          <div className="flex items-center gap-1.5 mb-2.5 pb-2 border-b border-[var(--border-light)]">
+            <List size={12} className="text-[var(--text-secondary)]" />
+            <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)] tracking-wider">
+              Outline
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            {entries.map((entry, index) => (
+              <button
+                key={entry.id}
+                onClick={() => {
+                  const block = editor.getBlock(entry.id);
+                  if (block) editor.setTextCursorPosition(block, "start");
+                }}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                className={`block w-full text-left py-1.5 px-2 rounded-md transition-all duration-150 truncate ${
+                  hoveredIndex === index
+                    ? "bg-[var(--accent-light)] text-[var(--accent)]"
+                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                }`}
+                style={{
+                  paddingLeft: `${(entry.level - 1) * 12 + 8}px`,
+                  fontSize: entry.level === 1 ? "12px" : "11px",
+                  fontWeight: entry.level === 1 ? 500 : 400,
+                }}
+              >
+                {entry.text}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

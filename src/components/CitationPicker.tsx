@@ -76,9 +76,9 @@ export function CitationPicker({
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-40 flex items-start justify-center bg-[rgba(247,247,245,0.72)] px-6 pt-16 backdrop-blur-[2px]">
-      <div className="w-full max-w-[640px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] shadow-[0_18px_50px_rgba(55,53,47,0.12)]">
-        <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3">
+    <div className="absolute inset-0 z-40 flex items-start justify-center bg-black/20 backdrop-blur-sm px-6 pt-20 animate-fade-in">
+      <div className="w-full max-w-[640px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] shadow-xl animate-slide-in">
+        <div className="flex items-center gap-3 border-b border-[var(--border-light)] px-4 py-3">
           <div className="relative flex-1">
             <Search
               size={15}
@@ -90,34 +90,34 @@ export function CitationPicker({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search citations by key, title, author..."
-              className="h-11 w-full rounded-xl border border-[var(--border)] bg-[var(--bg-primary)] pl-10 pr-3 text-[13px] text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent)]"
+              className="input h-10 pl-10 text-[13px]"
             />
           </div>
 
           <button
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] text-[var(--text-secondary)] transition-colors hover:border-[var(--border-hover)] hover:bg-[var(--hover)] hover:text-[var(--text-primary)]"
+            className="icon-btn w-9 h-9"
             title="Close"
           >
-            <X size={15} />
+            <X size={16} />
           </button>
         </div>
 
-        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2 text-[11px] text-[var(--text-secondary)]">
-          <span>{filtered.length} references</span>
-          <span>Enter to insert</span>
+        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-4 py-2 text-[11px] text-[var(--text-tertiary)]">
+          <span className="font-medium">{filtered.length} references</span>
+          <span className="px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[10px]">Enter to insert</span>
         </div>
 
         <div className="max-h-[420px] overflow-auto p-3">
           {filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-primary)] px-4 py-8 text-center">
-              <p className="text-[13px] text-[var(--text-primary)]">No matching citation</p>
-              <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
-                Load a bibliography or refine your search terms.
+            <div className="card py-10 text-center border-dashed">
+              <p className="text-[13px] font-medium text-[var(--text-primary)]">No matching citations</p>
+              <p className="mt-1.5 text-[11px] text-[var(--text-secondary)]">
+                Load a bibliography or refine your search terms
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {filtered.map((entry, index) => (
                 <CitationEntryCard
                   key={entry.key}

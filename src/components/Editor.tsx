@@ -82,8 +82,8 @@ export function Editor() {
   }, [insertCitation, openCitationPicker]);
 
   return (
-    <div className="h-full overflow-auto relative bg-[var(--bg-primary)]">
-      <div className="max-w-[720px] mx-auto px-12 py-8">
+    <div className="h-full overflow-auto relative">
+      <div className="max-w-[880px] mx-auto px-8 py-10">
         <BlockNoteView
           editor={editor}
           theme="light"
