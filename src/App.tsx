@@ -1,94 +1,116 @@
 import { useCallback, useState, useEffect, useRef } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
 import { Editor } from "./components/Editor";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
-import { useReferenceStore } from "./stores/reference-store";
-import { parseBibtex } from "./lib/bib-parser";
+import { useWorkspaceStore } from "./stores/workspace-store";
+
+const SIDEBAR_MIN = 200;
+const SIDEBAR_MAX = 400;
+const PDF_MIN = 280;
+
+function clampSidebar(w: number, windowWidth: number) {
+  return Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, Math.min(w, Math.floor(windowWidth * 0.3))));
+}
+
+function clampPdf(w: number, windowWidth: number) {
+  return Math.max(PDF_MIN, Math.min(w, Math.floor(windowWidth * 0.5)));
+}
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [pdfPanelWidth, setPdfPanelWidth] = useState(420);
+  const [sidebarWidth, setSidebarWidth] = useState(() => Math.round(window.innerWidth * 0.18));
+  const [pdfPanelWidth, setPdfPanelWidth] = useState(() => Math.round(window.innerWidth * 0.35));
   const [pdfPanelCollapsed, setPdfPanelCollapsed] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const { setEntries } = useReferenceStore();
+  const [resizingPanel, setResizingPanel] = useState<"sidebar" | "pdf" | null>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
+  const prevWindowWidth = useRef(window.innerWidth);
+  const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
+  const saveActiveDocument = useWorkspaceStore((s) => s.saveActiveDocument);
+  const isDirty = useWorkspaceStore((s) => s.isDirty);
 
-  // Responsive: auto-collapse sidebar on small windows
+  // Scale panels proportionally on window resize / fullscreen
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 900) {
+      const w = window.innerWidth;
+      const prev = prevWindowWidth.current;
+      prevWindowWidth.current = w;
+
+      if (w < 900) {
         setSidebarCollapsed(true);
       }
+
+      // Skip if user is actively dragging
+      if (resizingPanel) return;
+
+      const ratio = w / prev;
+
+      setSidebarWidth((prevW) => {
+        if (sidebarCollapsed) return prevW;
+        return clampSidebar(Math.round(prevW * ratio), w);
+      });
+      setPdfPanelWidth((prevW) => {
+        if (pdfPanelCollapsed) return prevW;
+        return clampPdf(Math.round(prevW * ratio), w);
+      });
     };
-    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [sidebarCollapsed, pdfPanelCollapsed, resizingPanel]);
 
-  // Handle resize drag
+  // Handle resize drag for both sidebar and pdf panel
   useEffect(() => {
+    if (!resizingPanel) return;
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const newWidth = window.innerWidth - e.clientX - (sidebarCollapsed ? 48 : 240);
-      setPdfPanelWidth(Math.max(280, Math.min(600, newWidth)));
+      const w = window.innerWidth;
+      if (resizingPanel === "sidebar") {
+        setSidebarWidth(clampSidebar(e.clientX, w));
+      } else {
+        setPdfPanelWidth(clampPdf(w - e.clientX, w));
+      }
     };
 
     const handleMouseUp = () => {
-      setIsResizing(false);
+      setResizingPanel(null);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
 
-    if (isResizing) {
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    }
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing, sidebarCollapsed]);
+  }, [resizingPanel]);
 
-  const handleLoadBib = useCallback(async () => {
-    const file = await open({
-      filters: [{ name: "BibTeX", extensions: ["bib"] }],
-    });
-    if (!file) return;
-    try {
-      const content = await invoke<string>("read_bib_file", { path: file });
-      const entries = parseBibtex(content);
-      setEntries(entries, file);
-    } catch (err) {
-      console.error("Failed to load bib file:", err);
-    }
-  }, [setEntries]);
+  // Save on window close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isDirty) {
+        saveActiveDocument().catch(console.error);
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, saveActiveDocument]);
 
   const handleInsertCitation = useCallback((key: string) => {
     const fn = (window as any).__lextyp_insertCitation;
     if (fn) fn(key);
   }, []);
 
-  const handleAction = useCallback(
-    (action: string) => {
-      switch (action) {
-        case "loadbib":
-          handleLoadBib();
-          break;
-        default:
-          console.log("Action:", action);
-      }
-    },
-    [handleLoadBib]
-  );
+  const startSidebarResize = useCallback(() => {
+    setResizingPanel("sidebar");
+  }, []);
 
-  const startResize = useCallback(() => {
-    setIsResizing(true);
+  const startPdfResize = useCallback(() => {
+    setResizingPanel("pdf");
   }, []);
 
   return (
@@ -97,49 +119,90 @@ function App() {
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onAction={handleAction}
         onInsertCitation={handleInsertCitation}
+        width={sidebarWidth}
       />
+
+      {/* Sidebar resize handle */}
+      {!sidebarCollapsed && (
+        <div
+          onMouseDown={startSidebarResize}
+          className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
+            resizingPanel === "sidebar" ? "bg-[var(--accent)]" : ""
+          }`}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+          {resizingPanel === "sidebar" && (
+            <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
+          )}
+        </div>
+      )}
 
       {/* Main content area */}
       <div className="flex flex-1 min-w-0 overflow-hidden">
         {/* Editor panel */}
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex-1 overflow-hidden bg-[var(--bg-primary)]">
-            <Editor />
+            {activeDocumentPath ? (
+              <Editor />
+            ) : (
+              <EmptyState />
+            )}
           </div>
           <StatusBar />
         </div>
 
-        {/* Resizer handle */}
-        {!pdfPanelCollapsed && (
+        {/* PDF resize handle */}
+        {!pdfPanelCollapsed && activeDocumentPath && (
           <div
             ref={resizeRef}
-            onMouseDown={startResize}
+            onMouseDown={startPdfResize}
             className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-              isResizing ? "bg-[var(--accent)]" : ""
+              resizingPanel === "pdf" ? "bg-[var(--accent)]" : ""
             }`}
           >
             <div className="absolute inset-y-0 -left-1 -right-1" />
-            {isResizing && (
+            {resizingPanel === "pdf" && (
               <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
             )}
           </div>
         )}
 
         {/* PDF Preview panel */}
-        <div
-          className={`hidden md:flex flex-col bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200 ${
-            pdfPanelCollapsed ? "w-12" : ""
-          }`}
-          style={{ width: pdfPanelCollapsed ? 48 : pdfPanelWidth }}
-        >
-          <PdfPreview
-            collapsed={pdfPanelCollapsed}
-            onToggleCollapse={() => setPdfPanelCollapsed(!pdfPanelCollapsed)}
-            panelWidth={pdfPanelWidth}
-          />
-        </div>
+        {activeDocumentPath && (
+          <div
+            className={`hidden md:flex flex-col bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200 ${
+              pdfPanelCollapsed ? "w-12" : ""
+            }`}
+            style={{ width: pdfPanelCollapsed ? 48 : pdfPanelWidth }}
+          >
+            <PdfPreview
+              collapsed={pdfPanelCollapsed}
+              onToggleCollapse={() => setPdfPanelCollapsed(!pdfPanelCollapsed)}
+              panelWidth={pdfPanelWidth}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="h-full flex flex-col items-center justify-center gap-4">
+      <div className="w-16 h-20 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
+        <span className="text-[24px] text-[var(--text-tertiary)]">
+          {"\u270E"}
+        </span>
+      </div>
+      <div className="text-center">
+        <p className="text-[14px] font-medium text-[var(--text-secondary)]">
+          No document open
+        </p>
+        <p className="text-[12px] text-[var(--text-tertiary)] mt-1">
+          Create or open a document from the sidebar
+        </p>
       </div>
     </div>
   );

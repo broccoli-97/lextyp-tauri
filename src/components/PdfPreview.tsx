@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -27,16 +27,53 @@ interface PdfPreviewProps {
 const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200];
 
 export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPreviewProps) {
-  const { pdfBase64, lastError, compiling } = useAppStore();
+  const pdfBase64 = useAppStore((s) => s.pdfBase64);
+  const lastError = useAppStore((s) => s.lastError);
+  const compiling = useAppStore((s) => s.compiling);
   const [numPages, setNumPages] = useState(0);
   const [zoomIndex, setZoomIndex] = useState(2); // Default 100%
+  const [isDragging, setIsDragging] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
   const zoom = ZOOM_LEVELS[zoomIndex];
 
-  // Calculate page width based on panel width and zoom
-  const pageWidth = useMemo(() => {
-    return Math.max(200, Math.min(600, (panelWidth - 48) * (zoom / 100)));
-  }, [panelWidth, zoom]);
+  // Mouse-drag panning
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (zoom <= 100) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    el.setPointerCapture(e.pointerId);
+  }, [zoom]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = dragStart.current.scrollLeft - (e.clientX - dragStart.current.x);
+    el.scrollTop = dragStart.current.scrollTop - (e.clientY - dragStart.current.y);
+  }, [isDragging]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    scrollRef.current?.releasePointerCapture(e.pointerId);
+  }, [isDragging]);
+
+  // Base page width fits the panel; zoom is applied via CSS transform
+  const basePageWidth = useMemo(() => {
+    return Math.max(200, panelWidth - 48);
+  }, [panelWidth]);
+
+  const scale = zoom / 100;
+
+  // A4 ratio: 297/210 ≈ 1.4143; space-y-4 = 16px gap between pages
+  const contentHeight = useMemo(() => {
+    const pageHeight = basePageWidth * (297 / 210);
+    return numPages * pageHeight + Math.max(0, numPages - 1) * 16;
+  }, [basePageWidth, numPages]);
 
   // Convert base64 to data URL for react-pdf
   const pdfData = useMemo(() => {
@@ -228,7 +265,15 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
       </div>
 
       {/* PDF content */}
-      <div className="flex-1 overflow-auto p-4">
+      <div
+        className="flex-1 overflow-auto p-4"
+        ref={scrollRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{ cursor: zoom > 100 ? (isDragging ? "grabbing" : "grab") : undefined }}
+      >
         <Document
           file={pdfData}
           onLoadSuccess={({ numPages: n }) => setNumPages(n)}
@@ -240,17 +285,27 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
             </div>
           }
         >
-          <div className="space-y-4">
-            {Array.from({ length: numPages }, (_, i) => (
-              <div key={i} className="rounded-lg overflow-hidden shadow-md bg-white">
-                <Page
-                  pageNumber={i + 1}
-                  width={pageWidth}
-                  renderTextLayer={true}
-                  renderAnnotationLayer={true}
-                />
+          <div style={{ width: basePageWidth * scale, height: contentHeight * scale }}>
+            <div
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                width: basePageWidth,
+              }}
+            >
+              <div className="space-y-4">
+                {Array.from({ length: numPages }, (_, i) => (
+                  <div key={i} className="rounded-lg overflow-hidden shadow-md bg-white">
+                    <Page
+                      pageNumber={i + 1}
+                      width={basePageWidth}
+                      renderTextLayer={true}
+                      renderAnnotationLayer={true}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </Document>
       </div>

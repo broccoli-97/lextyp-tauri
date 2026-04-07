@@ -13,6 +13,11 @@ pub fn run() {
             project::save_project,
             project::load_project,
             project::read_bib_file,
+            project::list_workspace,
+            project::create_folder,
+            project::create_document,
+            project::rename_item,
+            project::delete_item,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

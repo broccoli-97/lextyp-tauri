@@ -2,7 +2,9 @@ import { useAppStore } from "../stores/app-store";
 import { Circle, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
 export function StatusBar() {
-  const { compiling, lastError, lastDuration } = useAppStore();
+  const compiling = useAppStore((s) => s.compiling);
+  const lastError = useAppStore((s) => s.lastError);
+  const lastDuration = useAppStore((s) => s.lastDuration);
 
   const statusConfig = compiling
     ? { icon: <Loader2 size={12} className="animate-spin" />, text: "Compiling...", color: "text-[var(--accent)]", bg: "bg-[var(--accent-light)]" }
