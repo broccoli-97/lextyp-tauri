@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import {
   FilePlus,
   FolderPlus,
@@ -59,9 +59,6 @@ export function Sidebar({
   const setFromRaw = useReferenceStore((s) => s.setFromRaw);
 
   const [activeTab, setActiveTab] = useState<SidebarTab>("files");
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
-  const popoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [styleDropdownOpen, setStyleDropdownOpen] = useState(false);
   const [newItemInput, setNewItemInput] = useState<"document" | "folder" | null>(null);
@@ -115,35 +112,6 @@ export function Sidebar({
   const filtered = useMemo(() => {
     return filterBibEntries(entries, searchQuery);
   }, [entries, searchQuery]);
-
-  const hoveredEntry = hoveredKey
-    ? entries.find((e) => e.key === hoveredKey)
-    : null;
-
-  const handleEntryMouseEnter = useCallback((key: string, e: ReactMouseEvent) => {
-    if (popoverTimeout.current) clearTimeout(popoverTimeout.current);
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setHoveredKey(key);
-    setPopoverPos({ top: rect.top, left: rect.right + 8 });
-  }, []);
-
-  const handleEntryMouseLeave = useCallback(() => {
-    popoverTimeout.current = setTimeout(() => {
-      setHoveredKey(null);
-      setPopoverPos(null);
-    }, 200);
-  }, []);
-
-  const handlePopoverMouseEnter = useCallback(() => {
-    if (popoverTimeout.current) clearTimeout(popoverTimeout.current);
-  }, []);
-
-  const handlePopoverMouseLeave = useCallback(() => {
-    popoverTimeout.current = setTimeout(() => {
-      setHoveredKey(null);
-      setPopoverPos(null);
-    }, 200);
-  }, []);
 
   const handleOpenWorkspace = useCallback(async () => {
     const selected = await open({ directory: true });
@@ -346,17 +314,10 @@ export function Sidebar({
               styleDropdownOpen={styleDropdownOpen}
               setStyleDropdownOpen={setStyleDropdownOpen}
               styleDropdownRef={styleDropdownRef}
-              hoveredKey={hoveredKey}
-              hoveredEntry={hoveredEntry}
-              popoverPos={popoverPos}
               formatter={formatter}
               activeDocumentPath={activeDocumentPath}
               onInsertCitation={onInsertCitation}
               onImportBib={handleImportBib}
-              onEntryMouseEnter={handleEntryMouseEnter}
-              onEntryMouseLeave={handleEntryMouseLeave}
-              onPopoverMouseEnter={handlePopoverMouseEnter}
-              onPopoverMouseLeave={handlePopoverMouseLeave}
             />
           )}
         </div>
@@ -508,17 +469,10 @@ function ReferencesPanel({
   styleDropdownOpen,
   setStyleDropdownOpen,
   styleDropdownRef,
-  hoveredKey,
-  hoveredEntry,
-  popoverPos,
   formatter,
   activeDocumentPath,
   onInsertCitation,
   onImportBib,
-  onEntryMouseEnter,
-  onEntryMouseLeave,
-  onPopoverMouseEnter,
-  onPopoverMouseLeave,
 }: {
   entries: any[];
   filtered: any[];
@@ -529,18 +483,24 @@ function ReferencesPanel({
   styleDropdownOpen: boolean;
   setStyleDropdownOpen: (v: boolean) => void;
   styleDropdownRef: React.RefObject<HTMLDivElement | null>;
-  hoveredKey: string | null;
-  hoveredEntry: any;
-  popoverPos: { top: number; left: number } | null;
   formatter: any;
   activeDocumentPath: string | null;
   onInsertCitation: (key: string) => void;
   onImportBib: () => void;
-  onEntryMouseEnter: (key: string, e: ReactMouseEvent) => void;
-  onEntryMouseLeave: () => void;
-  onPopoverMouseEnter: () => void;
-  onPopoverMouseLeave: () => void;
 }) {
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  const entryTypes = useMemo(() => {
+    const types = new Set(entries.map((e) => e.type));
+    return Array.from(types).sort();
+  }, [entries]);
+
+  const displayedEntries = useMemo(() => {
+    if (!typeFilter) return filtered;
+    return filtered.filter((e) => e.type === typeFilter);
+  }, [filtered, typeFilter]);
+
   if (!activeDocumentPath) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4">
@@ -634,86 +594,137 @@ function ReferencesPanel({
               />
             </div>
 
+            {/* Type filter tags */}
+            {entryTypes.length > 1 && (
+              <div className="flex flex-wrap gap-1 mb-1.5">
+                <button
+                  onClick={() => setTypeFilter(null)}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                    typeFilter === null
+                      ? "bg-[var(--accent)] text-white"
+                      : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`}
+                >
+                  All
+                </button>
+                {entryTypes.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                      typeFilter === t
+                        ? "bg-[var(--accent)] text-white"
+                        : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Count */}
             <div className="flex items-center px-1 mb-1">
               <span className="text-[10px] text-[var(--text-tertiary)]">
-                {filtered.length}/{entries.length}
+                {displayedEntries.length}/{entries.length}
               </span>
             </div>
 
-            {/* Citation list */}
-            <div className="space-y-0.5 pb-2">
-              {filtered.length === 0 ? (
-                <div className="card py-3 text-[11px] text-[var(--text-tertiary)] text-center border-dashed">
+            {/* Citation cards */}
+            <div className="space-y-1.5 pb-2">
+              {displayedEntries.length === 0 ? (
+                <div className="py-3 text-[11px] text-[var(--text-tertiary)] text-center rounded-xl border border-dashed border-[var(--border)]">
                   No matches
                 </div>
               ) : (
-                filtered.map((entry) => (
-                  <div
-                    key={entry.key}
-                    onMouseEnter={(e) => onEntryMouseEnter(entry.key, e)}
-                    onMouseLeave={onEntryMouseLeave}
-                    className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
-                      hoveredKey === entry.key
-                        ? "bg-[var(--accent-light)]"
-                        : "hover:bg-[var(--bg-hover)]"
-                    }`}
-                  >
-                    <span className="badge shrink-0 text-[9px]">{entry.type}</span>
-                    <span className="text-[11px] text-[var(--text-primary)] truncate flex-1 min-w-0">
-                      {entry.fields.title || `@${entry.key}`}
-                    </span>
-                    <button
-                      onClick={(ev) => { ev.stopPropagation(); onInsertCitation(entry.key); }}
-                      className="shrink-0 text-[10px] font-medium text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--accent-hover)]"
+                displayedEntries.map((entry) => {
+                  const isExpanded = expandedKey === entry.key;
+                  return (
+                    <div
+                      key={entry.key}
+                      onClick={() => setExpandedKey(isExpanded ? null : entry.key)}
+                      className={[
+                        "group rounded-xl border cursor-pointer transition-all duration-200",
+                        isExpanded
+                          ? "border-[var(--accent)] bg-[var(--accent-light)] shadow-sm"
+                          : "border-[var(--border)] bg-[var(--bg-primary)] hover:border-[var(--border-hover)] hover:shadow-sm",
+                      ].join(" ")}
                     >
-                      Insert
-                    </button>
-                  </div>
-                ))
+                      {/* Card header */}
+                      <div className="px-2.5 py-2">
+                        <div className="flex items-center justify-between min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className={`badge shrink-0 text-[9px] ${isExpanded ? "badge-accent" : ""}`}>
+                              {entry.type}
+                            </span>
+                            <span className="text-[10px] font-mono text-[var(--text-tertiary)] truncate">
+                              @{entry.key}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(ev) => { ev.stopPropagation(); onInsertCitation(entry.key); }}
+                            className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
+                          >
+                            Insert
+                          </button>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-[1.4] text-[var(--text-primary)] break-words">
+                          {entry.fields.title || `@${entry.key}`}
+                        </p>
+                        <p className="mt-0.5 truncate text-[10px] text-[var(--text-secondary)]">
+                          {formatEntryMeta(entry)}
+                        </p>
+                      </div>
+
+                      {/* Expanded details */}
+                      {isExpanded && (
+                        <div className="px-2.5 pb-2.5 pt-0 border-t border-[var(--accent)]/20 animate-fade-in">
+                          {/* Formatted citation preview */}
+                          <p className="mt-2 text-[11px] leading-[1.6] text-[var(--text-primary)] italic">
+                            {formatCitationPreview(entry, formatter)}
+                          </p>
+
+                          {/* Structured fields */}
+                          <div className="mt-2 space-y-1">
+                            <DetailField label="Author" value={entry.fields.author} />
+                            <DetailField label="Editor" value={entry.fields.editor} />
+                            <DetailField label="Year" value={entry.fields.year} />
+                            <DetailField label="Journal" value={entry.fields.journal} />
+                            <DetailField label="Book Title" value={entry.fields.booktitle} />
+                            <DetailField label="Publisher" value={entry.fields.publisher} />
+                            <DetailField label="Volume" value={entry.fields.volume} />
+                            <DetailField label="Number" value={entry.fields.number} />
+                            <DetailField label="Pages" value={entry.fields.pages} />
+                            <DetailField label="Court" value={entry.fields.court} />
+                            <DetailField label="School" value={entry.fields.school} />
+                            <DetailField label="DOI" value={entry.fields.doi} mono />
+                            <DetailField label="URL" value={entry.fields.url} mono />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
-
-            {/* Floating popover for hovered citation */}
-            {hoveredEntry && popoverPos && (
-              <div
-                onMouseEnter={onPopoverMouseEnter}
-                onMouseLeave={onPopoverMouseLeave}
-                style={{
-                  position: "fixed",
-                  top: Math.min(popoverPos.top, window.innerHeight - 200),
-                  left: popoverPos.left,
-                  zIndex: 100,
-                  width: 280,
-                }}
-                className="card-elevated p-3 border border-[var(--border)] animate-fade-in"
-              >
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="badge badge-accent text-[9px]">
-                    {hoveredEntry.type}
-                  </span>
-                  <span className="text-[11px] font-mono text-[var(--text-tertiary)] truncate">
-                    @{hoveredEntry.key}
-                  </span>
-                </div>
-                <p className="text-[12px] leading-[1.5] text-[var(--text-primary)] mb-1">
-                  {formatCitationPreview(hoveredEntry, formatter)}
-                </p>
-                <p className="text-[11px] text-[var(--text-secondary)] mb-2">
-                  {formatEntryMeta(hoveredEntry)}
-                </p>
-                <button
-                  onClick={() => onInsertCitation(hoveredEntry.key)}
-                  className="btn btn-primary w-full h-7 text-[12px]"
-                >
-                  Insert Citation
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
     </>
+  );
+}
+
+/* ─── Detail field row ─── */
+
+function DetailField({ label, value, mono }: { label: string; value?: string; mono?: boolean }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-2 text-[10px] leading-[1.4]">
+      <span className="shrink-0 w-[60px] text-[var(--text-tertiary)] font-medium">{label}</span>
+      <span className={`min-w-0 break-words text-[var(--text-secondary)] ${mono ? "font-mono" : ""}`}>
+        {value}
+      </span>
+    </div>
   );
 }
 
