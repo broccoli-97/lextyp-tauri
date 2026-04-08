@@ -5,8 +5,8 @@ import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
 import { useWorkspaceStore } from "./stores/workspace-store";
 
-const SIDEBAR_MIN = 200;
-const SIDEBAR_MAX = 400;
+const SIDEBAR_MIN = 220;
+const SIDEBAR_MAX = 380;
 const PDF_MIN = 280;
 
 function clampSidebar(w: number, windowWidth: number) {
@@ -19,7 +19,7 @@ function clampPdf(w: number, windowWidth: number) {
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(() => Math.round(window.innerWidth * 0.18));
+  const [sidebarWidth, setSidebarWidth] = useState(() => Math.round(window.innerWidth * 0.15));
   const [pdfPanelWidth, setPdfPanelWidth] = useState(() => Math.round(window.innerWidth * 0.35));
   const [pdfPanelCollapsed, setPdfPanelCollapsed] = useState(false);
   const [resizingPanel, setResizingPanel] = useState<"sidebar" | "pdf" | null>(null);

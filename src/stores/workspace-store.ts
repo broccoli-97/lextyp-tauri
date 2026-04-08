@@ -31,6 +31,7 @@ interface WorkspaceState {
   createDocument: (parentFolder: string, title: string) => Promise<string>;
   createFolder: (parentFolder: string, name: string) => Promise<void>;
   renameItem: (oldPath: string, newPath: string) => Promise<void>;
+  moveItem: (sourcePath: string, targetFolderPath: string) => Promise<void>;
   deleteItem: (path: string) => Promise<void>;
   toggleFolder: (path: string) => void;
   setDirty: (dirty: boolean) => void;
@@ -41,20 +42,7 @@ interface WorkspaceState {
 }
 
 const WORKSPACE_KEY = "lextyp_workspace_path";
-
-/** Return the last document path in the flat ordering of the file tree, excluding `excludePath`. */
-function findLastDocumentInTree(entries: FileTreeEntry[], excludePath: string | null): string | null {
-  let last: string | null = null;
-  for (const entry of entries) {
-    if (entry.kind === "document" && entry.path !== excludePath) {
-      last = entry.path;
-    } else if (entry.kind === "folder") {
-      const child = findLastDocumentInTree(entry.children, excludePath);
-      if (child) last = child;
-    }
-  }
-  return last;
-}
+const ACTIVE_DOC_KEY = "lextyp_active_document_path";
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspacePath: null,
@@ -123,6 +111,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeDocumentBlocks: blocks,
       isDirty: false,
     });
+    localStorage.setItem(ACTIVE_DOC_KEY, path);
   },
 
   saveActiveDocument: async () => {
@@ -204,6 +193,28 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const { activeDocumentPath } = get();
     if (activeDocumentPath === oldPath) {
       set({ activeDocumentPath: newPath });
+      localStorage.setItem(ACTIVE_DOC_KEY, newPath);
+    }
+
+    await get().refreshFileTree();
+  },
+
+  moveItem: async (sourcePath, targetFolderPath) => {
+    // Extract the file/folder name from the source path
+    const name = sourcePath.replace(/\\/g, "/").split("/").pop();
+    if (!name) return;
+    const newPath = `${targetFolderPath}/${name}`;
+
+    // Don't move to the same location
+    if (newPath === sourcePath) return;
+
+    await invoke("rename_item", { oldPath: sourcePath, newPath });
+
+    // If moving the active document, update the path
+    const { activeDocumentPath } = get();
+    if (activeDocumentPath === sourcePath) {
+      set({ activeDocumentPath: newPath });
+      localStorage.setItem(ACTIVE_DOC_KEY, newPath);
     }
 
     await get().refreshFileTree();
@@ -212,13 +223,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   deleteItem: async (path) => {
     await invoke("delete_item", { path });
 
-    // If deleting the active document, close it (will fall back to last in list)
+    // If deleting the active document, close it
     const { activeDocumentPath } = get();
     if (activeDocumentPath === path) {
       await get().closeDocument();
-    } else {
-      await get().refreshFileTree();
     }
+
+    await get().refreshFileTree();
   },
 
   toggleFolder: (path) => {
@@ -236,68 +247,26 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setDirty: (dirty) => set({ isDirty: dirty }),
 
   closeDocument: async () => {
-    const { activeDocumentPath, isDirty, fileTree } = get();
+    const { activeDocumentPath, isDirty } = get();
 
     // Auto-save before closing
     if (isDirty && activeDocumentPath) {
-      await get().saveActiveDocument();
-    }
-
-    // Find the last document in the sidebar list (excluding the one being closed)
-    const nextPath = findLastDocumentInTree(fileTree, activeDocumentPath);
-
-    if (nextPath) {
-      // Load next document BEFORE clearing state — avoids empty-state flash
       try {
-        const result = await invoke<{
-          document_json: string;
-          bib_content: string | null;
-          meta: DocumentMeta;
-        }>("load_project", { path: nextPath });
-
-        let blocks: any[] = [];
-        try {
-          blocks = JSON.parse(result.document_json);
-        } catch {
-          blocks = [];
-        }
-
-        const refStore = useReferenceStore.getState();
-        refStore.clear();
-        if (result.bib_content) {
-          refStore.setFromRaw(result.bib_content);
-        }
-        refStore.setCitationStyle(result.meta.citation_style || "oscola");
-
-        set({
-          activeDocumentPath: nextPath,
-          activeDocumentMeta: result.meta,
-          activeDocumentBlocks: blocks,
-          isDirty: false,
-        });
-      } catch {
-        // If loading fails, fall back to empty state
-        useReferenceStore.getState().clear();
-        set({
-          activeDocumentPath: null,
-          activeDocumentMeta: null,
-          activeDocumentBlocks: null,
-          isDirty: false,
-        });
+        await get().saveActiveDocument();
+      } catch (err) {
+        console.error("Auto-save before close failed:", err);
       }
-    } else {
-      // No other document — go to empty state
-      useReferenceStore.getState().clear();
-      set({
-        activeDocumentPath: null,
-        activeDocumentMeta: null,
-        activeDocumentBlocks: null,
-        isDirty: false,
-      });
     }
 
-    // Refresh file tree after state is settled
-    await get().refreshFileTree();
+    // Always go to empty state — user can click another doc in the sidebar
+    useReferenceStore.getState().clear();
+    set({
+      activeDocumentPath: null,
+      activeDocumentMeta: null,
+      activeDocumentBlocks: null,
+      isDirty: false,
+    });
+    localStorage.removeItem(ACTIVE_DOC_KEY);
   },
 
   openFile: async () => {
@@ -349,6 +318,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     // Update active path to the new location
     set({ activeDocumentPath: dest, activeDocumentMeta: meta, isDirty: false });
+    localStorage.setItem(ACTIVE_DOC_KEY, dest);
     await get().refreshFileTree();
   },
 
@@ -373,8 +343,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 }));
 
-// Restore workspace on module load
+// Restore workspace and active document on module load
 const savedPath = localStorage.getItem(WORKSPACE_KEY);
 if (savedPath) {
-  useWorkspaceStore.getState().openWorkspace(savedPath).catch(console.error);
+  useWorkspaceStore
+    .getState()
+    .openWorkspace(savedPath)
+    .then(() => {
+      const savedDoc = localStorage.getItem(ACTIVE_DOC_KEY);
+      if (savedDoc) {
+        return useWorkspaceStore.getState().openDocument(savedDoc);
+      }
+    })
+    .catch(console.error);
 }

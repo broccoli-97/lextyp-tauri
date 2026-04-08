@@ -11,7 +11,7 @@ export function FileTree() {
   const openDocument = useWorkspaceStore((s) => s.openDocument);
   const renameItem = useWorkspaceStore((s) => s.renameItem);
   const deleteItem = useWorkspaceStore((s) => s.deleteItem);
-  const closeDocument = useWorkspaceStore((s) => s.closeDocument);
+  const moveItem = useWorkspaceStore((s) => s.moveItem);
 
   const handleRename = useCallback(
     (oldPath: string, newName: string) => {
@@ -44,7 +44,7 @@ export function FileTree() {
         onToggleFolder={toggleFolder}
         onRename={handleRename}
         onDelete={handleDelete}
-        onClose={closeDocument}
+        onMoveItem={moveItem}
       />
     </div>
   );
@@ -59,7 +59,7 @@ function FileTreeLevel({
   onToggleFolder,
   onRename,
   onDelete,
-  onClose,
+  onMoveItem,
 }: {
   entries: FileTreeEntry[];
   depth: number;
@@ -69,7 +69,7 @@ function FileTreeLevel({
   onToggleFolder: (path: string) => void;
   onRename: (oldPath: string, newName: string) => void;
   onDelete: (path: string) => void;
-  onClose: () => void;
+  onMoveItem: (sourcePath: string, targetFolderPath: string) => void;
 }) {
   return (
     <>
@@ -90,7 +90,7 @@ function FileTreeLevel({
               onToggleFolder={onToggleFolder}
               onRename={onRename}
               onDelete={onDelete}
-              onClose={onClose}
+              onMoveItem={onMoveItem}
             />
             {entry.kind === "folder" && isExpanded && entry.children.length > 0 && (
               <FileTreeLevel
@@ -102,7 +102,7 @@ function FileTreeLevel({
                 onToggleFolder={onToggleFolder}
                 onRename={onRename}
                 onDelete={onDelete}
-                onClose={onClose}
+                onMoveItem={onMoveItem}
               />
             )}
           </div>

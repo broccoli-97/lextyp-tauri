@@ -5,7 +5,6 @@ import {
   Folder,
   FolderOpen,
   FileText,
-  X,
 } from "lucide-react";
 import type { FileTreeEntry } from "../types/workspace";
 import { ContextMenu } from "./ContextMenu";
@@ -19,7 +18,7 @@ interface FileTreeItemProps {
   onToggleFolder: (path: string) => void;
   onRename: (oldPath: string, newName: string) => void;
   onDelete: (path: string) => void;
-  onClose?: () => void;
+  onMoveItem?: (sourcePath: string, targetFolderPath: string) => void;
 }
 
 export function FileTreeItem({
@@ -31,11 +30,12 @@ export function FileTreeItem({
   onToggleFolder,
   onRename,
   onDelete,
-  onClose,
+  onMoveItem,
 }: FileTreeItemProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isFolder = entry.kind === "folder";
@@ -89,6 +89,43 @@ export function FileTreeItem({
     [commitRename]
   );
 
+  // Drag-and-drop handlers
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      e.dataTransfer.setData("text/plain", entry.path);
+      e.dataTransfer.effectAllowed = "move";
+    },
+    [entry.path]
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!isFolder) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setIsDragOver(true);
+    },
+    [isFolder]
+  );
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      if (!isFolder || !onMoveItem) return;
+      const sourcePath = e.dataTransfer.getData("text/plain");
+      if (!sourcePath || sourcePath === entry.path) return;
+      // Don't drop into itself or a child of itself
+      if (sourcePath === entry.path || entry.path.startsWith(sourcePath + "/")) return;
+      onMoveItem(sourcePath, entry.path);
+    },
+    [isFolder, entry.path, onMoveItem]
+  );
+
   const contextItems = [
     { label: "Rename", onClick: startRename },
     { label: "Delete", danger: true, onClick: () => onDelete(entry.path) },
@@ -99,11 +136,18 @@ export function FileTreeItem({
       <div
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        draggable={!isRenaming}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         style={{ paddingLeft: depth * 16 + 8 }}
-        className={`flex items-center gap-1.5 h-7 pr-2 cursor-pointer rounded-md text-[12px] transition-colors group ${
+        className={`flex items-center gap-1.5 h-7 pr-2 cursor-pointer rounded-md text-[13px] transition-colors group ${
           isActive
             ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-            : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+            : isDragOver
+              ? "bg-[var(--accent-light)] ring-1 ring-[var(--accent)]"
+              : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
         }`}
       >
         {/* Expand chevron for folders */}
@@ -146,20 +190,6 @@ export function FileTreeItem({
           />
         ) : (
           <span className="truncate flex-1 min-w-0">{label}</span>
-        )}
-
-        {/* Close button (documents only, on hover) */}
-        {!isFolder && isActive && onClose && !isRenaming && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            className="shrink-0 w-4 h-4 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--bg-active)] transition-opacity"
-            title="Close file"
-          >
-            <X size={12} className="text-[var(--text-tertiary)]" />
-          </button>
         )}
       </div>
 
