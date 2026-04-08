@@ -6,10 +6,10 @@ use std::process::Stdio;
 use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
-use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use tauri::{AppHandle, Manager};
+use base64::Engine as _;
 use tar::Archive as TarArchive;
+use tauri::{AppHandle, Manager};
 use xz2::read::XzDecoder;
 use zip::ZipArchive;
 
@@ -30,7 +30,11 @@ enum ArchiveKind {
 }
 
 fn typst_binary_name() -> &'static str {
-    if cfg!(windows) { "typst.exe" } else { "typst" }
+    if cfg!(windows) {
+        "typst.exe"
+    } else {
+        "typst"
+    }
 }
 
 fn current_target() -> Result<(&'static str, ArchiveKind), String> {
@@ -78,7 +82,10 @@ fn bundled_binary_candidates() -> Vec<PathBuf> {
 fn path_binary_candidate() -> Option<PathBuf> {
     let bin = typst_binary_name();
     let which_cmd = if cfg!(windows) { "where" } else { "which" };
-    let output = std::process::Command::new(which_cmd).arg(bin).output().ok()?;
+    let output = std::process::Command::new(which_cmd)
+        .arg(bin)
+        .output()
+        .ok()?;
     if !output.status.success() {
         return None;
     }
@@ -131,7 +138,9 @@ fn extract_zip(bytes: &[u8], dest: &Path) -> Result<(), String> {
     let mut archive = ZipArchive::new(reader).map_err(|e| format!("Failed to open zip: {e}"))?;
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).map_err(|e| format!("Failed to read zip entry: {e}"))?;
+        let mut file = archive
+            .by_index(i)
+            .map_err(|e| format!("Failed to read zip entry: {e}"))?;
         let Some(name) = Path::new(file.name()).file_name() else {
             continue;
         };
@@ -144,7 +153,10 @@ fn extract_zip(bytes: &[u8], dest: &Path) -> Result<(), String> {
         }
     }
 
-    Err(format!("Typst binary {} not found in zip archive", typst_binary_name()))
+    Err(format!(
+        "Typst binary {} not found in zip archive",
+        typst_binary_name()
+    ))
 }
 
 fn extract_tar_xz(bytes: &[u8], dest: &Path) -> Result<(), String> {
@@ -173,7 +185,10 @@ fn extract_tar_xz(bytes: &[u8], dest: &Path) -> Result<(), String> {
         }
     }
 
-    Err(format!("Typst binary {} not found in tar archive", typst_binary_name()))
+    Err(format!(
+        "Typst binary {} not found in tar archive",
+        typst_binary_name()
+    ))
 }
 
 #[cfg(unix)]
@@ -255,8 +270,7 @@ fn compile_output_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .app_data_dir()
         .map_err(|e| format!("Failed to resolve app data directory: {e}"))?
         .join("output");
-    fs::create_dir_all(&out_dir)
-        .map_err(|e| format!("Failed to create output directory: {e}"))?;
+    fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output directory: {e}"))?;
     Ok(out_dir)
 }
 
@@ -293,8 +307,7 @@ pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileRes
     let duration_ms = start.elapsed().as_millis() as u64;
 
     if output.status.success() {
-        let pdf_bytes = fs::read(&output_path)
-            .map_err(|e| format!("Failed to read PDF: {}", e))?;
+        let pdf_bytes = fs::read(&output_path).map_err(|e| format!("Failed to read PDF: {}", e))?;
         let pdf_base64 = BASE64.encode(&pdf_bytes);
 
         Ok(CompileResult {
@@ -304,7 +317,10 @@ pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileRes
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         Err(if stderr.is_empty() {
-            format!("Typst exited with code {}", output.status.code().unwrap_or(-1))
+            format!(
+                "Typst exited with code {}",
+                output.status.code().unwrap_or(-1)
+            )
         } else {
             stderr
         })

@@ -76,8 +76,7 @@ pub fn save_project(
     if let Some(bib) = &bib_content {
         zip.start_file("references.bib", options)
             .map_err(|e| e.to_string())?;
-        zip.write_all(bib.as_bytes())
-            .map_err(|e| e.to_string())?;
+        zip.write_all(bib.as_bytes()).map_err(|e| e.to_string())?;
     }
 
     zip.finish().map_err(|e| e.to_string())?;
