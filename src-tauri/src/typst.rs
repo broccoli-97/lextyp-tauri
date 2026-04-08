@@ -82,10 +82,17 @@ fn bundled_binary_candidates() -> Vec<PathBuf> {
 fn path_binary_candidate() -> Option<PathBuf> {
     let bin = typst_binary_name();
     let which_cmd = if cfg!(windows) { "where" } else { "which" };
-    let output = std::process::Command::new(which_cmd)
-        .arg(bin)
-        .output()
-        .ok()?;
+    let mut cmd = std::process::Command::new(which_cmd);
+    cmd.arg(bin);
+
+    // On Windows, prevent the "where" command from flashing a CMD window
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
+    let output = cmd.output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -296,10 +303,19 @@ pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileRes
     let start = Instant::now();
 
     // Use tokio::process::Command so compilation runs off the main thread
-    let output = tokio::process::Command::new(&typst_bin)
-        .args(["compile", &input_str, &output_str])
+    let mut cmd = tokio::process::Command::new(&typst_bin);
+    cmd.args(["compile", &input_str, &output_str])
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    // On Windows, prevent the typst subprocess from flashing a CMD window
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
+    let output = cmd
         .output()
         .await
         .map_err(|e| format!("Failed to run typst: {}", e))?;
