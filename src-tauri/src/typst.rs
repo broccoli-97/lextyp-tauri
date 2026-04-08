@@ -2,13 +2,12 @@ use serde::Serialize;
 use std::fs;
 use std::io::{Cursor, Read};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::Stdio;
 use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use reqwest::blocking::Client;
 use tauri::{AppHandle, Manager};
 use tar::Archive as TarArchive;
 use xz2::read::XzDecoder;
@@ -79,7 +78,7 @@ fn bundled_binary_candidates() -> Vec<PathBuf> {
 fn path_binary_candidate() -> Option<PathBuf> {
     let bin = typst_binary_name();
     let which_cmd = if cfg!(windows) { "where" } else { "which" };
-    let output = Command::new(which_cmd).arg(bin).output().ok()?;
+    let output = std::process::Command::new(which_cmd).arg(bin).output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -195,7 +194,7 @@ fn make_executable(_path: &Path) -> Result<(), String> {
 
 fn download_typst(dest: &Path) -> Result<(), String> {
     let url = download_url()?;
-    let client = Client::builder()
+    let client = reqwest::blocking::Client::builder()
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {e}"))?;
     let mut response = client
@@ -248,33 +247,47 @@ fn ensure_typst_binary(app: &AppHandle) -> Result<PathBuf, String> {
     }
 }
 
+/// Get a writable output directory under app_data_dir.
+/// Falls back to a temp directory if app_data_dir is unavailable.
+fn compile_output_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let out_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data directory: {e}"))?
+        .join("output");
+    fs::create_dir_all(&out_dir)
+        .map_err(|e| format!("Failed to create output directory: {e}"))?;
+    Ok(out_dir)
+}
+
 #[tauri::command]
 pub fn resolve_typst_path(app: AppHandle) -> Result<String, String> {
     ensure_typst_binary(&app).map(|p| p.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub fn compile_typst(app: AppHandle, content: String) -> Result<CompileResult, String> {
+pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileResult, String> {
     let typst_bin = ensure_typst_binary(&app)?;
 
-    let exe_dir = std::env::current_exe()
-        .map_err(|e| e.to_string())?
-        .parent()
-        .unwrap()
-        .to_path_buf();
-
-    let out_dir = exe_dir.join("output");
-    fs::create_dir_all(&out_dir).map_err(|e| e.to_string())?;
+    let out_dir = compile_output_dir(&app)?;
 
     let input_path = out_dir.join("input.typ");
     let output_path = out_dir.join("output.pdf");
 
-    fs::write(&input_path, &content).map_err(|e| e.to_string())?;
+    fs::write(&input_path, &content).map_err(|e| format!("Failed to write input file: {e}"))?;
+
+    let input_str = input_path.to_string_lossy().to_string();
+    let output_str = output_path.to_string_lossy().to_string();
 
     let start = Instant::now();
-    let output = Command::new(&typst_bin)
-        .args(["compile", &input_path.to_string_lossy(), &output_path.to_string_lossy()])
+
+    // Use tokio::process::Command so compilation runs off the main thread
+    let output = tokio::process::Command::new(&typst_bin)
+        .args(["compile", &input_str, &output_str])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .output()
+        .await
         .map_err(|e| format!("Failed to run typst: {}", e))?;
 
     let duration_ms = start.elapsed().as_millis() as u64;

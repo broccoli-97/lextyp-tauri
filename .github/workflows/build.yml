@@ -19,10 +19,16 @@ jobs:
         include:
           - os: ubuntu-latest
             label: linux
+            typst_target: x86_64-unknown-linux-musl
+            typst_ext: tar.xz
           - os: macos-latest
             label: macos
+            typst_target: aarch64-apple-darwin
+            typst_ext: tar.xz
           - os: windows-latest
             label: windows
+            typst_target: x86_64-pc-windows-msvc
+            typst_ext: zip
 
     runs-on: ${{ matrix.os }}
 
@@ -45,6 +51,31 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Download Typst binary (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          VERSION="0.14.0"
+          TARGET="${{ matrix.typst_target }}"
+          EXT="${{ matrix.typst_ext }}"
+          URL="https://github.com/typst/typst/releases/download/v${VERSION}/typst-${TARGET}.${EXT}"
+          echo "Downloading typst from $URL"
+          curl -L -o /tmp/typst-archive.${EXT} "$URL"
+          tar xf /tmp/typst-archive.${EXT} -C /tmp --strip-components=1 "typst-${TARGET}/typst"
+          cp /tmp/typst src-tauri/resources/typst
+          chmod +x src-tauri/resources/typst
+
+      - name: Download Typst binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $VERSION = "0.14.0"
+          $TARGET = "${{ matrix.typst_target }}"
+          $URL = "https://github.com/typst/typst/releases/download/v${VERSION}/typst-${TARGET}.zip"
+          Write-Host "Downloading typst from $URL"
+          Invoke-WebRequest -Uri $URL -OutFile "$env:TEMP\typst-archive.zip"
+          Expand-Archive -Path "$env:TEMP\typst-archive.zip" -DestinationPath "$env:TEMP\typst-extract" -Force
+          Copy-Item -Path "$env:TEMP\typst-extract\typst-${TARGET}\typst.exe" -Destination "src-tauri\resources\typst.exe" -Force
 
       - run: npm ci
 
