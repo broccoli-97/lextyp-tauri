@@ -44,6 +44,14 @@ interface WorkspaceState {
 const WORKSPACE_KEY = "lextyp_workspace_path";
 const ACTIVE_DOC_KEY = "lextyp_active_document_path";
 
+/** Serialize the current editor document to Typst source. */
+function buildTypstSource(editorInstance: any): string {
+  const blocks = editorInstance.document;
+  const refStore = useReferenceStore.getState();
+  const formatter = getFormatter(refStore.citationStyle);
+  return serializeToTypst(blocks, refStore.entries, formatter);
+}
+
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspacePath: null,
   fileTree: [],
@@ -124,11 +132,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const blocks = state.editorInstance.document;
       const documentJson = JSON.stringify(blocks);
+      const typstSource = buildTypstSource(state.editorInstance);
 
       const refStore = useReferenceStore.getState();
-      const formatter = getFormatter(refStore.citationStyle);
-      const typstSource = serializeToTypst(blocks, refStore.entries, formatter);
-
       const now = new Date().toISOString();
       const meta: DocumentMeta = {
         ...(state.activeDocumentMeta || {
@@ -290,11 +296,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const blocks = editorInstance.document;
     const documentJson = JSON.stringify(blocks);
+    const typstSource = buildTypstSource(editorInstance);
 
     const refStore = useReferenceStore.getState();
-    const formatter = getFormatter(refStore.citationStyle);
-    const typstSource = serializeToTypst(blocks, refStore.entries, formatter);
-
     const now = new Date().toISOString();
     const title = dest
       .replace(/\\/g, "/")
@@ -333,10 +337,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
     if (!dest) return;
 
-    const blocks = editorInstance.document;
-    const refStore = useReferenceStore.getState();
-    const formatter = getFormatter(refStore.citationStyle);
-    const typstSource = serializeToTypst(blocks, refStore.entries, formatter);
+    const typstSource = buildTypstSource(editorInstance);
 
     const encoder = new TextEncoder();
     await writeFile(dest, encoder.encode(typstSource));

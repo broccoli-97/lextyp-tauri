@@ -12,10 +12,9 @@ interface ReferenceState {
   setSearchQuery: (query: string) => void;
   setCitationStyle: (style: string) => void;
   clear: () => void;
-  filteredEntries: () => BibEntry[];
 }
 
-export const useReferenceStore = create<ReferenceState>((set, get) => ({
+export const useReferenceStore = create<ReferenceState>((set) => ({
   entries: [],
   rawBibContent: "",
   searchQuery: "",
@@ -28,15 +27,4 @@ export const useReferenceStore = create<ReferenceState>((set, get) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setCitationStyle: (style) => set({ citationStyle: style }),
   clear: () => set({ entries: [], rawBibContent: "", searchQuery: "" }),
-  filteredEntries: () => {
-    const { entries, searchQuery } = get();
-    if (!searchQuery.trim()) return entries;
-    const q = searchQuery.toLowerCase();
-    return entries.filter(
-      (e) =>
-        e.key.toLowerCase().includes(q) ||
-        (e.fields.title || "").toLowerCase().includes(q) ||
-        (e.fields.author || "").toLowerCase().includes(q)
-    );
-  },
 }));

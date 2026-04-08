@@ -21,7 +21,6 @@ export function Editor() {
   const setCompiling = useAppStore((s) => s.setCompiling);
   const setCompilationResult = useAppStore((s) => s.setCompilationResult);
   const setCompilationError = useAppStore((s) => s.setCompilationError);
-  const setCapturedSource = useAppStore((s) => s.setCapturedSource);
 
   const compileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -79,7 +78,6 @@ export function Editor() {
       const formatter = getFormatter(useReferenceStore.getState().citationStyle);
       const { entries } = useReferenceStore.getState();
       const source = serializeToTypst(blocks as any, entries, formatter);
-      setCapturedSource(source);
       setCompiling(true);
 
       const result = await invoke<{ pdf_base64: string; duration_ms: number }>(
@@ -90,7 +88,7 @@ export function Editor() {
     } catch (err: any) {
       setCompilationError(String(err), 0);
     }
-  }, [editor, setCompiling, setCompilationResult, setCompilationError, setCapturedSource]);
+  }, [editor, setCompiling, setCompilationResult, setCompilationError]);
 
   const handleChange = useCallback(() => {
     // Mark dirty

@@ -5,7 +5,7 @@ function normalize(text: string) {
   return text.toLowerCase().trim();
 }
 
-export function matchesBibEntry(entry: BibEntry, query: string) {
+function matchesBibEntry(entry: BibEntry, query: string) {
   const q = normalize(query);
   if (!q) return true;
 
