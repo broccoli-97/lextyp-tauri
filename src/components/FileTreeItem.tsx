@@ -89,10 +89,13 @@ export function FileTreeItem({
     [commitRename]
   );
 
-  // Drag-and-drop handlers
+  // Drag-and-drop handlers — use a custom MIME type so sidebar drags
+  // don't collide with BlockNote's editor block drag-and-drop.
+  const DRAG_TYPE = "application/x-lextyp-filetree";
+
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
-      e.dataTransfer.setData("text/plain", entry.path);
+      e.dataTransfer.setData(DRAG_TYPE, entry.path);
       e.dataTransfer.effectAllowed = "move";
     },
     [entry.path]
@@ -100,7 +103,8 @@ export function FileTreeItem({
 
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
-      if (!isFolder) return;
+      // Only accept sidebar file-tree drags, ignore editor block drags
+      if (!isFolder || !e.dataTransfer.types.includes(DRAG_TYPE)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       setIsDragOver(true);
@@ -114,12 +118,11 @@ export function FileTreeItem({
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault();
       setIsDragOver(false);
       if (!isFolder || !onMoveItem) return;
-      const sourcePath = e.dataTransfer.getData("text/plain");
-      if (!sourcePath || sourcePath === entry.path) return;
-      // Don't drop into itself or a child of itself
+      const sourcePath = e.dataTransfer.getData(DRAG_TYPE);
+      if (!sourcePath) return;
+      e.preventDefault();
       if (sourcePath === entry.path || entry.path.startsWith(sourcePath + "/")) return;
       onMoveItem(sourcePath, entry.path);
     },
