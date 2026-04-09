@@ -1,8 +1,10 @@
-import { useState, useMemo } from "react";
-import { BookOpen, Search, ChevronDown } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { BookOpen, Search, ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { getStyleNames } from "../lib/citation/registry";
 import { formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
+import { useReferenceStore } from "../stores/reference-store";
+import { CitationEditor } from "./CitationEditor";
 import type { BibEntry } from "../types/bib";
 import type { CitationFormatter } from "../lib/citation/formatter";
 
@@ -38,8 +40,48 @@ export function ReferencesPanel({
   onImportBib,
 }: ReferencesPanelProps) {
   const t = useT();
+  const addEntry = useReferenceStore((s) => s.addEntry);
+  const updateEntry = useReferenceStore((s) => s.updateEntry);
+  const removeEntry = useReferenceStore((s) => s.removeEntry);
+
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [editorMode, setEditorMode] = useState<"create" | "edit" | null>(null);
+  const [editingEntry, setEditingEntry] = useState<BibEntry | null>(null);
+  const [deleteConfirmKey, setDeleteConfirmKey] = useState<string | null>(null);
+
+  const existingKeys = useMemo(() => entries.map((e) => e.key), [entries]);
+
+  const handleCreate = useCallback(() => {
+    setEditorMode("create");
+    setEditingEntry(null);
+  }, []);
+
+  const handleEdit = useCallback((entry: BibEntry) => {
+    setEditorMode("edit");
+    setEditingEntry(entry);
+  }, []);
+
+  const handleSave = useCallback((entry: BibEntry) => {
+    if (editorMode === "edit" && editingEntry) {
+      updateEntry(editingEntry.key, entry);
+    } else {
+      addEntry(entry);
+    }
+    setEditorMode(null);
+    setEditingEntry(null);
+  }, [editorMode, editingEntry, addEntry, updateEntry]);
+
+  const handleCancelEditor = useCallback(() => {
+    setEditorMode(null);
+    setEditingEntry(null);
+  }, []);
+
+  const handleDelete = useCallback((key: string) => {
+    removeEntry(key);
+    setDeleteConfirmKey(null);
+    if (expandedKey === key) setExpandedKey(null);
+  }, [removeEntry, expandedKey]);
 
   const entryTypes = useMemo(() => {
     const types = new Set(entries.map((e) => e.type));
@@ -62,17 +104,38 @@ export function ReferencesPanel({
     );
   }
 
+  // Show citation editor overlay
+  if (editorMode) {
+    return (
+      <CitationEditor
+        editEntry={editingEntry}
+        existingKeys={existingKeys}
+        onSave={handleSave}
+        onCancel={handleCancelEditor}
+      />
+    );
+  }
+
   return (
     <>
-      {/* Toolbar: import + style */}
+      {/* Toolbar: import + add + style */}
       <div className="shrink-0 px-2 pt-2 pb-1 space-y-1.5 border-b border-[var(--border-light)]">
-        <button
-          onClick={onImportBib}
-          className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
-        >
-          <BookOpen size={14} className="shrink-0" />
-          <span className="truncate">{t("refs.importBib")}</span>
-        </button>
+        <div className="flex gap-1.5">
+          <button
+            onClick={onImportBib}
+            className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
+          >
+            <BookOpen size={14} className="shrink-0" />
+            <span className="truncate">{t("refs.importBib")}</span>
+          </button>
+          <button
+            onClick={handleCreate}
+            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
+            title={t("refs.addNew")}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
 
         {entries.length > 0 && (
           <div className="relative" ref={styleDropdownRef}>
@@ -123,7 +186,10 @@ export function ReferencesPanel({
           <div className="flex flex-col items-center justify-center gap-2 py-8">
             <BookOpen size={20} className="text-[var(--text-tertiary)]" />
             <p className="text-[11px] text-[var(--text-tertiary)] text-center">
-              {t("refs.noRefs")}{"\n"}{t("refs.noRefsHint")}
+              {t("refs.noRefs")}
+            </p>
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+              {t("refs.noRefsHint")}
             </p>
           </div>
         ) : (
@@ -249,6 +315,42 @@ export function ReferencesPanel({
                             <DetailField label="School" value={entry.fields.school} />
                             <DetailField label="DOI" value={entry.fields.doi} mono />
                             <DetailField label="URL" value={entry.fields.url} mono />
+                          </div>
+
+                          {/* Edit / Delete actions */}
+                          <div className="mt-2.5 pt-2 border-t border-[var(--accent)]/15 flex gap-1.5">
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); handleEdit(entry); }}
+                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
+                            >
+                              <Pencil size={11} />
+                              {t("refs.edit")}
+                            </button>
+                            {deleteConfirmKey === entry.key ? (
+                              <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
+                                <span className="text-[10px] text-[var(--error)]">{t("refs.deleteConfirm")}</span>
+                                <button
+                                  onClick={() => handleDelete(entry.key)}
+                                  className="px-1.5 py-0.5 rounded text-[10px] font-medium text-white bg-[var(--error)] hover:opacity-90 transition-opacity"
+                                >
+                                  {t("refs.delete")}
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmKey(null)}
+                                  className="px-1.5 py-0.5 rounded text-[10px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
+                                >
+                                  {t("refs.cancel")}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={(ev) => { ev.stopPropagation(); setDeleteConfirmKey(entry.key); }}
+                                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[var(--error)] hover:bg-[var(--error-light)] transition-colors"
+                              >
+                                <Trash2 size={11} />
+                                {t("refs.delete")}
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
