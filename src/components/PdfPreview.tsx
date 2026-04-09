@@ -19,6 +19,11 @@ import { useT } from "../lib/i18n";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
+/** A4 aspect ratio: height / width */
+const A4_RATIO = 297 / 210;
+const PAGE_GAP = 16;
+const PADDING = 24;
+
 interface PdfPreviewProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -40,16 +45,41 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
   const zoom = ZOOM_LEVELS[zoomIndex];
+  const scale = zoom / 100;
 
-  // Mouse-drag panning
+  // Freeze panel width during resize to prevent re-renders on every pixel
+  const stableWidthRef = useRef(panelWidth);
+  if (!isResizing) {
+    stableWidthRef.current = panelWidth;
+  }
+  const stableWidth = stableWidthRef.current;
+
+  // At 100% zoom, page fits the panel width (minus padding).
+  // Zoom scales from this baseline. The rendered width is what react-pdf
+  // actually draws — vector text stays sharp at any zoom.
+  const fitWidth = Math.max(200, stableWidth - PADDING * 2);
+  const renderedPageWidth = Math.round(fitWidth * scale);
+  const renderedPageHeight = Math.round(renderedPageWidth * A4_RATIO);
+
+  // Total content size (all pages + gaps)
+  const contentWidth = renderedPageWidth;
+  const contentHeight = numPages * renderedPageHeight + Math.max(0, numPages - 1) * PAGE_GAP;
+
+  // Drag panning — works whenever content overflows the container
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (zoom <= 100) return;
     const el = scrollRef.current;
     if (!el) return;
+    // Only enable drag if content overflows
+    if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
     setIsDragging(true);
-    dragStart.current = { x: e.clientX, y: e.clientY, scrollLeft: el.scrollLeft, scrollTop: el.scrollTop };
+    dragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    };
     el.setPointerCapture(e.pointerId);
-  }, [zoom]);
+  }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging) return;
@@ -65,28 +95,6 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     scrollRef.current?.releasePointerCapture(e.pointerId);
   }, [isDragging]);
 
-  // Freeze the PDF render width during resize drag — only update when drag ends.
-  // This prevents react-pdf from re-rendering on every pixel of the resize.
-  const stableWidthRef = useRef(panelWidth);
-  if (!isResizing) {
-    stableWidthRef.current = panelWidth;
-  }
-  const renderWidth = stableWidthRef.current;
-
-  // Base page width fits the panel; zoom is applied via CSS transform
-  const basePageWidth = useMemo(() => {
-    return Math.max(200, renderWidth - 48);
-  }, [renderWidth]);
-
-  const scale = zoom / 100;
-
-  // A4 ratio: 297/210 ≈ 1.4143; space-y-4 = 16px gap between pages
-  const contentHeight = useMemo(() => {
-    const pageHeight = basePageWidth * (297 / 210);
-    return numPages * pageHeight + Math.max(0, numPages - 1) * 16;
-  }, [basePageWidth, numPages]);
-
-  // Convert base64 to data URL for react-pdf
   const pdfData = useMemo(() => {
     if (!pdfBase64) return null;
     return `data:application/pdf;base64,${pdfBase64}`;
@@ -102,12 +110,10 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
 
   const handleDownload = useCallback(async () => {
     if (!pdfBase64) return;
-
     const filePath = await save({
       filters: [{ name: "PDF", extensions: ["pdf"] }],
       defaultPath: "document.pdf",
     });
-
     if (filePath) {
       const binaryString = atob(pdfBase64);
       const bytes = new Uint8Array(binaryString.length);
@@ -117,6 +123,9 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
       await writeFile(filePath, bytes);
     }
   }, [pdfBase64]);
+
+  // Whether content overflows — controls cursor style
+  const overflows = contentWidth > stableWidth - PADDING * 2 || contentHeight > 0;
 
   // Collapsed state
   if (collapsed) {
@@ -143,20 +152,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   if (!pdfData && !lastError) {
     return (
       <div className="h-full flex flex-col">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
-          <div className="flex items-center gap-2">
-            <FileText size={14} className="text-[var(--text-tertiary)]" />
-            <span className="text-[12px] font-medium text-[var(--text-secondary)]">{t("pdf.preview")}</span>
-          </div>
-          <button
-            onClick={onToggleCollapse}
-            className="icon-btn w-7 h-7"
-            title={t("pdf.collapse")}
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
+        <PdfToolbarSimple label={t("pdf.preview")} onCollapse={onToggleCollapse} collapseTitle={t("pdf.collapse")} />
         <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8">
           {compiling ? (
             <div className="flex flex-col items-center gap-3 animate-fade-in">
@@ -192,20 +188,13 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   if (lastError) {
     return (
       <div className="h-full flex flex-col">
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
-          <div className="flex items-center gap-2">
-            <FileWarning size={14} className="text-[var(--error)]" />
-            <span className="text-[12px] font-medium text-[var(--error)]">{t("pdf.error")}</span>
-          </div>
-          <button
-            onClick={onToggleCollapse}
-            className="icon-btn w-7 h-7"
-            title={t("pdf.collapse")}
-          >
-            <ChevronRight size={14} />
-          </button>
-        </div>
+        <PdfToolbarSimple
+          label={t("pdf.error")}
+          labelColor="text-[var(--error)]"
+          icon={<FileWarning size={14} className="text-[var(--error)]" />}
+          onCollapse={onToggleCollapse}
+          collapseTitle={t("pdf.collapse")}
+        />
         <div className="flex-1 flex flex-col p-4 overflow-auto">
           <pre className="text-[11px] text-[var(--error)] whitespace-pre-wrap font-mono leading-[1.6] bg-[var(--error-light)] rounded-lg p-3 border border-red-100 overflow-auto">
             {lastError}
@@ -254,7 +243,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
             </button>
           </div>
 
-          {/* Download button */}
+          {/* Download */}
           <button
             onClick={handleDownload}
             className="btn btn-ghost h-7 px-2 text-[11px] font-medium gap-1"
@@ -264,7 +253,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
             <span className="hidden lg:inline">{t("pdf.download")}</span>
           </button>
 
-          {/* Collapse button */}
+          {/* Collapse */}
           <button
             onClick={onToggleCollapse}
             className="icon-btn w-7 h-7"
@@ -275,51 +264,86 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
         </div>
       </div>
 
-      {/* PDF content */}
+      {/* PDF content — scrollable in both axes, drag to pan */}
       <div
-        className="flex-1 overflow-auto p-4"
+        className="flex-1 overflow-auto"
         ref={scrollRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        style={{ cursor: zoom > 100 ? (isDragging ? "grabbing" : "grab") : undefined }}
+        style={{
+          cursor: overflows ? (isDragging ? "grabbing" : "grab") : undefined,
+        }}
       >
-        <Document
-          file={pdfData}
-          onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-          onLoadError={(err) => console.error("PDF load error:", err)}
-          loading={
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-              <span className="text-[12px] text-[var(--text-tertiary)]">{t("pdf.loading")}</span>
-            </div>
-          }
+        {/* Center the content when it fits; allow overflow when zoomed */}
+        <div
+          style={{
+            minWidth: "100%",
+            minHeight: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            padding: PADDING,
+          }}
         >
-          <div style={{ width: basePageWidth * scale, height: contentHeight * scale }}>
-            <div
-              style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "top left",
-                width: basePageWidth,
-              }}
-            >
-              <div className="space-y-4">
-                {Array.from({ length: numPages }, (_, i) => (
-                  <div key={i} className="rounded-lg overflow-hidden shadow-md bg-white">
-                    <Page
-                      pageNumber={i + 1}
-                      width={basePageWidth}
-                      renderTextLayer={true}
-                      renderAnnotationLayer={true}
-                    />
-                  </div>
-                ))}
+          <Document
+            file={pdfData}
+            onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+            onLoadError={(err) => console.error("PDF load error:", err)}
+            loading={
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
+                <span className="text-[12px] text-[var(--text-tertiary)]">{t("pdf.loading")}</span>
               </div>
+            }
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: PAGE_GAP }}>
+              {Array.from({ length: numPages }, (_, i) => (
+                <div
+                  key={i}
+                  className="rounded-lg overflow-hidden shadow-md bg-white"
+                  style={{ width: renderedPageWidth, height: renderedPageHeight }}
+                >
+                  <Page
+                    pageNumber={i + 1}
+                    width={renderedPageWidth}
+                    renderTextLayer={true}
+                    renderAnnotationLayer={true}
+                  />
+                </div>
+              ))}
             </div>
-          </div>
-        </Document>
+          </Document>
+        </div>
       </div>
+    </div>
+  );
+}
+
+/** Simple toolbar used for empty/error states */
+function PdfToolbarSimple({
+  label,
+  labelColor,
+  icon,
+  onCollapse,
+  collapseTitle,
+}: {
+  label: string;
+  labelColor?: string;
+  icon?: React.ReactNode;
+  onCollapse: () => void;
+  collapseTitle: string;
+}) {
+  return (
+    <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
+      <div className="flex items-center gap-2">
+        {icon || <FileText size={14} className="text-[var(--text-tertiary)]" />}
+        <span className={`text-[12px] font-medium ${labelColor || "text-[var(--text-secondary)]"}`}>{label}</span>
+      </div>
+      <button onClick={onCollapse} className="icon-btn w-7 h-7" title={collapseTitle}>
+        <ChevronRight size={14} />
+      </button>
     </div>
   );
 }

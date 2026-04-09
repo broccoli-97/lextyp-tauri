@@ -121,12 +121,27 @@ function serializeInlineContent(
     .join("");
 }
 
+/**
+ * Escape Typst special characters so body text renders literally.
+ * Characters escaped: \ # * _ ` $ @ < > ~ = /
+ * The `=` is only special at line start (headings) but we escape it
+ * everywhere for safety since inline `=` is harmless when escaped.
+ */
+function escapeTypst(text: string): string {
+  // Escape backslash first, then all other specials
+  return text.replace(/[\\#*_`$@<>~=/]/g, (ch) => `\\${ch}`);
+}
+
 function serializeStyledText(item: any): string {
   let text: string = item.text ?? "";
   if (!text) return "";
 
   const styles = item.styles ?? {};
 
+  // Escape special characters in the raw text
+  text = escapeTypst(text);
+
+  // Apply styling AFTER escaping — these are intentional Typst markup
   if (styles.bold) text = `*${text}*`;
   if (styles.italic) text = `_${text}_`;
   if (styles.code) text = `\`${text}\``;

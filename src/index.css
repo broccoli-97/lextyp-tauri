@@ -203,6 +203,24 @@ html, body, #root {
 }
 
 /* ═══════════════════════════════════════
+   PDF Text Layer — hide ghost text on selection
+   ═══════════════════════════════════════ */
+
+.react-pdf__Page__textContent span {
+  color: transparent !important;
+}
+
+.react-pdf__Page__textContent span::selection {
+  background: rgba(79, 70, 229, 0.2);
+  color: transparent;
+}
+
+[data-theme="dark"] .react-pdf__Page__textContent span::selection {
+  background: rgba(129, 140, 248, 0.25);
+  color: transparent;
+}
+
+/* ═══════════════════════════════════════
    Scrollbar
    ═══════════════════════════════════════ */
 
