@@ -11,11 +11,13 @@ const translations = {
     "sidebar.openFile": "Open File...",
     "sidebar.openWorkspace": "Open Workspace",
     "sidebar.switchWorkspace": "Switch Workspace",
+
     "sidebar.noWorkspace": "No workspace open",
     "sidebar.noWorkspaceHint": "Open a folder to manage your documents",
     "sidebar.collapse": "Collapse sidebar",
     "sidebar.expand": "Expand sidebar",
     "sidebar.new": "New...",
+    "sidebar.closeWorkspace": "Close Workspace",
 
     // Editor
     "editor.noDocument": "No document open",
@@ -73,11 +75,13 @@ const translations = {
     "sidebar.openFile": "打开文件...",
     "sidebar.openWorkspace": "打开工作区",
     "sidebar.switchWorkspace": "切换工作区",
+
     "sidebar.noWorkspace": "未打开工作区",
     "sidebar.noWorkspaceHint": "打开文件夹以管理您的文档",
     "sidebar.collapse": "收起侧边栏",
     "sidebar.expand": "展开侧边栏",
     "sidebar.new": "新建...",
+    "sidebar.closeWorkspace": "关闭工作区",
 
     // Editor
     "editor.noDocument": "未打开文档",

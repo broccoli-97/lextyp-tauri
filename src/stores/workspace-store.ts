@@ -25,6 +25,7 @@ interface WorkspaceState {
   // Actions
   setEditorInstance: (editor: any) => void;
   openWorkspace: (path: string) => Promise<void>;
+  closeWorkspace: () => Promise<void>;
   refreshFileTree: () => Promise<void>;
   openDocument: (path: string) => Promise<void>;
   saveActiveDocument: () => Promise<void>;
@@ -68,6 +69,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const tree = await invoke<FileTreeEntry[]>("list_workspace", { path });
     set({ workspacePath: path, fileTree: tree });
     localStorage.setItem(WORKSPACE_KEY, path);
+  },
+
+  closeWorkspace: async () => {
+    // Close active document first (auto-saves if dirty)
+    if (get().activeDocumentPath) {
+      await get().closeDocument();
+    }
+    set({
+      workspacePath: null,
+      fileTree: [],
+      expandedFolders: new Set<string>(),
+    });
+    localStorage.removeItem(WORKSPACE_KEY);
   },
 
   refreshFileTree: async () => {

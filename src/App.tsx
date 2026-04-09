@@ -21,8 +21,8 @@ function clampPdf(w: number, windowWidth: number) {
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(() => Math.round(window.innerWidth * 0.15));
-  const [pdfPanelWidth, setPdfPanelWidth] = useState(() => Math.round(window.innerWidth * 0.35));
+  const [sidebarWidth, setSidebarWidth] = useState(() => clampSidebar(Math.round(window.innerWidth * 0.18), window.innerWidth));
+  const [pdfPanelWidth, setPdfPanelWidth] = useState(() => clampPdf(Math.round(window.innerWidth * 0.35), window.innerWidth));
   const [pdfPanelCollapsed, setPdfPanelCollapsed] = useState(false);
   const [resizingPanel, setResizingPanel] = useState<"sidebar" | "pdf" | null>(null);
   const resizeRef = useRef<HTMLDivElement>(null);

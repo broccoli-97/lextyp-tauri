@@ -12,6 +12,7 @@ import {
   FileUp,
   FolderTree,
   Settings,
+  X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -47,6 +48,7 @@ export function Sidebar({
   const openFile = useWorkspaceStore((s) => s.openFile);
   const saveAs = useWorkspaceStore((s) => s.saveAs);
   const exportTypst = useWorkspaceStore((s) => s.exportTypst);
+  const closeWorkspace = useWorkspaceStore((s) => s.closeWorkspace);
 
   const entries = useReferenceStore((s) => s.entries);
   const searchQuery = useReferenceStore((s) => s.searchQuery);
@@ -62,6 +64,7 @@ export function Sidebar({
   const [newItemInput, setNewItemInput] = useState<"document" | "folder" | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const newMenuRef = useRef<HTMLDivElement>(null);
+  const newMenuPortalRef = useRef<HTMLDivElement>(null);
   const styleDropdownRef = useRef<HTMLDivElement>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const formatter = useMemo(() => getFormatter(citationStyle), [citationStyle]);
@@ -84,7 +87,8 @@ export function Sidebar({
       if (
         showNewMenu &&
         newMenuRef.current &&
-        !newMenuRef.current.contains(e.target as Node)
+        !newMenuRef.current.contains(e.target as Node) &&
+        (!newMenuPortalRef.current || !newMenuPortalRef.current.contains(e.target as Node))
       ) {
         setShowNewMenu(false);
       }
@@ -246,11 +250,21 @@ export function Sidebar({
                 </button>
                 {showNewMenu && <NewMenuDropdown
                   anchorRef={newMenuRef}
+                  portalRef={newMenuPortalRef}
                   onNewDocument={() => handleNewItem("document")}
                   onNewFolder={() => handleNewItem("folder")}
                   onOpenFile={() => { setShowNewMenu(false); openFile().catch(console.error); }}
                 />}
               </div>
+            )}
+            {workspacePath && (
+              <button
+                onClick={() => closeWorkspace().catch(console.error)}
+                className="icon-btn w-6 h-6 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                title={t("sidebar.closeWorkspace")}
+              >
+                <X size={14} />
+              </button>
             )}
             <button
               onClick={onToggle}
@@ -328,15 +342,15 @@ export function Sidebar({
               <FolderOpen size={14} className="shrink-0" />
               <span className="truncate">{t("sidebar.openWorkspace")}</span>
             </button>
-          ) : (
+          ) : activeTab === "files" ? (
             <button
               onClick={handleOpenWorkspace}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] transition-all whitespace-nowrap overflow-hidden"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] transition-all whitespace-nowrap overflow-hidden"
             >
-              <FolderOpen size={14} className="shrink-0 text-[var(--text-secondary)]" />
+              <FolderOpen size={14} className="shrink-0 text-[var(--text-tertiary)]" />
               <span className="truncate">{t("sidebar.switchWorkspace")}</span>
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -375,11 +389,13 @@ function ActivityBarButton({
 
 function NewMenuDropdown({
   anchorRef,
+  portalRef,
   onNewDocument,
   onNewFolder,
   onOpenFile,
 }: {
   anchorRef: React.RefObject<HTMLDivElement | null>;
+  portalRef: React.RefObject<HTMLDivElement | null>;
   onNewDocument: () => void;
   onNewFolder: () => void;
   onOpenFile: () => void;
@@ -398,6 +414,7 @@ function NewMenuDropdown({
 
   return createPortal(
     <div
+      ref={portalRef}
       style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
       className="w-[160px] py-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md shadow-lg animate-fade-in"
     >
