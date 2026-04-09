@@ -14,11 +14,12 @@ interface FileTreeItemProps {
   depth: number;
   isActive: boolean;
   isExpanded: boolean;
+  isDropTarget: boolean;
   onClickDocument: (path: string) => void;
   onToggleFolder: (path: string) => void;
   onRename: (oldPath: string, newName: string) => void;
   onDelete: (path: string) => void;
-  onMoveItem?: (sourcePath: string, targetFolderPath: string) => void;
+  onDragStart?: (path: string) => void;
 }
 
 export function FileTreeItem({
@@ -26,17 +27,18 @@ export function FileTreeItem({
   depth,
   isActive,
   isExpanded,
+  isDropTarget,
   onClickDocument,
   onToggleFolder,
   onRename,
   onDelete,
-  onMoveItem,
+  onDragStart,
 }: FileTreeItemProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
-  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pointerOrigin = useRef<{ x: number; y: number } | null>(null);
 
   const isFolder = entry.kind === "folder";
   const label = isFolder ? entry.name : entry.title || entry.name;
@@ -89,45 +91,31 @@ export function FileTreeItem({
     [commitRename]
   );
 
-  // Drag-and-drop handlers — use a custom MIME type so sidebar drags
-  // don't collide with BlockNote's editor block drag-and-drop.
-  const DRAG_TYPE = "application/x-lextyp-filetree";
-
-  const handleDragStart = useCallback(
-    (e: React.DragEvent) => {
-      e.dataTransfer.setData(DRAG_TYPE, entry.path);
-      e.dataTransfer.effectAllowed = "move";
+  // Pointer-based drag: track pointerdown, start drag after 4px movement
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (isRenaming || e.button !== 0) return;
+      pointerOrigin.current = { x: e.clientX, y: e.clientY };
     },
-    [entry.path]
+    [isRenaming]
   );
 
-  const handleDragOver = useCallback(
-    (e: React.DragEvent) => {
-      // Only accept sidebar file-tree drags, ignore editor block drags
-      if (!isFolder || !e.dataTransfer.types.includes(DRAG_TYPE)) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      setIsDragOver(true);
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!pointerOrigin.current || !onDragStart) return;
+      const dx = e.clientX - pointerOrigin.current.x;
+      const dy = e.clientY - pointerOrigin.current.y;
+      if (dx * dx + dy * dy > 16) {
+        pointerOrigin.current = null;
+        onDragStart(entry.path);
+      }
     },
-    [isFolder]
+    [entry.path, onDragStart]
   );
 
-  const handleDragLeave = useCallback(() => {
-    setIsDragOver(false);
+  const handlePointerUp = useCallback(() => {
+    pointerOrigin.current = null;
   }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      setIsDragOver(false);
-      if (!isFolder || !onMoveItem) return;
-      const sourcePath = e.dataTransfer.getData(DRAG_TYPE);
-      if (!sourcePath) return;
-      e.preventDefault();
-      if (sourcePath === entry.path || entry.path.startsWith(sourcePath + "/")) return;
-      onMoveItem(sourcePath, entry.path);
-    },
-    [isFolder, entry.path, onMoveItem]
-  );
 
   const contextItems = [
     { label: "Rename", onClick: startRename },
@@ -137,18 +125,18 @@ export function FileTreeItem({
   return (
     <>
       <div
+        data-filetree-path={entry.path}
+        data-filetree-kind={entry.kind}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        draggable={!isRenaming}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
         style={{ paddingLeft: depth * 16 + 8 }}
         className={`flex items-center gap-1.5 h-7 pr-2 cursor-pointer rounded-md text-[13px] transition-colors group ${
           isActive
             ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-            : isDragOver
+            : isDropTarget
               ? "bg-[var(--accent-light)] ring-1 ring-[var(--accent)]"
               : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
         }`}

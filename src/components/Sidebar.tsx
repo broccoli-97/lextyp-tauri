@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   FilePlus,
   FolderPlus,
@@ -10,6 +11,7 @@ import {
   Plus,
   FileUp,
   FolderTree,
+  Settings,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -17,10 +19,12 @@ import { useWorkspaceStore } from "../stores/workspace-store";
 import { useReferenceStore } from "../stores/reference-store";
 import { getFormatter } from "../lib/citation/registry";
 import { filterBibEntries } from "../lib/citation-search";
+import { useT } from "../lib/i18n";
 import { FilesPanel } from "./FilesPanel";
 import { ReferencesPanel } from "./ReferencesPanel";
+import { SettingsPanel } from "./SettingsPanel";
 
-type SidebarTab = "files" | "references";
+type SidebarTab = "files" | "references" | "settings";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -51,6 +55,7 @@ export function Sidebar({
   const setCitationStyle = useReferenceStore((s) => s.setCitationStyle);
   const setFromRaw = useReferenceStore((s) => s.setFromRaw);
 
+  const t = useT();
   const [activeTab, setActiveTab] = useState<SidebarTab>("files");
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [styleDropdownOpen, setStyleDropdownOpen] = useState(false);
@@ -160,22 +165,30 @@ export function Sidebar({
         <button
           onClick={onToggle}
           className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] mb-2"
-          title="Expand sidebar"
+          title={t("sidebar.expand")}
         >
           <ChevronsRight size={18} />
         </button>
         <ActivityBarButton
           icon={<FolderTree size={18} />}
           active={activeTab === "files"}
-          title="Files"
+          title={t("sidebar.files")}
           onClick={() => { setActiveTab("files"); onToggle(); }}
         />
         <ActivityBarButton
           icon={<BookOpen size={18} />}
           active={activeTab === "references"}
-          title="References"
+          title={t("sidebar.references")}
           onClick={() => { setActiveTab("references"); onToggle(); }}
         />
+        <div className="flex-1" />
+        <ActivityBarButton
+          icon={<Settings size={18} />}
+          active={activeTab === "settings"}
+          title={t("settings.title")}
+          onClick={() => { setActiveTab("settings"); onToggle(); }}
+        />
+        <div className="h-2" />
       </div>
     );
   }
@@ -190,15 +203,23 @@ export function Sidebar({
         <ActivityBarButton
           icon={<FolderTree size={16} />}
           active={activeTab === "files"}
-          title="Files"
+          title={t("sidebar.files")}
           onClick={() => setActiveTab("files")}
         />
         <ActivityBarButton
           icon={<BookOpen size={16} />}
           active={activeTab === "references"}
-          title="References"
+          title={t("sidebar.references")}
           onClick={() => setActiveTab("references")}
         />
+        <div className="flex-1" />
+        <ActivityBarButton
+          icon={<Settings size={16} />}
+          active={activeTab === "settings"}
+          title={t("settings.title")}
+          onClick={() => setActiveTab("settings")}
+        />
+        <div className="h-2" />
       </div>
 
       {/* Panel content */}
@@ -219,42 +240,22 @@ export function Sidebar({
                 <button
                   onClick={() => setShowNewMenu(!showNewMenu)}
                   className="icon-btn w-6 h-6 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                  title="New..."
+                  title={t("sidebar.new")}
                 >
                   <Plus size={14} />
                 </button>
-                {showNewMenu && (
-                  <div className="absolute top-full right-0 mt-1 w-[160px] py-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md shadow-lg z-50 animate-fade-in">
-                    <button
-                      onClick={() => handleNewItem("document")}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
-                    >
-                      <FilePlus size={14} className="shrink-0" />
-                      New Document
-                    </button>
-                    <button
-                      onClick={() => handleNewItem("folder")}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
-                    >
-                      <FolderPlus size={14} className="shrink-0" />
-                      New Folder
-                    </button>
-                    <div className="my-0.5 border-t border-[var(--border-light)]" />
-                    <button
-                      onClick={() => { setShowNewMenu(false); openFile().catch(console.error); }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
-                    >
-                      <FileUp size={14} className="shrink-0" />
-                      Open File...
-                    </button>
-                  </div>
-                )}
+                {showNewMenu && <NewMenuDropdown
+                  anchorRef={newMenuRef}
+                  onNewDocument={() => handleNewItem("document")}
+                  onNewFolder={() => handleNewItem("folder")}
+                  onOpenFile={() => { setShowNewMenu(false); openFile().catch(console.error); }}
+                />}
               </div>
             )}
             <button
               onClick={onToggle}
               className="icon-btn w-6 h-6 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-              title="Collapse sidebar"
+              title={t("sidebar.collapse")}
             >
               <ChevronsLeft size={14} />
             </button>
@@ -263,24 +264,26 @@ export function Sidebar({
 
         {/* Panel body */}
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-          {!workspacePath ? (
+          {activeTab === "settings" ? (
+            <SettingsPanel />
+          ) : !workspacePath ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">
               <div className="w-12 h-12 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center">
                 <FolderOpen size={24} className="text-[var(--text-tertiary)]" />
               </div>
               <div className="text-center">
                 <p className="text-[13px] font-medium text-[var(--text-primary)]">
-                  No workspace open
+                  {t("sidebar.noWorkspace")}
                 </p>
                 <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
-                  Open a folder to manage your documents
+                  {t("sidebar.noWorkspaceHint")}
                 </p>
               </div>
               <button
                 onClick={handleOpenWorkspace}
                 className="btn btn-primary h-8 px-4 text-[12px]"
               >
-                Open Workspace
+                {t("sidebar.openWorkspace")}
               </button>
             </div>
           ) : activeTab === "files" ? (
@@ -320,18 +323,18 @@ export function Sidebar({
           {!workspacePath ? (
             <button
               onClick={handleOpenWorkspace}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all whitespace-nowrap overflow-hidden"
             >
               <FolderOpen size={14} className="shrink-0" />
-              <span className="truncate">Open Workspace</span>
+              <span className="truncate">{t("sidebar.openWorkspace")}</span>
             </button>
           ) : (
             <button
               onClick={handleOpenWorkspace}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] transition-all"
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] transition-all whitespace-nowrap overflow-hidden"
             >
               <FolderOpen size={14} className="shrink-0 text-[var(--text-secondary)]" />
-              <span className="truncate">Switch Workspace</span>
+              <span className="truncate">{t("sidebar.switchWorkspace")}</span>
             </button>
           )}
         </div>
@@ -365,5 +368,62 @@ function ActivityBarButton({
     >
       {icon}
     </button>
+  );
+}
+
+/* ─── "+" menu dropdown rendered as portal to escape overflow-hidden ─── */
+
+function NewMenuDropdown({
+  anchorRef,
+  onNewDocument,
+  onNewFolder,
+  onOpenFile,
+}: {
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+  onNewDocument: () => void;
+  onNewFolder: () => void;
+  onOpenFile: () => void;
+}) {
+  const t = useT();
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: Math.max(4, rect.right - 160) });
+  }, [anchorRef]);
+
+  if (!pos) return null;
+
+  return createPortal(
+    <div
+      style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+      className="w-[160px] py-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md shadow-lg animate-fade-in"
+    >
+      <button
+        onClick={onNewDocument}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+      >
+        <FilePlus size={14} className="shrink-0" />
+        {t("sidebar.newDocument")}
+      </button>
+      <button
+        onClick={onNewFolder}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+      >
+        <FolderPlus size={14} className="shrink-0" />
+        {t("sidebar.newFolder")}
+      </button>
+      <div className="my-0.5 border-t border-[var(--border-light)]" />
+      <button
+        onClick={onOpenFile}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+      >
+        <FileUp size={14} className="shrink-0" />
+        {t("sidebar.openFile")}
+      </button>
+    </div>,
+    document.body
   );
 }

@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 CLAUDE.md
+*.lextyp
 
 # Typst binary (downloaded at dev time)
 src-tauri/resources/typst

@@ -4,6 +4,8 @@ import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
 import { useWorkspaceStore } from "./stores/workspace-store";
+import { useSettingsStore } from "./stores/settings-store";
+import { useT } from "./lib/i18n";
 
 const SIDEBAR_MIN = 220;
 const SIDEBAR_MAX = 380;
@@ -28,6 +30,12 @@ function App() {
   const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
   const saveActiveDocument = useWorkspaceStore((s) => s.saveActiveDocument);
   const isDirty = useWorkspaceStore((s) => s.isDirty);
+  const theme = useSettingsStore((s) => s.theme);
+
+  // Apply theme to document root
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   // Scale panels proportionally on window resize / fullscreen
   useEffect(() => {
@@ -171,15 +179,16 @@ function App() {
         {/* PDF Preview panel */}
         {activeDocumentPath && (
           <div
-            className={`hidden md:flex flex-col bg-[var(--bg-secondary)] overflow-hidden transition-all duration-200 ${
+            className={`hidden md:flex flex-col bg-[var(--bg-secondary)] overflow-hidden ${
               pdfPanelCollapsed ? "w-12" : ""
-            }`}
+            } ${resizingPanel ? "" : "transition-[width] duration-200"}`}
             style={{ width: pdfPanelCollapsed ? 48 : pdfPanelWidth }}
           >
             <PdfPreview
               collapsed={pdfPanelCollapsed}
               onToggleCollapse={() => setPdfPanelCollapsed(!pdfPanelCollapsed)}
               panelWidth={pdfPanelWidth}
+              isResizing={resizingPanel === "pdf"}
             />
           </div>
         )}
@@ -189,6 +198,7 @@ function App() {
 }
 
 function EmptyState() {
+  const t = useT();
   return (
     <div className="h-full flex flex-col items-center justify-center gap-4">
       <div className="w-16 h-20 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
@@ -198,10 +208,10 @@ function EmptyState() {
       </div>
       <div className="text-center">
         <p className="text-[14px] font-medium text-[var(--text-secondary)]">
-          No document open
+          {t("editor.noDocument")}
         </p>
         <p className="text-[12px] text-[var(--text-tertiary)] mt-1">
-          Create or open a document from the sidebar
+          {t("editor.noDocumentHint")}
         </p>
       </div>
     </div>

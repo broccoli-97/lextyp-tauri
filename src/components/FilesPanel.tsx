@@ -1,5 +1,6 @@
 import { FolderPlus, FilePlus, FileDown, FileUp, FileCode } from "lucide-react";
 import { FileTree } from "./FileTree";
+import { useT } from "../lib/i18n";
 
 interface FilesPanelProps {
   newItemInput: "document" | "folder" | null;
@@ -26,6 +27,8 @@ export function FilesPanel({
   openFile,
   exportTypst,
 }: FilesPanelProps) {
+  const t = useT();
+
   return (
     <>
       <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-1">
@@ -64,17 +67,17 @@ export function FilesPanel({
           </div>
           <SidebarItem
             icon={<FileDown size={14} />}
-            label="Save As..."
+            label={t("files.saveAs")}
             onClick={() => saveAs().catch(console.error)}
           />
           <SidebarItem
             icon={<FileUp size={14} />}
-            label="Open File..."
+            label={t("sidebar.openFile")}
             onClick={() => openFile().catch(console.error)}
           />
           <SidebarItem
             icon={<FileCode size={14} />}
-            label="Export .typ"
+            label={t("files.export")}
             onClick={() => exportTypst().catch(console.error)}
           />
         </div>

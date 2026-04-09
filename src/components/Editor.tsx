@@ -140,8 +140,54 @@ export function Editor() {
     };
   }, [insertCitation, openCitationPicker]);
 
+  // Override BlockNote's drag preview on dragstart so it works cleanly on
+  // Windows/WebView2. BlockNote appends a .bn-drag-preview clone of the
+  // editor DOM to the body, but on WebView2 it renders incorrectly
+  // (shows sidebar/other content). We replace it with a compact element.
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+
+    const handleDragStart = (e: DragEvent) => {
+      if (!e.dataTransfer) return;
+
+      // Find the block being dragged via the side menu's data
+      const sideMenu = container.querySelector<HTMLElement>(".bn-side-menu");
+      const blockEl = sideMenu
+        ? document.querySelector<HTMLElement>(
+            `[data-id="${sideMenu.closest("[data-id]")?.getAttribute("data-id") || ""}"]`
+          )
+        : null;
+
+      // Build a minimal drag image from the block's visible text
+      const text =
+        blockEl?.textContent?.trim().slice(0, 60) ||
+        (e.target as HTMLElement)?.closest?.("[data-node-type]")?.textContent?.trim().slice(0, 60) ||
+        "Block";
+
+      const ghost = document.createElement("div");
+      ghost.textContent = text + (text.length >= 60 ? "..." : "");
+      ghost.style.cssText =
+        "position:fixed;left:-9999px;top:0;padding:6px 12px;border-radius:6px;" +
+        "background:#fff;border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(0,0,0,0.12);" +
+        "font-size:13px;color:#1a1d21;white-space:nowrap;max-width:280px;overflow:hidden;" +
+        "text-overflow:ellipsis;z-index:99999;pointer-events:none;";
+      document.body.appendChild(ghost);
+      e.dataTransfer.setDragImage(ghost, 0, 0);
+
+      // Clean up after browser captures the image
+      requestAnimationFrame(() => {
+        document.body.removeChild(ghost);
+      });
+    };
+
+    container.addEventListener("dragstart", handleDragStart, true);
+    return () => container.removeEventListener("dragstart", handleDragStart, true);
+  }, []);
+
   return (
-    <div className="h-full overflow-auto relative">
+    <div className="h-full overflow-auto relative" ref={editorContainerRef}>
       <div className="max-w-[880px] mx-auto px-8 py-10">
         <BlockNoteView
           editor={editor}

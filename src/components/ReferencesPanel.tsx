@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { BookOpen, Search, ChevronDown } from "lucide-react";
 import { getStyleNames } from "../lib/citation/registry";
 import { formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
+import { useT } from "../lib/i18n";
 import type { BibEntry } from "../types/bib";
 import type { CitationFormatter } from "../lib/citation/formatter";
 
@@ -36,6 +37,7 @@ export function ReferencesPanel({
   onInsertCitation,
   onImportBib,
 }: ReferencesPanelProps) {
+  const t = useT();
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
 
@@ -69,13 +71,13 @@ export function ReferencesPanel({
           className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
         >
           <BookOpen size={14} className="shrink-0" />
-          <span className="truncate">Import .bib</span>
+          <span className="truncate">{t("refs.importBib")}</span>
         </button>
 
         {entries.length > 0 && (
           <div className="relative" ref={styleDropdownRef}>
             <label className="block text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.08em] px-1 mb-0.5">
-              Citation Style
+              {t("refs.style")}
             </label>
             <button
               onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
@@ -121,7 +123,7 @@ export function ReferencesPanel({
           <div className="flex flex-col items-center justify-center gap-2 py-8">
             <BookOpen size={20} className="text-[var(--text-tertiary)]" />
             <p className="text-[11px] text-[var(--text-tertiary)] text-center">
-              No references yet. Import a .bib file to get started.
+              {t("refs.noRefs")}{"\n"}{t("refs.noRefsHint")}
             </p>
           </div>
         ) : (
@@ -134,7 +136,7 @@ export function ReferencesPanel({
               />
               <input
                 type="text"
-                placeholder="Search references..."
+                placeholder={t("refs.search")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ height: 26, fontSize: 11, paddingLeft: 26, paddingRight: 8 }}
@@ -213,7 +215,7 @@ export function ReferencesPanel({
                             onClick={(ev) => { ev.stopPropagation(); onInsertCitation(entry.key); }}
                             className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
                           >
-                            Insert
+                            {t("refs.insert")}
                           </button>
                         </div>
                         <p className="mt-1 line-clamp-2 text-[11px] leading-[1.4] text-[var(--text-primary)] break-words">

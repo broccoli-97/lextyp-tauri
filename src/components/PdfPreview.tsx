@@ -15,6 +15,7 @@ import {
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "../stores/app-store";
+import { useT } from "../lib/i18n";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -22,11 +23,13 @@ interface PdfPreviewProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
   panelWidth: number;
+  isResizing?: boolean;
 }
 
 const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200];
 
-export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPreviewProps) {
+export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing }: PdfPreviewProps) {
+  const t = useT();
   const pdfBase64 = useAppStore((s) => s.pdfBase64);
   const lastError = useAppStore((s) => s.lastError);
   const compiling = useAppStore((s) => s.compiling);
@@ -62,10 +65,18 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
     scrollRef.current?.releasePointerCapture(e.pointerId);
   }, [isDragging]);
 
+  // Freeze the PDF render width during resize drag — only update when drag ends.
+  // This prevents react-pdf from re-rendering on every pixel of the resize.
+  const stableWidthRef = useRef(panelWidth);
+  if (!isResizing) {
+    stableWidthRef.current = panelWidth;
+  }
+  const renderWidth = stableWidthRef.current;
+
   // Base page width fits the panel; zoom is applied via CSS transform
   const basePageWidth = useMemo(() => {
-    return Math.max(200, panelWidth - 48);
-  }, [panelWidth]);
+    return Math.max(200, renderWidth - 48);
+  }, [renderWidth]);
 
   const scale = zoom / 100;
 
@@ -114,14 +125,14 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
         <button
           onClick={onToggleCollapse}
           className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          title="Expand preview"
+          title={t("pdf.expand")}
         >
           <ChevronLeft size={18} />
         </button>
         <div className="mt-2 flex flex-col items-center gap-2">
           <FileText size={16} className="text-[var(--text-tertiary)] rotate-90" />
           <span className="text-[9px] text-[var(--text-tertiary)] writing-mode-vertical rotate-180" style={{ writingMode: "vertical-rl" }}>
-            PDF Preview
+            {t("pdf.preview")}
           </span>
         </div>
       </div>
@@ -136,12 +147,12 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
         <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={14} className="text-[var(--text-tertiary)]" />
-            <span className="text-[12px] font-medium text-[var(--text-secondary)]">Preview</span>
+            <span className="text-[12px] font-medium text-[var(--text-secondary)]">{t("pdf.preview")}</span>
           </div>
           <button
             onClick={onToggleCollapse}
             className="icon-btn w-7 h-7"
-            title="Collapse preview"
+            title={t("pdf.collapse")}
           >
             <ChevronRight size={14} />
           </button>
@@ -153,7 +164,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
                 <Loader2 size={24} className="animate-spin text-[var(--accent)]" />
               </div>
               <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                Compiling document...
+                {t("pdf.compiling")}
               </span>
             </div>
           ) : (
@@ -164,10 +175,10 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
               </div>
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                  Preview will appear here
+                  {t("pdf.willAppear")}
                 </span>
                 <span className="text-[11px] text-[var(--text-tertiary)]">
-                  Start typing to see your document
+                  {t("pdf.startTyping")}
                 </span>
               </div>
             </>
@@ -185,12 +196,12 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
         <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
           <div className="flex items-center gap-2">
             <FileWarning size={14} className="text-[var(--error)]" />
-            <span className="text-[12px] font-medium text-[var(--error)]">Error</span>
+            <span className="text-[12px] font-medium text-[var(--error)]">{t("pdf.error")}</span>
           </div>
           <button
             onClick={onToggleCollapse}
             className="icon-btn w-7 h-7"
-            title="Collapse preview"
+            title={t("pdf.collapse")}
           >
             <ChevronRight size={14} />
           </button>
@@ -211,10 +222,10 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
       <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-[var(--accent)]" />
-          <span className="text-[12px] font-medium text-[var(--text-primary)]">Preview</span>
+          <span className="text-[12px] font-medium text-[var(--text-primary)]">{t("pdf.preview")}</span>
           {numPages > 0 && (
             <span className="text-[10px] text-[var(--text-tertiary)] ml-1">
-              {numPages} {numPages === 1 ? "page" : "pages"}
+              {numPages} {numPages === 1 ? t("pdf.page") : t("pdf.pages")}
             </span>
           )}
         </div>
@@ -247,17 +258,17 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
           <button
             onClick={handleDownload}
             className="btn btn-ghost h-7 px-2 text-[11px] font-medium gap-1"
-            title="Download PDF"
+            title={t("pdf.download")}
           >
             <Download size={14} />
-            <span className="hidden lg:inline">Download</span>
+            <span className="hidden lg:inline">{t("pdf.download")}</span>
           </button>
 
           {/* Collapse button */}
           <button
             onClick={onToggleCollapse}
             className="icon-btn w-7 h-7"
-            title="Collapse preview"
+            title={t("pdf.collapse")}
           >
             <ChevronRight size={14} />
           </button>
@@ -281,7 +292,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth }: PdfPrevi
           loading={
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
-              <span className="text-[12px] text-[var(--text-tertiary)]">Loading PDF...</span>
+              <span className="text-[12px] text-[var(--text-tertiary)]">{t("pdf.loading")}</span>
             </div>
           }
         >

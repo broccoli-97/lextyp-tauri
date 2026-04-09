@@ -1,18 +1,20 @@
 import { useAppStore } from "../stores/app-store";
 import { Circle, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { useT } from "../lib/i18n";
 
 export function StatusBar() {
+  const t = useT();
   const compiling = useAppStore((s) => s.compiling);
   const lastError = useAppStore((s) => s.lastError);
   const lastDuration = useAppStore((s) => s.lastDuration);
 
   const statusConfig = compiling
-    ? { icon: <Loader2 size={12} className="animate-spin" />, text: "Compiling...", color: "text-[var(--accent)]", bg: "bg-[var(--accent-light)]" }
+    ? { icon: <Loader2 size={12} className="animate-spin" />, text: t("status.compiling"), color: "text-[var(--accent)]", bg: "bg-[var(--accent-light)]" }
     : lastError
-      ? { icon: <AlertCircle size={12} />, text: "Error", color: "text-[var(--error)]", bg: "bg-[var(--error-light)]" }
+      ? { icon: <AlertCircle size={12} />, text: t("status.error"), color: "text-[var(--error)]", bg: "bg-[var(--error-light)]" }
       : lastDuration > 0
         ? { icon: <CheckCircle size={12} />, text: `${lastDuration}ms`, color: "text-[var(--success)]", bg: "bg-[var(--success-light)]" }
-        : { icon: <Circle size={8} className="fill-current" />, text: "Ready", color: "text-[var(--text-tertiary)]", bg: "" };
+        : { icon: <Circle size={8} className="fill-current" />, text: t("status.ready"), color: "text-[var(--text-tertiary)]", bg: "" };
 
   return (
     <div className="h-8 border-t border-[var(--border-light)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-secondary)]">
