@@ -22,6 +22,7 @@ const translations = {
     // Editor
     "editor.noDocument": "No document open",
     "editor.noDocumentHint": "Create or open a document from the sidebar",
+    "editor.outline": "Outline",
 
     // PDF Preview
     "pdf.preview": "Preview",
@@ -86,6 +87,7 @@ const translations = {
     // Editor
     "editor.noDocument": "未打开文档",
     "editor.noDocumentHint": "从侧边栏创建或打开文档",
+    "editor.outline": "大纲",
 
     // PDF Preview
     "pdf.preview": "预览",

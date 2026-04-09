@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { List } from "lucide-react";
+import { useT } from "../lib/i18n";
 
 interface OutlineEntry {
   id: string;
@@ -12,6 +13,7 @@ interface FloatingOutlineProps {
 }
 
 export function FloatingOutline({ editor }: FloatingOutlineProps) {
+  const t = useT();
   const [entries, setEntries] = useState<OutlineEntry[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -79,7 +81,7 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
           <div className="flex items-center gap-1.5 mb-2.5 pb-2 border-b border-[var(--border-light)]">
             <List size={12} className="text-[var(--text-secondary)]" />
             <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)] tracking-wider">
-              Outline
+              {t("editor.outline")}
             </span>
           </div>
           <div className="space-y-0.5">
@@ -88,7 +90,14 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
                 key={entry.id}
                 onClick={() => {
                   const block = editor.getBlock(entry.id);
-                  if (block) editor.setTextCursorPosition(block, "start");
+                  if (block) {
+                    editor.setTextCursorPosition(block, "start");
+                    // Scroll the DOM element into view
+                    setTimeout(() => {
+                      const el = document.querySelector(`[data-id="${entry.id}"]`);
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }, 50);
+                  }
                 }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
