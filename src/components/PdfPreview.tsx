@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -15,14 +15,21 @@ import {
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "../stores/app-store";
+import type { SourceMapEntry } from "../stores/app-store";
 import { useT } from "../lib/i18n";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 /** A4 aspect ratio: height / width */
 const A4_RATIO = 297 / 210;
+/** A4 dimensions in Typst points (1pt = 1/72 inch) */
+const A4_WIDTH_PT = 595.28;
 const PAGE_GAP = 16;
 const PADDING = 24;
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 3.0;
+const ZOOM_STEP = 0.15; // For button clicks
+const WHEEL_SENSITIVITY = 0.002; // For Ctrl+wheel
 
 interface PdfPreviewProps {
   collapsed: boolean;
@@ -31,21 +38,26 @@ interface PdfPreviewProps {
   isResizing?: boolean;
 }
 
-const ZOOM_LEVELS = [50, 75, 100, 125, 150, 200];
-
 export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing }: PdfPreviewProps) {
   const t = useT();
   const pdfBase64 = useAppStore((s) => s.pdfBase64);
   const lastError = useAppStore((s) => s.lastError);
   const compiling = useAppStore((s) => s.compiling);
+  const sourceMap = useAppStore((s) => s.sourceMap);
   const [numPages, setNumPages] = useState(0);
-  const [zoomIndex, setZoomIndex] = useState(2); // Default 100%
   const [isDragging, setIsDragging] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
-  const zoom = ZOOM_LEVELS[zoomIndex];
-  const scale = zoom / 100;
+  // Continuous zoom: `zoom` is the live value (drives CSS transform for
+  // instant feedback). `renderedZoom` is what react-pdf actually rendered
+  // at — only updated after a debounce to avoid thrashing re-renders.
+  const [zoom, setZoom] = useState(1.0);
+  const [renderedZoom, setRenderedZoom] = useState(1.0);
+  const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clampZoom = (z: number) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  const zoomPercent = Math.round(zoom * 100);
 
   // Freeze panel width during resize to prevent re-renders on every pixel
   const stableWidthRef = useRef(panelWidth);
@@ -54,22 +66,80 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   }
   const stableWidth = stableWidthRef.current;
 
-  // At 100% zoom, page fits the panel width (minus padding).
-  // Zoom scales from this baseline. The rendered width is what react-pdf
-  // actually draws — vector text stays sharp at any zoom.
+  // At zoom=1, page fits the panel width (minus padding).
   const fitWidth = Math.max(200, stableWidth - PADDING * 2);
-  const renderedPageWidth = Math.round(fitWidth * scale);
-  const renderedPageHeight = Math.round(renderedPageWidth * A4_RATIO);
 
-  // Total content size (all pages + gaps)
-  const contentWidth = renderedPageWidth;
-  const contentHeight = numPages * renderedPageHeight + Math.max(0, numPages - 1) * PAGE_GAP;
+  // What react-pdf renders at (full resolution, debounced)
+  const renderPageWidth = Math.round(fitWidth * renderedZoom);
+
+  // The CSS transform ratio to bridge the gap between rendered and current zoom.
+  // e.g., if rendered at 100% but user zoomed to 150%, cssScale = 1.5.
+  // This gives instant visual zoom while the high-res render catches up.
+  const cssScale = renderedZoom > 0 ? zoom / renderedZoom : 1;
+
+  // Visual page size after CSS transform
+  const visualPageWidth = Math.round(renderPageWidth * cssScale);
+  const pageHeight = Math.round(renderPageWidth * A4_RATIO);
+  const totalPagesHeight =
+    numPages > 0 ? numPages * pageHeight + (numPages - 1) * PAGE_GAP : 0;
+  const visualTotalHeight = Math.round(totalPagesHeight * cssScale);
+
+  // Schedule a high-res re-render after zoom stops changing
+  const scheduleRender = useCallback((newZoom: number) => {
+    if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
+    renderTimerRef.current = setTimeout(() => {
+      setRenderedZoom(newZoom);
+    }, 200);
+  }, []);
+
+  // Cleanup timer
+  useEffect(() => {
+    return () => {
+      if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
+    };
+  }, []);
+
+  // Ctrl+Wheel zoom centered on cursor (like typst.app)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+
+      const rect = el.getBoundingClientRect();
+      // Cursor position relative to the scroll container viewport
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      // Cursor position in content coordinates (before zoom)
+      const contentX = (el.scrollLeft + cursorX);
+      const contentY = (el.scrollTop + cursorY);
+
+      setZoom((prev) => {
+        const factor = 1 - e.deltaY * WHEEL_SENSITIVITY;
+        const next = clampZoom(prev * factor);
+        const ratio = next / prev;
+
+        // Adjust scroll so the point under the cursor stays fixed
+        requestAnimationFrame(() => {
+          el.scrollLeft = contentX * ratio - cursorX;
+          el.scrollTop = contentY * ratio - cursorY;
+        });
+
+        scheduleRender(next);
+        return next;
+      });
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [scheduleRender]);
 
   // Drag panning — works whenever content overflows the container
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const el = scrollRef.current;
     if (!el) return;
-    // Only enable drag if content overflows
     if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
     setIsDragging(true);
     dragStart.current = {
@@ -101,12 +171,25 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   }, [pdfBase64]);
 
   const handleZoomIn = useCallback(() => {
-    setZoomIndex((prev) => Math.min(prev + 1, ZOOM_LEVELS.length - 1));
-  }, []);
+    setZoom((prev) => {
+      const next = clampZoom(prev + ZOOM_STEP);
+      scheduleRender(next);
+      return next;
+    });
+  }, [scheduleRender]);
 
   const handleZoomOut = useCallback(() => {
-    setZoomIndex((prev) => Math.max(prev - 1, 0));
-  }, []);
+    setZoom((prev) => {
+      const next = clampZoom(prev - ZOOM_STEP);
+      scheduleRender(next);
+      return next;
+    });
+  }, [scheduleRender]);
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(1.0);
+    scheduleRender(1.0);
+  }, [scheduleRender]);
 
   const handleDownload = useCallback(async () => {
     if (!pdfBase64) return;
@@ -124,8 +207,39 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     }
   }, [pdfBase64]);
 
-  // Whether content overflows — controls cursor style
-  const overflows = contentWidth > stableWidth - PADDING * 2 || contentHeight > 0;
+  // Double-click on PDF → jump to the corresponding word in the editor
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!sourceMap.length) return;
+
+      // Find the page element that was clicked (react-pdf sets data-page-number)
+      const pageEl = (e.target as HTMLElement).closest("[data-page-number]");
+      if (!pageEl) return;
+
+      const pageNum = parseInt(pageEl.getAttribute("data-page-number") ?? "0", 10);
+      if (!pageNum) return;
+
+      // Get click position relative to the page element
+      const pageRect = pageEl.getBoundingClientRect();
+      const clickXInPage = e.clientX - pageRect.left;
+      const clickYInPage = e.clientY - pageRect.top;
+
+      // Convert pixel position to Typst points
+      // The rendered page width in pixels corresponds to A4_WIDTH_PT
+      const pxPerPt = pageRect.width / A4_WIDTH_PT;
+      const clickYPt = clickYInPage / pxPerPt;
+      const clickXPt = clickXInPage / pxPerPt;
+
+      // Find the nearest source-map marker (word) to the click
+      const target = findNearestEntry(sourceMap, pageNum, clickXPt, clickYPt);
+      if (!target) return;
+
+      // Jump to (block, character offset) in editor
+      const jumpFn = (window as any).__lextyp_jumpToBlock;
+      if (jumpFn) jumpFn(target.id, target.off);
+    },
+    [sourceMap]
+  );
 
   // Collapsed state
   if (collapsed) {
@@ -204,6 +318,9 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     );
   }
 
+  // Determine if content overflows for cursor style
+  const canDrag = visualPageWidth > stableWidth - PADDING * 2;
+
   // PDF display
   return (
     <div className="h-full flex flex-col">
@@ -224,18 +341,22 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
           <div className="flex items-center gap-0.5 mr-1 px-1.5 py-0.5 rounded-md bg-[var(--bg-tertiary)]">
             <button
               onClick={handleZoomOut}
-              disabled={zoomIndex === 0}
+              disabled={zoom <= ZOOM_MIN}
               className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               title="Zoom out"
             >
               <ZoomOut size={14} className="text-[var(--text-secondary)]" />
             </button>
-            <span className="text-[10px] font-semibold text-[var(--text-primary)] w-10 text-center">
-              {zoom}%
-            </span>
+            <button
+              onClick={handleZoomReset}
+              className="text-[10px] font-semibold text-[var(--text-primary)] w-10 text-center hover:bg-[var(--bg-hover)] rounded transition-colors"
+              title="Reset zoom"
+            >
+              {zoomPercent}%
+            </button>
             <button
               onClick={handleZoomIn}
-              disabled={zoomIndex === ZOOM_LEVELS.length - 1}
+              disabled={zoom >= ZOOM_MAX}
               className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               title="Zoom in"
             >
@@ -264,7 +385,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
         </div>
       </div>
 
-      {/* PDF content — scrollable in both axes, drag to pan */}
+      {/* PDF content — scrollable in both axes, Ctrl+wheel to zoom, drag to pan, double-click to jump */}
       <div
         className="flex-1 overflow-auto"
         ref={scrollRef}
@@ -272,19 +393,26 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
         style={{
-          cursor: overflows ? (isDragging ? "grabbing" : "grab") : undefined,
+          cursor: canDrag ? (isDragging ? "grabbing" : "grab") : undefined,
+          userSelect: "none",
+          WebkitUserSelect: "none",
         }}
       >
-        {/* Center the content when it fits; allow overflow when zoomed */}
         <div
           style={{
             minWidth: "100%",
             minHeight: "100%",
             display: "flex",
-            justifyContent: "center",
+            // `safe center` falls back to flex-start when the content
+            // overflows the container, otherwise the left half of the
+            // overflow is unreachable by scrolling/dragging.
+            justifyContent: "safe center",
             alignItems: "flex-start",
             padding: PADDING,
+            boxSizing: "border-box",
+            width: "fit-content",
           }}
         >
           <Document
@@ -298,27 +426,83 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
               </div>
             }
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: PAGE_GAP }}>
-              {Array.from({ length: numPages }, (_, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg overflow-hidden shadow-md bg-white"
-                  style={{ width: renderedPageWidth, height: renderedPageHeight }}
-                >
-                  <Page
-                    pageNumber={i + 1}
-                    width={renderedPageWidth}
-                    renderTextLayer={true}
-                    renderAnnotationLayer={true}
-                  />
-                </div>
-              ))}
+            {/* CSS transform gives instant zoom; react-pdf re-renders at
+                full resolution after 200ms debounce for sharpness.
+                The outer wrapper is sized to the *visual* (scaled) box so
+                the scroll container's scrollWidth/Height reflect the zoom,
+                otherwise horizontal drag-pan would be clamped to 0. */}
+            <div
+              style={{
+                width: visualPageWidth,
+                height: visualTotalHeight,
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  transform: cssScale !== 1 ? `scale(${cssScale})` : undefined,
+                  transformOrigin: "top left",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: PAGE_GAP,
+                }}
+              >
+                {Array.from({ length: numPages }, (_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg overflow-hidden shadow-md bg-white"
+                    style={{ width: renderPageWidth, height: pageHeight }}
+                  >
+                    <Page
+                      pageNumber={i + 1}
+                      width={renderPageWidth}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </Document>
         </div>
       </div>
     </div>
   );
+}
+
+/**
+ * Find the nearest source-map marker (word) to a click position on a page.
+ * Y is weighted heavily so that words on the same visual line as the click
+ * are strongly preferred; among those, the closest by X wins.
+ */
+function findNearestEntry(
+  sourceMap: SourceMapEntry[],
+  page: number,
+  clickXPt: number,
+  clickYPt: number
+): SourceMapEntry | null {
+  const onPage = sourceMap.filter((e) => e.page === page);
+  if (onPage.length === 0) return null;
+
+  let best = onPage[0];
+  let bestScore = score(best, clickXPt, clickYPt);
+  for (let i = 1; i < onPage.length; i++) {
+    const s = score(onPage[i], clickXPt, clickYPt);
+    if (s < bestScore) {
+      best = onPage[i];
+      bestScore = s;
+    }
+  }
+  return best;
+}
+
+function score(entry: SourceMapEntry, x: number, y: number): number {
+  // 6× vertical weight ≈ "same line beats nearby line by a wide margin",
+  // since 11pt text has ~14pt line height.
+  return Math.abs(entry.y - y) * 6 + Math.abs(entry.x - x);
 }
 
 /** Simple toolbar used for empty/error states */

@@ -203,21 +203,31 @@ html, body, #root {
 }
 
 /* ═══════════════════════════════════════
-   PDF Text Layer — hide ghost text on selection
+   Editor — single-line flash highlight when jumping from PDF double-click.
+   The element is injected by Editor.tsx as an absolutely-positioned overlay
+   inside the target block, sized to one line of text at the caret.
    ═══════════════════════════════════════ */
 
-.react-pdf__Page__textContent span {
-  color: transparent !important;
+.lextyp-line-highlight {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  pointer-events: none;
+  border-radius: 3px;
+  background: var(--accent);
+  opacity: 0;
+  z-index: 1;
+  animation: lextyp-line-flash 1.6s ease-out forwards;
 }
 
-.react-pdf__Page__textContent span::selection {
-  background: rgba(79, 70, 229, 0.2);
-  color: transparent;
+@keyframes lextyp-line-flash {
+  0% { opacity: 0.28; }
+  20% { opacity: 0.24; }
+  100% { opacity: 0; }
 }
 
-[data-theme="dark"] .react-pdf__Page__textContent span::selection {
-  background: rgba(129, 140, 248, 0.25);
-  color: transparent;
+[data-theme="dark"] .lextyp-line-highlight {
+  background: #818cf8;
 }
 
 /* ═══════════════════════════════════════

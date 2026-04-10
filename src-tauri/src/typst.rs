@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Cursor, Read};
 use std::path::{Path, PathBuf};
@@ -22,6 +22,42 @@ static DOWNLOAD_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
 pub struct CompileResult {
     pub pdf_base64: String,
     pub duration_ms: u64,
+}
+
+/// A single position marker on a PDF page, returned by `query_source_map`.
+/// `off` is the character offset within the source block (0 = block start,
+/// >0 = the position of a specific word inside the block).
+#[derive(Serialize)]
+pub struct SourceMapEntry {
+    pub id: String,
+    pub off: u32,
+    pub page: u32,
+    pub x: f64,
+    pub y: f64,
+}
+
+/// Raw JSON structures from `typst query ... "metadata"` output.
+#[derive(Deserialize)]
+struct QueryMetadataItem {
+    value: QueryMetadataValue,
+}
+
+#[derive(Deserialize)]
+struct QueryMetadataValue {
+    id: String,
+    off: u32,
+    pos: QueryPosition,
+}
+
+#[derive(Deserialize)]
+struct QueryPosition {
+    page: u32,
+    x: String,
+    y: String,
+}
+
+fn parse_pt(s: &str) -> f64 {
+    s.trim_end_matches("pt").parse::<f64>().unwrap_or(0.0)
 }
 
 enum ArchiveKind {
@@ -340,4 +376,54 @@ pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileRes
             stderr
         })
     }
+}
+
+/// Run `typst query` on the last compiled input file to extract block positions.
+/// Must be called after a successful `compile_typst` (reuses the same input.typ).
+#[tauri::command]
+pub async fn query_source_map(app: AppHandle) -> Result<Vec<SourceMapEntry>, String> {
+    let typst_bin = ensure_typst_binary(&app)?;
+    let out_dir = compile_output_dir(&app)?;
+    let input_path = out_dir.join("input.typ");
+
+    if !input_path.exists() {
+        return Err("No compiled input file found".to_string());
+    }
+
+    let input_str = input_path.to_string_lossy().to_string();
+
+    let mut cmd = tokio::process::Command::new(&typst_bin);
+    cmd.args(["query", &input_str, "metadata", "--pretty"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    #[cfg(target_os = "windows")]
+    {
+        cmd.creation_flags(0x08000000);
+    }
+
+    let output = cmd
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run typst query: {e}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        return Err(format!("typst query failed: {stderr}"));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let items: Vec<QueryMetadataItem> =
+        serde_json::from_str(&stdout).map_err(|e| format!("Failed to parse query output: {e}"))?;
+
+    Ok(items
+        .into_iter()
+        .map(|item| SourceMapEntry {
+            id: item.value.id,
+            off: item.value.off,
+            page: item.value.pos.page,
+            x: parse_pt(&item.value.pos.x),
+            y: parse_pt(&item.value.pos.y),
+        })
+        .collect())
 }
