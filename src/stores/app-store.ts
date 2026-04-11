@@ -19,6 +19,7 @@ interface AppState {
   setCompilationResult: (pdfBase64: string, duration: number) => void;
   setCompilationError: (error: string, duration: number) => void;
   setSourceMap: (entries: SourceMapEntry[]) => void;
+  clear: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -33,4 +34,12 @@ export const useAppStore = create<AppState>((set) => ({
   setCompilationError: (error, duration) =>
     set({ lastError: error, lastDuration: duration, compiling: false }),
   setSourceMap: (sourceMap) => set({ sourceMap }),
+  clear: () =>
+    set({
+      compiling: false,
+      lastError: "",
+      pdfBase64: "",
+      lastDuration: 0,
+      sourceMap: [],
+    }),
 }));

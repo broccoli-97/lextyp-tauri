@@ -4,6 +4,7 @@ import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialo
 import { writeFile } from "@tauri-apps/plugin-fs";
 import type { DocumentMeta, FileTreeEntry } from "../types/workspace";
 import { useReferenceStore } from "./reference-store";
+import { useAppStore } from "./app-store";
 import { serializeToTypst } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
 
@@ -278,7 +279,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       }
     }
 
-    // Always go to empty state — user can click another doc in the sidebar
+    // Clear PDF data first so react-pdf can cleanly release its resources
+    // before PdfPreview is unmounted (avoids double-free in the webview).
+    useAppStore.getState().clear();
+
+    // Wait a frame for react-pdf to process the empty state before we
+    // unmount the component by clearing activeDocumentPath.
+    await new Promise((r) => requestAnimationFrame(r));
+
     useReferenceStore.getState().clear();
     set({
       activeDocumentPath: null,
