@@ -58,7 +58,12 @@ jobs:
             conf.version = '$VERSION';
             fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2) + '\n');
           "
-          sed -i '0,/^version = ".*"/s//version = "'"$VERSION"'"/' src-tauri/Cargo.toml
+          node -e "
+            const fs = require('fs');
+            let toml = fs.readFileSync('src-tauri/Cargo.toml','utf8');
+            toml = toml.replace(/^version = \".*\"/m, 'version = \"$VERSION\"');
+            fs.writeFileSync('src-tauri/Cargo.toml', toml);
+          "
 
       - name: Patch version (Windows)
         if: runner.os == 'Windows'
