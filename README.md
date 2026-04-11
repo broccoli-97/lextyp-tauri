@@ -88,3 +88,5 @@ test/            # Tests
 This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
 
 You are free to use, modify, and distribute LexTyp for any **personal, non-commercial** purpose -- including research, education, hobby projects, and use by non-profit organizations. Commercial use requires a separate license from the author.
+
+LexTyp bundles the [Typst](https://github.com/typst/typst) compiler (Apache-2.0). See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details.
