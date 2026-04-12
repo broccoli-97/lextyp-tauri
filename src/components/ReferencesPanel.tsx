@@ -123,7 +123,7 @@ export function ReferencesPanel({
         <div className="flex gap-1.5">
           <button
             onClick={onImportBib}
-            className="flex-1 flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
+            className="sidebar-row-btn sidebar-row-btn-accent flex-1"
           >
             <BookOpen size={14} className="shrink-0" />
             <span className="truncate">{t("refs.importBib")}</span>
@@ -139,13 +139,12 @@ export function ReferencesPanel({
 
         {entries.length > 0 && (
           <div className="relative" ref={styleDropdownRef}>
-            <label className="block text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.08em] px-1 mb-0.5">
+            <label className="panel-section-label block px-1 mb-0.5">
               {t("refs.style")}
             </label>
             <button
               onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
-              style={{ height: 26, fontSize: 11 }}
-              className="w-full flex items-center justify-between px-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-md text-[var(--text-primary)] font-medium cursor-pointer transition-colors hover:border-[var(--border-hover)]"
+              className="compact-control flex items-center justify-between px-2 font-medium cursor-pointer"
             >
               <span>{citationStyle.toUpperCase()}</span>
               <ChevronDown
@@ -156,7 +155,7 @@ export function ReferencesPanel({
               />
             </button>
             {styleDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md shadow-lg overflow-hidden z-50">
+              <div className="menu-surface absolute top-full left-0 right-0 mt-1 overflow-hidden z-50">
                 {getStyleNames().map((s) => (
                   <button
                     key={s}
@@ -164,11 +163,10 @@ export function ReferencesPanel({
                       setCitationStyle(s);
                       setStyleDropdownOpen(false);
                     }}
-                    style={{ fontSize: 11 }}
-                    className={`w-full text-left px-2 py-1.5 font-medium transition-colors ${
+                    className={`menu-item ${
                       citationStyle === s
                         ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-                        : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                        : ""
                     }`}
                   >
                     {s.toUpperCase()}
@@ -205,8 +203,7 @@ export function ReferencesPanel({
                 placeholder={t("refs.search")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ height: 26, fontSize: 11, paddingLeft: 26, paddingRight: 8 }}
-                className="input w-full"
+                className="compact-control compact-control-search"
               />
             </div>
 

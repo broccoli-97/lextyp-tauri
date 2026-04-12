@@ -176,8 +176,7 @@ export function FileTreeItem({
             onBlur={commitRename}
             onKeyDown={handleRenameKeyDown}
             onClick={(e) => e.stopPropagation()}
-            style={{ fontSize: 12, height: 20 }}
-            className="flex-1 min-w-0 px-1 bg-[var(--bg-primary)] border border-[var(--accent)] rounded outline-none text-[var(--text-primary)]"
+            className="inline-name-input flex-1"
           />
         ) : (
           <span className="truncate flex-1 min-w-0">{label}</span>

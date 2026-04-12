@@ -45,7 +45,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     <div
       ref={ref}
       style={style}
-      className="min-w-[120px] py-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md shadow-lg animate-fade-in"
+      className="menu-surface min-w-[120px] py-1 animate-fade-in"
     >
       {items.map((item) => (
         <button
@@ -54,10 +54,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
             item.onClick();
             onClose();
           }}
-          className={`w-full text-left px-3 py-1.5 text-[11px] font-medium transition-colors ${
+          className={`menu-item ${
             item.danger
-              ? "text-[var(--error)] hover:bg-[var(--error-light)]"
-              : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+              ? "menu-item-danger"
+              : ""
           }`}
         >
           {item.label}

@@ -1,5 +1,5 @@
 import "@blocknote/core/fonts/inter.css";
-import { useCreateBlockNote } from "@blocknote/react";
+import { SideMenuController, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { filterSuggestionItems } from "@blocknote/core/extensions";
 import { SuggestionMenuController } from "@blocknote/react";
@@ -15,6 +15,8 @@ import { useReferenceStore } from "../stores/reference-store";
 import { useWorkspaceStore } from "../stores/workspace-store";
 import { FloatingOutline } from "./FloatingOutline";
 import { CitationPicker } from "./CitationPicker";
+import { EditorSideMenu } from "./EditorSideMenu";
+import { SlashMenu } from "./SlashMenu";
 
 /**
  * Walk visible text nodes inside a block element until we accumulate
@@ -59,38 +61,146 @@ function findOffsetTextNode(
   return last;
 }
 
+function getLineHighlightMetrics(
+  blockEl: HTMLElement,
+  placement?: { node: Text; offset: number } | null,
+  range?: Range | null
+) {
+  const contentEl =
+    blockEl.querySelector<HTMLElement>(".bn-block-content") ?? blockEl;
+  const blockRect = contentEl.getBoundingClientRect();
+
+  const tryRect = (candidate: Range | null | undefined) => {
+    if (!candidate) return null;
+    const rects = Array.from(candidate.getClientRects());
+    const rect = rects.find((item) => item.height > 0) ?? candidate.getBoundingClientRect();
+    if (!rect || (rect.width === 0 && rect.height === 0)) {
+      return null;
+    }
+    return rect;
+  };
+
+  let rect = tryRect(range);
+
+  if (!rect && placement) {
+    const probe = document.createRange();
+    const textLength = placement.node.data.length;
+
+    if (textLength > 0) {
+      if (placement.offset < textLength) {
+        probe.setStart(placement.node, placement.offset);
+        probe.setEnd(placement.node, Math.min(textLength, placement.offset + 1));
+      } else {
+        probe.setStart(placement.node, Math.max(0, placement.offset - 1));
+        probe.setEnd(placement.node, placement.offset);
+      }
+      rect = tryRect(probe);
+    }
+  }
+
+  if (!rect && placement?.node.parentElement) {
+    rect = placement.node.parentElement.getBoundingClientRect();
+  }
+
+  if (!rect) {
+    const contentEl =
+      blockEl.querySelector<HTMLElement>(".bn-inline-content") ?? blockEl;
+    rect = contentEl.getBoundingClientRect();
+  }
+
+  const lineHeightSource =
+    placement?.node.parentElement ??
+    blockEl.querySelector<HTMLElement>(".bn-inline-content") ??
+    contentEl;
+  const computedLineHeight = parseFloat(getComputedStyle(lineHeightSource).lineHeight);
+  const height = Math.max(
+    22,
+    Number.isFinite(computedLineHeight) ? computedLineHeight : 24,
+    rect.height || 0
+  );
+  const top = Math.max(0, rect.top - blockRect.top);
+
+  return { top, height, contentRect: blockRect };
+}
+
 /**
  * Briefly highlight the visual line that contains the current caret,
  * then fade it out. Uses an absolutely-positioned overlay inside the
  * block element so it scrolls naturally with the content.
  */
-function flashCurrentLine(blockEl: HTMLElement) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const caretRect = sel.getRangeAt(0).getBoundingClientRect();
-  // Empty ranges sometimes report all-zero rects; bail out gracefully.
-  if (caretRect.height === 0 && caretRect.width === 0 && caretRect.top === 0) {
-    return;
-  }
-
-  const blockRect = blockEl.getBoundingClientRect();
-  const top = caretRect.top - blockRect.top;
-  const height = caretRect.height || 20;
+function flashCurrentLine(
+  containerEl: HTMLElement,
+  blockEl: HTMLElement,
+  placement?: { node: Text; offset: number } | null,
+  range?: Range | null
+) {
+  const metrics = getLineHighlightMetrics(blockEl, placement, range);
+  if (!metrics) return;
+  const containerRect = containerEl.getBoundingClientRect();
+  const left =
+    containerEl.scrollLeft + metrics.contentRect.left - containerRect.left - 10;
+  const top =
+    containerEl.scrollTop + metrics.contentRect.top - containerRect.top + metrics.top;
+  const width = metrics.contentRect.width + 20;
 
   const highlight = document.createElement("div");
   highlight.className = "lextyp-line-highlight";
+  highlight.style.left = `${left}px`;
   highlight.style.top = `${top}px`;
-  highlight.style.height = `${height}px`;
-
-  // Ensure the block is a positioning context for the absolute overlay.
-  const prevPosition = blockEl.style.position;
-  if (!prevPosition) blockEl.style.position = "relative";
-
-  blockEl.appendChild(highlight);
+  highlight.style.width = `${width}px`;
+  highlight.style.height = `${metrics.height}px`;
+  containerEl.appendChild(highlight);
   window.setTimeout(() => {
     highlight.remove();
-    if (!prevPosition) blockEl.style.position = "";
   }, 1700);
+}
+
+function placeCaretAndHighlight(
+  editor: any,
+  containerEl: HTMLElement | null,
+  blockEl: HTMLElement,
+  placement: { node: Text; offset: number } | null
+) {
+  if (!placement) {
+    if (containerEl) {
+      flashCurrentLine(containerEl, blockEl, null, null);
+    }
+    return;
+  }
+
+  const range = document.createRange();
+  range.setStart(placement.node, placement.offset);
+  range.collapse(true);
+
+  try {
+    const view = editor?.prosemirrorView;
+    if (view) {
+      const pos = view.posAtDOM(placement.node, placement.offset);
+      if (typeof pos === "number" && pos >= 0) {
+        const tiptap = editor?._tiptapEditor;
+        tiptap?.commands?.setTextSelection?.(pos);
+        tiptap?.commands?.focus?.();
+      }
+    }
+  } catch {
+    // Fall through to DOM selection below.
+  }
+
+  const sel = window.getSelection();
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  try {
+    editor?.focus?.();
+  } catch {
+    // Ignore if not yet mounted.
+  }
+
+  if (containerEl) {
+    flashCurrentLine(containerEl, blockEl, placement, range);
+  }
 }
 
 export function Editor() {
@@ -103,6 +213,7 @@ export function Editor() {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [citationPickerOpen, setCitationPickerOpen] = useState(false);
   const loadedPathRef = useRef<string | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
   const editor = useCreateBlockNote({ schema });
   // Only subscribe to the specific values needed from reference-store
@@ -194,12 +305,14 @@ export function Editor() {
     }, 2000);
   }, [compileDocument, setDirty, saveActiveDocument]);
 
-  // Initial compile when document loads
+  // Compile when the active document or citation rendering inputs change.
+  // The PDF depends on bibliography entries and citation style in addition to
+  // editor blocks, so those changes need to trigger a refresh as well.
   useEffect(() => {
     if (!activeDocumentPath) return;
-    const timer = setTimeout(compileDocument, 500);
+    const timer = setTimeout(compileDocument, 250);
     return () => clearTimeout(timer);
-  }, [activeDocumentPath, compileDocument]);
+  }, [activeDocumentPath, citationStyle, entries, compileDocument]);
 
   // Cleanup timers
   useEffect(() => {
@@ -243,50 +356,21 @@ export function Editor() {
       // After the editor has had a chance to render the focused block,
       // walk the DOM to the precise character and move the PM selection
       // there, then flash the line that contains it.
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const blockEl = document.querySelector<HTMLElement>(`[data-id="${blockId}"]`);
         if (!blockEl) return;
-        blockEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        blockEl.scrollIntoView({ block: "center", inline: "nearest" });
 
-        // Wait for smooth scroll to settle so the caret rect is in its
-        // final position before we read it.
-        window.setTimeout(() => {
+        requestAnimationFrame(() => {
           const placement = findOffsetTextNode(blockEl, charOffset);
-          if (!placement) {
-            flashCurrentLine(blockEl);
-            return;
-          }
-
-          // Move ProseMirror's selection to the precise position so the
-          // editor's own caret blinks at the right spot.
-          try {
-            const view = (editor as any).prosemirrorView;
-            if (view) {
-              const pos = view.posAtDOM(placement.node, placement.offset);
-              if (typeof pos === "number" && pos >= 0) {
-                const tiptap = (editor as any)._tiptapEditor;
-                tiptap?.commands?.setTextSelection?.(pos);
-                tiptap?.commands?.focus?.();
-              }
-            }
-          } catch {
-            // Fall through — DOM selection still gives us a usable rect.
-          }
-
-          // Force a DOM selection so we can read the caret rect even if
-          // the ProseMirror update is async.
-          const range = document.createRange();
-          range.setStart(placement.node, placement.offset);
-          range.collapse(true);
-          const sel = window.getSelection();
-          if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(range);
-          }
-
-          flashCurrentLine(blockEl);
-        }, 350);
-      }, 50);
+          placeCaretAndHighlight(
+            editor as any,
+            editorContainerRef.current,
+            blockEl,
+            placement
+          );
+        });
+      });
     },
     [editor]
   );
@@ -302,59 +386,15 @@ export function Editor() {
     };
   }, [insertCitation, openCitationPicker, jumpToBlock]);
 
-  // Override BlockNote's drag preview on dragstart so it works cleanly on
-  // Windows/WebView2. BlockNote appends a .bn-drag-preview clone of the
-  // editor DOM to the body, but on WebView2 it renders incorrectly
-  // (shows sidebar/other content). We replace it with a compact element.
-  const editorContainerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const container = editorContainerRef.current;
-    if (!container) return;
-
-    const handleDragStart = (e: DragEvent) => {
-      if (!e.dataTransfer) return;
-
-      // Find the block being dragged via the side menu's data
-      const sideMenu = container.querySelector<HTMLElement>(".bn-side-menu");
-      const blockEl = sideMenu
-        ? document.querySelector<HTMLElement>(
-            `[data-id="${sideMenu.closest("[data-id]")?.getAttribute("data-id") || ""}"]`
-          )
-        : null;
-
-      // Build a minimal drag image from the block's visible text
-      const text =
-        blockEl?.textContent?.trim().slice(0, 60) ||
-        (e.target as HTMLElement)?.closest?.("[data-node-type]")?.textContent?.trim().slice(0, 60) ||
-        "Block";
-
-      const ghost = document.createElement("div");
-      ghost.textContent = text + (text.length >= 60 ? "..." : "");
-      ghost.style.cssText =
-        "position:fixed;left:-9999px;top:0;padding:6px 12px;border-radius:6px;" +
-        "background:#fff;border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(0,0,0,0.12);" +
-        "font-size:13px;color:#1a1d21;white-space:nowrap;max-width:280px;overflow:hidden;" +
-        "text-overflow:ellipsis;z-index:99999;pointer-events:none;";
-      document.body.appendChild(ghost);
-      e.dataTransfer.setDragImage(ghost, 0, 0);
-
-      // Clean up after browser captures the image
-      requestAnimationFrame(() => {
-        document.body.removeChild(ghost);
-      });
-    };
-
-    container.addEventListener("dragstart", handleDragStart, true);
-    return () => container.removeEventListener("dragstart", handleDragStart, true);
-  }, []);
-
   return (
     <div className="h-full overflow-auto relative" ref={editorContainerRef}>
       <div className="max-w-[880px] mx-auto px-8 py-10">
         <BlockNoteView
           editor={editor}
           theme="light"
+          formattingToolbar={false}
           slashMenu={false}
+          sideMenu={false}
           onChange={handleChange}
         >
           <SuggestionMenuController
@@ -362,7 +402,9 @@ export function Editor() {
             getItems={async (query) =>
               filterSuggestionItems(getSlashMenuItems(editor, openCitationPicker), query)
             }
+            suggestionMenuComponent={SlashMenu}
           />
+          <SideMenuController sideMenu={EditorSideMenu} />
         </BlockNoteView>
       </div>
       <FloatingOutline editor={editor} />

@@ -52,8 +52,7 @@ export function FilesPanel({
                   setNewItemName("");
                 }
               }}
-              style={{ fontSize: 12, height: 20 }}
-              className="flex-1 min-w-0 px-1 bg-[var(--bg-primary)] border border-[var(--accent)] rounded outline-none text-[var(--text-primary)]"
+              className="inline-name-input flex-1"
             />
           </div>
         )}
@@ -62,7 +61,7 @@ export function FilesPanel({
 
       {activeDocumentPath && (
         <div className="shrink-0 border-t border-[var(--border-light)] px-2 py-1.5 space-y-0.5">
-          <div className="px-2 py-0.5 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-[0.08em]">
+          <div className="panel-section-label px-2 py-0.5">
             Document
           </div>
           <SidebarItem
@@ -98,9 +97,9 @@ function SidebarItem({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] transition-all"
+      className="sidebar-row-btn"
     >
-      <span className="shrink-0 text-[var(--text-secondary)]">{icon}</span>
+      <span className="sidebar-row-icon">{icon}</span>
       <span className="truncate">{label}</span>
     </button>
   );

@@ -43,7 +43,7 @@ export function SettingsPanel() {
 function SettingsSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-2">
+      <div className="panel-section-label mb-2">
         {label}
       </div>
       {children}
@@ -65,10 +65,10 @@ function ThemeButton({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-[12px] font-medium transition-all ${
+      className={`panel-toggle-btn ${
         active
-          ? "bg-[var(--accent-light)] text-[var(--accent)] ring-1 ring-[var(--accent)]"
-          : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+          ? "panel-toggle-btn-active"
+          : ""
       }`}
     >
       {icon}
@@ -89,10 +89,10 @@ function LangButton({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 px-3 py-2 rounded-md text-[12px] font-medium transition-all ${
+      className={`panel-toggle-btn ${
         active
-          ? "bg-[var(--accent-light)] text-[var(--accent)] ring-1 ring-[var(--accent)]"
-          : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+          ? "panel-toggle-btn-active"
+          : ""
       }`}
     >
       {label}

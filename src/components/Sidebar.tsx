@@ -337,17 +337,17 @@ export function Sidebar({
           {!workspacePath ? (
             <button
               onClick={handleOpenWorkspace}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all whitespace-nowrap overflow-hidden"
+              className="sidebar-row-btn sidebar-row-btn-accent"
             >
-              <FolderOpen size={14} className="shrink-0" />
+              <FolderOpen size={14} className="sidebar-row-icon" />
               <span className="truncate">{t("sidebar.openWorkspace")}</span>
             </button>
           ) : activeTab === "files" ? (
             <button
               onClick={handleOpenWorkspace}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)] transition-all whitespace-nowrap overflow-hidden"
+              className="sidebar-row-btn"
             >
-              <FolderOpen size={14} className="shrink-0 text-[var(--text-tertiary)]" />
+              <FolderOpen size={14} className="sidebar-row-icon" />
               <span className="truncate">{t("sidebar.switchWorkspace")}</span>
             </button>
           ) : null}
@@ -416,18 +416,18 @@ function NewMenuDropdown({
     <div
       ref={portalRef}
       style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
-      className="w-[160px] py-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-md shadow-lg animate-fade-in"
+      className="menu-surface w-[160px] py-1 animate-fade-in"
     >
       <button
         onClick={onNewDocument}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+        className="menu-item whitespace-nowrap"
       >
         <FilePlus size={14} className="shrink-0" />
         {t("sidebar.newDocument")}
       </button>
       <button
         onClick={onNewFolder}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+        className="menu-item whitespace-nowrap"
       >
         <FolderPlus size={14} className="shrink-0" />
         {t("sidebar.newFolder")}
@@ -435,7 +435,7 @@ function NewMenuDropdown({
       <div className="my-0.5 border-t border-[var(--border-light)]" />
       <button
         onClick={onOpenFile}
-        className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors whitespace-nowrap"
+        className="menu-item whitespace-nowrap"
       >
         <FileUp size={14} className="shrink-0" />
         {t("sidebar.openFile")}

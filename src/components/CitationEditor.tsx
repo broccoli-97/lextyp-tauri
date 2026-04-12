@@ -168,10 +168,10 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
       <div className="flex gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
           onClick={() => setMode("form")}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] font-medium transition-all ${
+          className={`panel-toggle-btn panel-toggle-btn-compact ${
             mode === "form"
-              ? "bg-[var(--accent-light)] text-[var(--accent)] ring-1 ring-[var(--accent)]"
-              : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              ? "panel-toggle-btn-active"
+              : ""
           }`}
         >
           <FormInput size={12} />
@@ -179,10 +179,10 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
         </button>
         <button
           onClick={() => setMode("bibtex")}
-          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] font-medium transition-all ${
+          className={`panel-toggle-btn panel-toggle-btn-compact ${
             mode === "bibtex"
-              ? "bg-[var(--accent-light)] text-[var(--accent)] ring-1 ring-[var(--accent)]"
-              : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              ? "panel-toggle-btn-active"
+              : ""
           }`}
         >
           <Code size={12} />
@@ -220,7 +220,7 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
                   setEntryType(e.target.value);
                   setFields({});
                 }}
-                className="input h-7 text-[11px] px-2 bg-[var(--bg-primary)]"
+                className="compact-control"
               >
                 {ENTRY_TYPE_NAMES.map((t) => (
                   <option key={t} value={t}>
@@ -238,7 +238,7 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
                 onChange={(e) => setCitationKey(e.target.value)}
                 placeholder="smith2023"
                 disabled={isEditing}
-                className="input h-7 text-[11px] px-2"
+                className="compact-control"
               />
             </FormField>
 
@@ -253,7 +253,7 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
                   type="text"
                   value={fields[fieldName] || ""}
                   onChange={(e) => setField(fieldName, e.target.value)}
-                  className="input h-7 text-[11px] px-2"
+                  className="compact-control"
                 />
               </FormField>
             ))}
@@ -265,13 +265,13 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
       <div className="shrink-0 px-3 py-2 border-t border-[var(--border-light)] flex gap-2">
         <button
           onClick={onCancel}
-          className="flex-1 btn btn-secondary h-8 text-[11px]"
+          className="flex-1 btn btn-secondary h-8 text-[12px]"
         >
           {t("refs.cancel")}
         </button>
         <button
           onClick={mode === "bibtex" ? handleSaveBibtex : handleSaveForm}
-          className="flex-1 btn btn-primary h-8 text-[11px]"
+          className="flex-1 btn btn-primary h-8 text-[12px]"
         >
           {isEditing ? t("refs.save") : t("refs.create")}
         </button>
@@ -291,7 +291,7 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="flex items-center gap-1 text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-[0.06em] mb-0.5 px-0.5">
+      <label className="panel-section-label flex items-center gap-1 mb-0.5 px-0.5">
         {label}
         {required && <span className="text-[var(--error)]">*</span>}
       </label>
