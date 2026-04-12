@@ -216,6 +216,12 @@ export function Editor() {
         " ",
       ]);
       setCitationPickerOpen(false);
+      // Re-focus so the cursor stays visible after inserting the citation
+      try {
+        editor.focus();
+      } catch {
+        // Ignore if not yet mounted
+      }
     },
     [editor]
   );

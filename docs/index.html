@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexTyp — The Free WYSIWYG Editor for Legal Academic Writing</title>
+  <meta name="description" content="LexTyp is a free, cross-platform WYSIWYG academic document editor with built-in law citation support, Typst PDF compilation, and a live preview." />
+  <link rel="icon" href="icon.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              teal: '#06b6d4',
+              'teal-light': '#38bdf8',
+              amber: '#f59e0b',
+              'amber-light': '#fbbf24',
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #0c1929 40%, #0e2a3d 70%, #0f172a 100%);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #38bdf8, #06b6d4, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+    .glow {
+      box-shadow: 0 0 40px rgba(6, 182, 212, 0.15), 0 0 80px rgba(56, 189, 248, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3">
+        <img src="icon.png" alt="LexTyp" class="w-8 h-8 rounded-lg" />
+        <span class="text-white font-bold text-lg">LexTyp</span>
+      </a>
+      <div class="hidden sm:flex items-center gap-6 text-sm text-slate-300">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#citations" class="hover:text-white transition-colors">Citations</a>
+        <a href="#download" class="hover:text-white transition-colors">Download</a>
+        <a href="#contact" class="hover:text-white transition-colors">Contact</a>
+        <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-32 pb-20 sm:pt-40 sm:pb-28">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="mb-8 flex justify-center">
+        <img src="icon.png" alt="LexTyp" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl glow" />
+      </div>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
+        The free WYSIWYG editor for<br />
+        <span class="gradient-text">legal academic writing</span>
+      </h1>
+      <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
+        Write, cite, and publish. LexTyp combines a rich-text editor with built-in law citation styles
+        and Typst-powered PDF compilation &mdash; all in one free, open-source desktop app.
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-lg shadow-lg shadow-cyan-500/25">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          Download
+        </a>
+        <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-medium px-8 py-3.5 rounded-xl transition-colors text-lg">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="py-20 sm:py-28">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Everything you need to write</h2>
+        <p class="text-lg text-slate-500 max-w-2xl mx-auto">A modern writing experience designed for academic and legal documents.</p>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- WYSIWYG -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
+          <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">WYSIWYG Editing</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Rich-text editor powered by BlockNote. Write naturally with headings, lists, tables, and more &mdash; no markup required.</p>
+        </div>
+
+        <!-- Citations -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-brand-amber flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">Law Citation Styles</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Built-in OSCOLA, APA, Harvard, Chicago, and IEEE formatters. Insert citations from BibTeX and get perfectly formatted footnotes.</p>
+        </div>
+
+        <!-- PDF -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
+          <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">Typst PDF Compilation</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Compile to publication-ready PDFs with Typst. Live preview updates as you write, with source-map click-to-scroll navigation.</p>
+        </div>
+
+        <!-- Cross-platform -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-brand-amber flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">Cross-Platform</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Built with Tauri v2 for Windows, macOS, and Linux. Native performance with a tiny footprint.</p>
+        </div>
+
+        <!-- Themes -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
+          <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">Dark &amp; Light Themes</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Switch between light and dark modes for comfortable writing day or night. Your preference is saved automatically.</p>
+        </div>
+
+        <!-- i18n -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-brand-amber flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">Internationalization</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Full English and Chinese (Simplified) interface support with a lightweight i18n system.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Citation Styles Spotlight -->
+  <section id="citations" class="py-20 sm:py-28 bg-slate-900 text-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <span class="inline-block text-brand-amber font-semibold text-sm uppercase tracking-wider mb-4">Built for Legal Scholars</span>
+          <h2 class="text-3xl sm:text-4xl font-bold mb-6">Citation styles that understand law</h2>
+          <p class="text-slate-300 text-lg leading-relaxed mb-8">
+            LexTyp ships with first-class support for legal citation formats. Insert a BibTeX key and
+            your references are automatically formatted as footnotes in the style your institution requires.
+          </p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+              </span>
+              <span class="text-slate-300"><strong class="text-white">OSCOLA</strong> &mdash; Oxford Standard for Citation of Legal Authorities, the UK standard for law journals and dissertations.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+              </span>
+              <span class="text-slate-300"><strong class="text-white">APA, Harvard, Chicago</strong> &mdash; widely used across social sciences, humanities, and interdisciplinary legal research.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+              </span>
+              <span class="text-slate-300"><strong class="text-white">IEEE</strong> &mdash; for technical law and technology policy papers.</span>
+            </li>
+          </ul>
+        </div>
+        <div class="bg-slate-800 rounded-2xl p-6 sm:p-8 border border-slate-700 font-mono text-sm">
+          <div class="flex items-center gap-2 mb-4 text-slate-500 text-xs">
+            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+            <span class="ml-2">document.typ</span>
+          </div>
+          <div class="space-y-2 text-slate-300 leading-relaxed">
+            <p>The doctrine of parliamentary sovereignty</p>
+            <p>has been examined extensively by scholars.</p>
+            <p class="text-brand-teal">#footnote[</p>
+            <p class="pl-4 text-brand-amber">AV Dicey, <em>Introduction to the Study</em></p>
+            <p class="pl-4 text-brand-amber"><em>of the Law of the Constitution</em></p>
+            <p class="pl-4 text-brand-amber">(8th edn, Macmillan 1915)</p>
+            <p class="text-brand-teal">]</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="py-16 bg-slate-100 border-y border-slate-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-8">Built With</h3>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/Tauri-v2-blue?logo=tauri&logoColor=white&style=flat-square" alt="Tauri v2" class="h-5" />
+        </span>
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white&style=flat-square" alt="React 19" class="h-5" />
+        </span>
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white&style=flat-square" alt="TypeScript" class="h-5" />
+        </span>
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/Rust-stable-dea584?logo=rust&logoColor=white&style=flat-square" alt="Rust" class="h-5" />
+        </span>
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/Typst-PDF-239dad?logo=typst&logoColor=white&style=flat-square" alt="Typst" class="h-5" />
+        </span>
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?logo=tailwindcss&logoColor=white&style=flat-square" alt="Tailwind CSS" class="h-5" />
+        </span>
+        <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
+          <img src="https://img.shields.io/badge/BlockNote-editor-6366f1?style=flat-square" alt="BlockNote" class="h-5" />
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download / Get Started -->
+  <section id="download" class="py-20 sm:py-28">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Get started for free</h2>
+      <p class="text-lg text-slate-500 mb-10 max-w-xl mx-auto">
+        LexTyp is open source and completely free. Download the latest release for your platform.
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-lg shadow-lg shadow-cyan-500/25">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          Download Latest Release
+        </a>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-100 rounded-xl px-5 py-4">
+          <div class="font-semibold text-slate-700 mb-1">Windows</div>
+          <div class="text-slate-400">.msi / .exe installer</div>
+        </div>
+        <div class="bg-slate-100 rounded-xl px-5 py-4">
+          <div class="font-semibold text-slate-700 mb-1">macOS</div>
+          <div class="text-slate-400">.dmg (Apple Silicon &amp; Intel)</div>
+        </div>
+        <div class="bg-slate-100 rounded-xl px-5 py-4">
+          <div class="font-semibold text-slate-700 mb-1">Linux</div>
+          <div class="text-slate-400">.deb / .AppImage</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="py-20 sm:py-28 bg-slate-100 border-t border-slate-200">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Get in Touch</h2>
+        <p class="text-lg text-slate-500 max-w-xl mx-auto">
+          Have a question, feature request, or just want to say hi? Feel free to contact me about anything.
+        </p>
+      </div>
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-8 sm:p-10">
+          <!-- Contact info -->
+          <div class="flex flex-col sm:flex-row items-center gap-6 mb-10">
+            <div class="flex items-center gap-4 bg-cyan-50 rounded-xl px-6 py-4 w-full sm:w-auto">
+              <div class="w-10 h-10 rounded-full bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Email</div>
+                <a href="mailto:pacer97@163.com" class="text-brand-teal font-semibold hover:underline">pacer97@163.com</a>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 bg-slate-50 rounded-xl px-6 py-4 w-full sm:w-auto">
+              <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                </svg>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Issues &amp; Ideas</div>
+                <a href="https://github.com/broccoli-97/lextyp-tauri/issues" target="_blank" rel="noopener" class="text-slate-700 font-semibold hover:underline">GitHub Issues</a>
+              </div>
+            </div>
+          </div>
+          <!-- Message form (mailto-based) -->
+          <form id="contact-form" class="space-y-5">
+            <div class="grid sm:grid-cols-2 gap-5">
+              <div>
+                <label for="contact-name" class="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                <input type="text" id="contact-name" placeholder="Your name"
+                       class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:border-brand-teal text-sm" />
+              </div>
+              <div>
+                <label for="contact-email" class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <input type="email" id="contact-email" placeholder="you@example.com"
+                       class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:border-brand-teal text-sm" />
+              </div>
+            </div>
+            <div>
+              <label for="contact-message" class="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
+              <textarea id="contact-message" rows="4" placeholder="Feedback, questions, feature requests &mdash; anything goes!"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:border-brand-teal text-sm resize-y"></textarea>
+            </div>
+            <button type="submit"
+                    class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-7 py-3 rounded-xl transition-colors shadow-md shadow-cyan-500/20">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.getElementById('contact-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var name = document.getElementById('contact-name').value.trim();
+      var email = document.getElementById('contact-email').value.trim();
+      var message = document.getElementById('contact-message').value.trim();
+      if (!message) { alert('Please enter a message.'); return; }
+      var subject = encodeURIComponent('[LexTyp] Message from ' + (name || 'a visitor'));
+      var body = encodeURIComponent(
+        (name ? 'From: ' + name + '\n' : '') +
+        (email ? 'Reply-to: ' + email + '\n' : '') +
+        '\n' + message
+      );
+      window.location.href = 'mailto:pacer97@163.com?subject=' + subject + '&body=' + body;
+    });
+  </script>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <img src="icon.png" alt="LexTyp" class="w-6 h-6 rounded-md" />
+          <span class="text-slate-300 font-semibold">LexTyp</span>
+          <span class="text-slate-500 text-sm">&mdash; Free &amp; open source</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm">
+          <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
+        &copy; 2025 LexTyp Contributors. Built with Tauri, React, and Typst.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

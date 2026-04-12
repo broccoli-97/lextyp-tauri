@@ -12,6 +12,18 @@ export function getSlashMenuItems(
 ): DefaultReactSuggestionItem[] {
   return [
     {
+      title: "Title",
+      subtext: "Document title",
+      aliases: ["title"],
+      group: "Structure",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "heading",
+          props: { level: 1 as any },
+        });
+      },
+    },
+    {
       title: "Section",
       subtext: "Large section heading",
       aliases: ["section", "heading", "h1"],
