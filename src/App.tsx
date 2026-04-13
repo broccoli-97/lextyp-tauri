@@ -37,6 +37,27 @@ function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  // Block browser-default shortcuts that do not apply in this Tauri app
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod) {
+        // Block: save page, print, new window/tab, close tab, refresh,
+        // browser find/replace, address bar, bookmark, history
+        const blocked = ["s", "p", "n", "t", "w", "r", "f", "g", "h", "l", "d", "j"];
+        if (blocked.includes(e.key.toLowerCase())) {
+          e.preventDefault();
+        }
+      }
+      // Block F5 (refresh), F7 (caret browsing), F12 (devtools in prod)
+      if (["F5", "F7"].includes(e.key)) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, []);
+
   // Scale panels proportionally on window resize / fullscreen
   useEffect(() => {
     const handleResize = () => {

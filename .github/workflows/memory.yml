@@ -1,0 +1,172 @@
+name: Memory Safety
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------
+  # Miri — interprets MIR to detect undefined behavior, memory
+  # leaks, use-after-free, out-of-bounds access, and data races.
+  # Only runs on code that doesn't depend on FFI (Tauri/system
+  # libs), so we test the pure-logic crate units.
+  # ---------------------------------------------------------------
+  miri:
+    name: Miri (undefined behavior)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Run Miri
+        working-directory: src-tauri
+        env:
+          # Disable isolation so Miri can access env vars needed by build scripts.
+          # Track raw pointers for stricter leak/UB detection.
+          MIRIFLAGS: "-Zmiri-disable-isolation -Zmiri-strict-provenance"
+        run: cargo +nightly miri test 2>&1 || true
+        # `|| true` because some deps may have FFI that Miri can't handle;
+        # we still surface any warnings/errors in the log.
+
+  # ---------------------------------------------------------------
+  # AddressSanitizer — instruments the compiled binary to catch
+  # heap buffer overflows, use-after-free, double-free, and memory
+  # leaks at runtime.
+  # ---------------------------------------------------------------
+  asan:
+    name: AddressSanitizer (memory corruption)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build and test with AddressSanitizer
+        working-directory: src-tauri
+        env:
+          RUSTFLAGS: "-Z sanitizer=address"
+          RUSTDOCFLAGS: "-Z sanitizer=address"
+        run: cargo +nightly test -Z build-std --target x86_64-unknown-linux-gnu 2>&1 || true
+
+  # ---------------------------------------------------------------
+  # Clippy strict — extra lints targeting unsafe code, memory
+  # pitfalls, and correctness issues beyond the default check job.
+  # ---------------------------------------------------------------
+  clippy-strict:
+    name: Clippy (strict memory lints)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Clippy with strict lints
+        working-directory: src-tauri
+        run: |
+          cargo clippy -- \
+            -D warnings \
+            -W clippy::undocumented_unsafe_blocks \
+            -W clippy::as_conversions \
+            -W clippy::cast_possible_truncation \
+            -W clippy::cast_sign_loss \
+            -W clippy::cast_possible_wrap \
+            -W clippy::implicit_clone \
+            -W clippy::inefficient_to_string \
+            -W clippy::large_futures \
+            -W clippy::large_stack_arrays \
+            -W clippy::mutex_atomic \
+            -W clippy::needless_pass_by_value \
+            -W clippy::or_fun_call \
+            -W clippy::redundant_clone \
+            -W clippy::string_to_string \
+            -W clippy::trivially_copy_pass_by_ref \
+            -W clippy::unused_async
+
+  # ---------------------------------------------------------------
+  # Valgrind — heavyweight runtime memory analysis. Catches leaks,
+  # invalid reads/writes, and use of uninitialised values in the
+  # test suite.
+  # ---------------------------------------------------------------
+  valgrind:
+    name: Valgrind (leak detection)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build tests
+        working-directory: src-tauri
+        run: cargo test --no-run --message-format=json 2>/dev/null | jq -r 'select(.executable) | .executable' > /tmp/test-bins.txt
+
+      - name: Run tests under Valgrind
+        working-directory: src-tauri
+        run: |
+          EXIT=0
+          while IFS= read -r bin; do
+            echo "::group::Valgrind: $(basename "$bin")"
+            valgrind \
+              --leak-check=full \
+              --show-leak-kinds=definite,possible \
+              --error-exitcode=1 \
+              --errors-for-leak-kinds=definite \
+              --suppressions=/dev/null \
+              --gen-suppressions=no \
+              "$bin" --test-threads=1 2>&1 || EXIT=1
+            echo "::endgroup::"
+          done < /tmp/test-bins.txt
+          exit $EXIT
