@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>使用指南 — LexTyp</title>
+  <meta name="description" content="学习如何使用 LexTyp——免费的法学论文所见即所得编辑器。快速入门、引用工作流和 PDF 导出。" />
+  <link rel="icon" href="icon.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              teal: '#06b6d4',
+              'teal-light': '#38bdf8',
+              amber: '#f59e0b',
+              'amber-light': '#fbbf24',
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Noto Sans SC', 'Inter', system-ui, sans-serif; }
+    .gradient-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #0c1929 40%, #0e2a3d 70%, #0f172a 100%);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #38bdf8, #06b6d4, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .step-line::before {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 48px;
+      bottom: -16px;
+      width: 2px;
+      background: linear-gradient(to bottom, #06b6d4, transparent);
+    }
+    .step-line:last-child::before { display: none; }
+    kbd {
+      display: inline-block;
+      padding: 2px 7px;
+      font-size: 0.8em;
+      font-family: ui-monospace, monospace;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      box-shadow: 0 1px 0 #cbd5e1;
+    }
+    .toc a {
+      transition: color 0.15s, padding-left 0.15s;
+    }
+    .toc a:hover {
+      color: #06b6d4;
+      padding-left: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="index.zh-CN.html" class="flex items-center gap-3">
+        <img src="icon.png" alt="LexTyp" class="w-8 h-8 rounded-lg" />
+        <span class="text-white font-bold text-lg">LexTyp</span>
+      </a>
+      <div class="hidden sm:flex items-center gap-6 text-sm text-slate-300">
+        <a href="index.zh-CN.html" class="hover:text-white transition-colors">首页</a>
+        <a href="index.zh-CN.html#features" class="hover:text-white transition-colors">功能</a>
+        <a href="guide.zh-CN.html" class="text-white font-medium">指南</a>
+        <a href="index.zh-CN.html#download" class="hover:text-white transition-colors">下载</a>
+        <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+        <a href="guide.html" class="text-slate-400 hover:text-white transition-colors text-xs border border-slate-600 rounded px-2 py-0.5">EN</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-28 pb-14 sm:pt-36 sm:pb-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <span class="inline-block text-brand-amber font-semibold text-sm uppercase tracking-wider mb-4">使用指南</span>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight mb-5">
+        写一次，引用<span class="gradient-text">任意格式</span>，导出 PDF。
+      </h1>
+      <p class="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        不用学 LaTeX，不用手动排版。打开 LexTyp，写论文，插引用，点下载。就这么简单。
+      </p>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+    <div class="flex gap-12">
+
+      <!-- Sidebar TOC -->
+      <aside class="hidden lg:block w-56 flex-shrink-0">
+        <div class="sticky top-24 toc">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">本页目录</h4>
+          <nav class="space-y-2.5 text-sm text-slate-500 border-l-2 border-slate-200 pl-4">
+            <a href="#why" class="block">为什么选 LexTyp？</a>
+            <a href="#quick-start" class="block">快速入门</a>
+            <a href="#workspace" class="block">工作区</a>
+            <a href="#editor" class="block">编辑器</a>
+            <a href="#citations" class="block">引用</a>
+            <a href="#pdf" class="block">PDF 预览与导出</a>
+            <a href="#styles" class="block">引用样式</a>
+            <a href="#example" class="block">示例输出</a>
+            <a href="#shortcuts" class="block">快捷键</a>
+            <a href="#tips" class="block">使用技巧</a>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <main class="flex-1 min-w-0">
+
+        <!-- WHY -->
+        <section id="why" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">为什么选 LexTyp？</h2>
+          <p class="text-slate-600 text-lg leading-relaxed mb-8">
+            法学写作有一个特殊的痛点：你需要<strong>排版精美的 PDF</strong>、需要严格遵循格式规范的<strong>精确引用</strong>，还需要一个不和你对着干的编辑器。大多数工具让你在易用性和正确性之间二选一。LexTyp 不需要。
+          </p>
+          <div class="grid sm:grid-cols-3 gap-5">
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="text-2xl mb-3">&#9998;</div>
+              <h3 class="font-semibold text-slate-900 mb-1">专注编辑</h3>
+              <p class="text-sm text-slate-500">干净的所见即所得编辑器，无需学习标记语言。标题、加粗、列表、引用——像写笔记一样自然。</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="text-2xl mb-3">&#128218;</div>
+              <h3 class="font-semibold text-slate-900 mb-1">引用格式自由</h3>
+              <p class="text-sm text-slate-500">导入 .bib 文件，输入 <kbd>/citation</kbd> 选择文献。OSCOLA、Harvard、APA、Chicago、IEEE——一键切换，格式自动处理。</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="text-2xl mb-3">&#128196;</div>
+              <h3 class="font-semibold text-slate-900 mb-1">实时 PDF 输出</h3>
+              <p class="text-sm text-slate-500">Typst 实时编译，每次修改都即时反映在 PDF 预览中。无需单独的构建步骤。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- QUICK START -->
+        <section id="quick-start" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">快速入门</h2>
+          <p class="text-slate-600 mb-8">从零到一篇完整论文，只需四步。</p>
+
+          <div class="space-y-8">
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">1</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">下载并打开</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  从 <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" class="text-brand-teal font-medium hover:underline">Releases 页面</a> 下载对应系统的安装包。打开应用——就这样。Typst 会在首次启动时自动下载。
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">2</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">创建工作区和文档</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  点击侧边栏的<strong>打开工作区</strong>，选择（或新建）一个文件夹。然后点击<strong>+ 新建文档</strong>。LexTyp 会将所有内容保存为文件夹内的 <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.lextyp</code> 项目文件。
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">3</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">导入文献并开始写作</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  将 <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.bib</code> 文件拖入侧边栏的参考文献面板（或点击导入）。在编辑器中开始输入——右侧 PDF 预览实时更新。
+                </p>
+              </div>
+            </div>
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">4</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">导出 PDF</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  点击 PDF 预览工具栏中的<strong>下载</strong>按钮。完成——一份出版级别的 PDF 就保存到了你的磁盘上。
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WORKSPACE -->
+        <section id="workspace" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">工作区</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            LexTyp 用<strong>工作区</strong>来组织文件——就是你电脑上的一个普通文件夹。你可以在其中创建文档和子文件夹。每个文档是一个独立的
+            <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.lextyp</code> 文件（ZIP 格式，包含编辑器状态、Typst 源码和参考文献）。
+          </p>
+          <div class="bg-white rounded-xl border border-slate-200 p-5 text-sm font-mono text-slate-600 leading-loose">
+            <span class="text-slate-400">我的论文/</span><br>
+            &nbsp;&nbsp;&#128193; 第一章/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&#128196; 绪论.lextyp<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&#128196; 文献综述.lextyp<br>
+            &nbsp;&nbsp;&#128193; 第二章/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&#128196; 研究方法.lextyp<br>
+            &nbsp;&nbsp;&#128196; 摘要.lextyp
+          </div>
+          <p class="text-slate-500 text-sm mt-4">
+            右键点击侧边栏中的项目可以重命名、删除或新建文件夹。修改每 2 秒自动保存。
+          </p>
+        </section>
+
+        <!-- THE EDITOR -->
+        <section id="editor" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">编辑器</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            编辑器是一个基于块的富文本区域（由 BlockNote 驱动）。你期望的功能都有：
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">文本格式</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li><kbd>Ctrl</kbd> + <kbd>B</kbd> 加粗</li>
+                <li><kbd>Ctrl</kbd> + <kbd>I</kbd> 斜体</li>
+                <li><kbd>Ctrl</kbd> + <kbd>U</kbd> 下划线</li>
+                <li><kbd>Ctrl</kbd> + <kbd>E</kbd> 行内代码</li>
+              </ul>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">块类型</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li>输入 <kbd>#</kbd> 创建标题（## 为二级标题，以此类推）</li>
+                <li>输入 <kbd>-</kbd> 创建无序列表</li>
+                <li>输入 <kbd>1.</kbd> 创建有序列表</li>
+                <li>输入 <kbd>/</kbd> 打开斜杠菜单</li>
+              </ul>
+            </div>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            <strong>斜杠菜单</strong>是你的超级工具。在任意位置输入 <kbd>/</kbd> 即可看到所有可用的块类型——标题、列表、表格、图片，当然还有 <strong>/citation</strong>。
+          </div>
+        </section>
+
+        <!-- CITATIONS -->
+        <section id="citations" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">引用</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            这是 LexTyp 真正闪光的地方。引用工作流设计得尽可能顺畅：
+          </p>
+
+          <div class="space-y-6 mb-8">
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">1</div>
+              <div>
+                <h4 class="font-semibold text-slate-900">导入 .bib 文件</h4>
+                <p class="text-sm text-slate-500 mt-1">点击侧边栏参考文献区域的<strong>导入 .bib</strong>。所有条目立即显示，可按作者、标题或键名搜索。</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">2</div>
+              <div>
+                <h4 class="font-semibold text-slate-900">插入引用</h4>
+                <p class="text-sm text-slate-500 mt-1">在编辑器中输入 <kbd>/citation</kbd>。弹出选择器——搜索并点击条目。一个 <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">@key</code> 标签会插入到行内。</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">3</div>
+              <div>
+                <h4 class="font-semibold text-slate-900">随时切换样式</h4>
+                <p class="text-sm text-slate-500 mt-1">使用侧边栏的样式下拉菜单。所有引用即时重新渲染——OSCOLA 脚注变为 Harvard 作者-日期格式，反之亦然。无需手动修改。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 rounded-xl p-5 sm:p-6 text-sm font-mono">
+            <div class="flex items-center gap-2 mb-3 text-slate-500 text-xs">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500/80"></span>
+              <span class="ml-2">编辑器中看到的效果</span>
+            </div>
+            <p class="text-slate-300 leading-relaxed">
+              The modern law of negligence originates from the foundational case
+              establishing the neighbour principle. <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-xs font-semibold">@donoghue1932</span>
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+              <div class="flex items-center gap-2 mb-2 text-slate-500 text-xs">
+                <span class="ml-0">&#8595; 编译输出（OSCOLA 格式）</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                The modern law of negligence originates from the foundational case
+                establishing the neighbour principle.<span class="text-brand-amber"><sup>1</sup></span>
+              </p>
+              <p class="text-slate-500 mt-2 text-xs">
+                <span class="text-brand-amber">1.</span> <em>Donoghue v Stevenson</em> [1932] AC 562
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PDF PREVIEW & EXPORT -->
+        <section id="pdf" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">PDF 预览与导出</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            右侧面板显示<strong>实时 PDF 预览</strong>，随输入更新（有 400ms 防抖，不会闪烁）。这不是模拟——是真正编译出来的 PDF。
+          </p>
+          <div class="grid sm:grid-cols-2 gap-5 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">导航</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li><strong>双击</strong> PDF 可跳转到编辑器对应位置</li>
+                <li><kbd>Ctrl</kbd> + <kbd>滚轮</kbd> 缩放</li>
+                <li>点击拖拽平移（缩放后）</li>
+              </ul>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">导出</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li>点击预览工具栏的<strong>下载</strong>按钮</li>
+                <li>选择 <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">.pdf</code> 文件保存位置</li>
+                <li>也可以从侧边栏菜单导出原始 Typst 源码</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- CITATION STYLES -->
+        <section id="styles" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">引用样式</h2>
+          <p class="text-slate-600 leading-relaxed mb-8">
+            LexTyp 支持 6 种引用样式，每种都能处理书籍、文章、判例、立法、章节、论文和会议论文。一键切换，引用即时重新渲染。
+          </p>
+
+          <div class="space-y-4">
+            <details class="bg-white rounded-xl border border-slate-200 group" open>
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-50 text-brand-teal flex items-center justify-center flex-shrink-0 text-xs font-bold">OS</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">OSCOLA</span>
+                    <span class="text-slate-400 text-sm ml-2">牛津大学法律引用标准</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 space-y-3 border-t border-slate-100 pt-4">
+                <p>英国法学期刊、论文和法学学术著作的标准格式。使用<strong>脚注</strong>而非文内引用。</p>
+                <ul class="space-y-2 text-slate-500">
+                  <li><strong>书籍：</strong>作者，<em>书名</em>（出版社 年份）</li>
+                  <li><strong>文章：</strong>作者，'文章标题'（年份）卷号 <em>期刊名</em> 起始页码</li>
+                  <li><strong>判例：</strong><em>原告 v 被告</em> [年份] 判例汇编 编号</li>
+                  <li><strong>立法：</strong>法律简称 年份（不用斜体，始终完整引用）</li>
+                  <li><strong>章节：</strong>作者，'章名' in 编者 (ed)，<em>书名</em>（出版社 年份）</li>
+                  <li><strong>论文：</strong>作者，'题目'（PhD thesis，大学 年份）</li>
+                </ul>
+                <div class="bg-slate-50 rounded-lg p-3 text-xs">
+                  <strong>特殊规则：</strong>OSCOLA 在连续引用同一来源时使用 <em>ibid</em>，再次引用已出现过的来源时使用简写形式 <em>作者 (n X)</em>。LexTyp 自动处理这两种情况。
+                </div>
+              </div>
+            </details>
+
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-amber-50 text-brand-amber flex items-center justify-center flex-shrink-0 text-xs font-bold">HA</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">Harvard</span>
+                    <span class="text-slate-400 text-sm ml-2">作者-日期体系</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 space-y-3 border-t border-slate-100 pt-4">
+                <p>广泛用于社会科学和人文学科的作者-日期引用体系。</p>
+                <ul class="space-y-2 text-slate-500">
+                  <li><strong>书籍：</strong>作者 (年份) <em>书名</em>. 出版地: 出版社.</li>
+                  <li><strong>文章：</strong>作者 (年份) '文章标题', <em>期刊名</em>, vol. X, pp. X&ndash;Y.</li>
+                  <li><strong>书名</strong>和<strong>期刊名</strong>斜体；文章标题用单引号。</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-50 text-brand-teal flex items-center justify-center flex-shrink-0 text-xs font-bold">AP</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">APA</span>
+                    <span class="text-slate-400 text-sm ml-2">美国心理学会格式</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>常用于心理学、教育学和跨学科法学研究的作者-日期格式。与 Harvard 类似，但有 APA 特有的标点规则。</p>
+              </div>
+            </details>
+
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-amber-50 text-brand-amber flex items-center justify-center flex-shrink-0 text-xs font-bold">CH</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">Chicago</span>
+                    <span class="text-slate-400 text-sm ml-2">芝加哥手册格式</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>脚注式引用格式，流行于历史学、艺术和部分法律领域。在脚注中使用完整和简写引用。</p>
+              </div>
+            </details>
+
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-50 text-brand-teal flex items-center justify-center flex-shrink-0 text-xs font-bold">IE</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">IEEE</span>
+                    <span class="text-slate-400 text-sm ml-2">电气电子工程师学会格式</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>编号式引用格式，适用于科技法律、技术政策论文和跨学科科技/法律研究。</p>
+              </div>
+            </details>
+
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0 text-xs font-bold">PL</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">Plain</span>
+                    <span class="text-slate-400 text-sm ml-2">简易格式</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>极简格式。适合草稿或学校没有特定格式要求时使用。</p>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- EXAMPLE OUTPUT -->
+        <section id="example" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">示例输出</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            这是 LexTyp 从示例项目生成的真实 PDF——一份涵盖 OSCOLA 和 Harvard 格式的引用指南，包含书籍、文章、判例、立法、章节、论文和会议论文。
+          </p>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-500">Citation Guide - OSCOLA &amp; Harvard.pdf</span>
+              <a href="example.pdf" download class="text-xs text-brand-teal font-medium hover:underline flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+                下载 PDF
+              </a>
+            </div>
+            <div class="p-2 sm:p-4 bg-slate-50">
+              <iframe src="example.pdf" class="w-full rounded-lg border border-slate-200" style="height: 700px;" title="示例 PDF 输出"></iframe>
+            </div>
+            <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-400 text-center">
+              此 PDF 由内置示例项目使用 OSCOLA 引用样式编译生成。
+              <a href="https://github.com/broccoli-97/lextyp-tauri/tree/main/examples" target="_blank" class="text-brand-teal hover:underline ml-1">在 GitHub 上查看源文件</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- SHORTCUTS -->
+        <section id="shortcuts" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">快捷键</h2>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="px-5 py-3 text-left font-semibold text-slate-700">操作</th>
+                  <th class="px-5 py-3 text-left font-semibold text-slate-700">快捷键</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr><td class="px-5 py-3 text-slate-600">加粗</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>B</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">斜体</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>I</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">下划线</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>U</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">行内代码</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>E</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">斜杠菜单</td><td class="px-5 py-3"><kbd>/</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">放大 PDF</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>滚轮上</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">缩小 PDF</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>滚轮下</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">跳转到源文本</td><td class="px-5 py-3">双击 PDF</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- TIPS -->
+        <section id="tips" class="mb-10">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">使用技巧</h2>
+          <div class="space-y-4">
+            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900">
+              <strong>随时切换引用样式。</strong>
+              期刊要求 Harvard 但导师要 OSCOLA？切换下拉菜单就行。所有引用自动重新渲染。零手动操作。
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
+              <strong>双击 PDF 定位源文本。</strong>
+              找不到某个段落对应的是哪里？在预览中双击它，编辑器会直接滚动到对应位置。
+            </div>
+            <div class="bg-slate-100 border border-slate-200 rounded-xl p-5 text-sm text-slate-700">
+              <strong>收起面板进入专注模式。</strong>
+              点击箭头图标收起侧边栏和/或 PDF 预览。深度写作时，给自己一整个屏幕。
+            </div>
+            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900">
+              <strong>使用悬浮大纲。</strong>
+              左下角的大纲按钮显示根据标题生成的可点击目录。适合导航长文档。
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
+              <strong>深夜写作用深色模式。</strong>
+              在侧边栏设置中切换主题。偏好自动保存。
+            </div>
+          </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="text-center py-12 mt-8 border-t border-slate-200">
+          <h2 class="text-2xl font-bold text-slate-900 mb-3">准备好了吗？</h2>
+          <p class="text-slate-500 mb-6">下载 LexTyp，今天就开始写论文。</p>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-lg shadow-lg shadow-cyan-500/25">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            下载 LexTyp
+          </a>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <img src="icon.png" alt="LexTyp" class="w-6 h-6 rounded-md" />
+          <span class="text-slate-300 font-semibold">LexTyp</span>
+          <span class="text-slate-500 text-sm">&mdash; 免费开源</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm">
+          <a href="index.zh-CN.html" class="hover:text-white transition-colors">首页</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">版本发布</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT 协议</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
+        &copy; 2025 LexTyp Contributors. 基于 Tauri、React 和 Typst 构建。
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

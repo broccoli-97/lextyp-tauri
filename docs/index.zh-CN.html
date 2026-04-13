@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="zh-CN" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LexTyp — The Free WYSIWYG Editor for Legal Academic Writing</title>
-  <meta name="description" content="LexTyp is a free, cross-platform WYSIWYG academic document editor with built-in law citation support, Typst PDF compilation, and a live preview." />
+  <title>LexTyp — 免费的法学论文所见即所得编辑器</title>
+  <meta name="description" content="LexTyp 是一款免费、跨平台的所见即所得学术文档编辑器，内置法学引用格式支持、Typst PDF 编译和实时预览。" />
   <link rel="icon" href="icon.png" type="image/png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -24,8 +24,8 @@
     }
   </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Noto Sans SC', 'Inter', system-ui, sans-serif; }
     .gradient-hero {
       background: linear-gradient(135deg, #0f172a 0%, #0c1929 40%, #0e2a3d 70%, #0f172a 100%);
     }
@@ -57,13 +57,13 @@
         <span class="text-white font-bold text-lg">LexTyp</span>
       </a>
       <div class="hidden sm:flex items-center gap-6 text-sm text-slate-300">
-        <a href="#features" class="hover:text-white transition-colors">Features</a>
-        <a href="#citations" class="hover:text-white transition-colors">Citations</a>
-        <a href="guide.html" class="hover:text-white transition-colors">Guide</a>
-        <a href="#download" class="hover:text-white transition-colors">Download</a>
-        <a href="#contact" class="hover:text-white transition-colors">Contact</a>
+        <a href="#features" class="hover:text-white transition-colors">功能</a>
+        <a href="#citations" class="hover:text-white transition-colors">引用</a>
+        <a href="guide.zh-CN.html" class="hover:text-white transition-colors">指南</a>
+        <a href="#download" class="hover:text-white transition-colors">下载</a>
+        <a href="#contact" class="hover:text-white transition-colors">联系</a>
         <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
-        <a href="index.zh-CN.html" class="text-slate-400 hover:text-white transition-colors text-xs border border-slate-600 rounded px-2 py-0.5">中文</a>
+        <a href="index.html" class="text-slate-400 hover:text-white transition-colors text-xs border border-slate-600 rounded px-2 py-0.5">EN</a>
       </div>
     </div>
   </nav>
@@ -75,12 +75,11 @@
         <img src="icon.png" alt="LexTyp" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl glow" />
       </div>
       <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
-        Just write. Citations<br />
-        <span class="gradient-text">format themselves.</span>
+        专注写作，引用<br />
+        <span class="gradient-text">自动格式化。</span>
       </h1>
       <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-        Stop fighting with footnotes. Pick a citation style, drop in your references,
-        and get a publication-ready PDF &mdash; live, as you type. Free &amp; open source.
+        不再纠结脚注格式。选择引用样式、导入参考文献，即时生成出版级 PDF。免费开源。
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
         <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
@@ -88,14 +87,14 @@
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
           </svg>
-          Download
+          立即下载
         </a>
         <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener"
            class="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-medium px-8 py-3.5 rounded-xl transition-colors text-lg">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
           </svg>
-          View on GitHub
+          GitHub 仓库
         </a>
       </div>
     </div>
@@ -105,75 +104,69 @@
   <section id="features" class="py-20 sm:py-28">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-16">
-        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Write first, format never</h2>
-        <p class="text-lg text-slate-500 max-w-2xl mx-auto">Everything that makes legal writing painful &mdash; gone.</p>
+        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">只管写，格式交给我</h2>
+        <p class="text-lg text-slate-500 max-w-2xl mx-auto">法学写作中最痛苦的部分——统统解决。</p>
       </div>
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-        <!-- WYSIWYG -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
           <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal flex items-center justify-center mb-4">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">Edit-Focused</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">No LaTeX, no markup. Just a clean WYSIWYG editor where you write like you think &mdash; headings, lists, bold, citations, all inline.</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">专注编辑</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">无需 LaTeX，无需标记语言。所见即所得编辑器，标题、列表、加粗、引用，像写笔记一样自然。</p>
         </div>
 
-        <!-- Citations -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
           <div class="w-12 h-12 rounded-xl bg-amber-50 text-brand-amber flex items-center justify-center mb-4">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">Citation-Format Free</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">OSCOLA, Harvard, APA, Chicago, IEEE &mdash; switch with one click. Import your .bib file and never hand-format a footnote again.</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">引用格式自由切换</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">OSCOLA、Harvard、APA、Chicago、IEEE——一键切换。导入 .bib 文件，再也不用手动排版脚注。</p>
         </div>
 
-        <!-- PDF -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
           <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal flex items-center justify-center mb-4">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">Instant PDF Output</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">See a real PDF update live as you type. Double-click any line to jump back to the source. Download when you're done.</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">实时 PDF 输出</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">边写边看真实 PDF。双击 PDF 任意行跳转到源文本。写完直接下载。</p>
         </div>
 
-        <!-- Cross-platform -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
           <div class="w-12 h-12 rounded-xl bg-amber-50 text-brand-amber flex items-center justify-center mb-4">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">Runs Everywhere</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">Windows, macOS, Linux. Tiny installer, native speed. Built with Tauri &mdash; no Electron bloat.</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">全平台运行</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">Windows、macOS、Linux 全覆盖。安装包极小，原生性能。基于 Tauri 构建，告别 Electron 臃肿。</p>
         </div>
 
-        <!-- Themes -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
           <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal flex items-center justify-center mb-4">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">Focus Mode</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">Collapse the sidebar and PDF panel for distraction-free writing. Dark &amp; light themes. Your eyes, your call.</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">沉浸写作</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">收起侧边栏和 PDF 面板，进入无干扰写作模式。深色/浅色主题随心切换。</p>
         </div>
 
-        <!-- i18n -->
         <div class="bg-white rounded-2xl p-6 border border-slate-200 card-hover">
           <div class="w-12 h-12 rounded-xl bg-amber-50 text-brand-amber flex items-center justify-center mb-4">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">100% Free &amp; Open Source</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">MIT licensed. No accounts, no subscriptions, no telemetry. English &amp; Chinese interface included.</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">完全免费开源</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">MIT 协议。无需注册、无订阅、无遥测。内置中英文双语界面。</p>
         </div>
 
       </div>
@@ -185,30 +178,29 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid lg:grid-cols-2 gap-12 items-center">
         <div>
-          <span class="inline-block text-brand-amber font-semibold text-sm uppercase tracking-wider mb-4">The hard part, automated</span>
-          <h2 class="text-3xl sm:text-4xl font-bold mb-6">Drop in a reference. Done.</h2>
+          <span class="inline-block text-brand-amber font-semibold text-sm uppercase tracking-wider mb-4">最繁琐的部分，自动化</span>
+          <h2 class="text-3xl sm:text-4xl font-bold mb-6">插入引用，一步到位。</h2>
           <p class="text-slate-300 text-lg leading-relaxed mb-8">
-            Type <code class="text-cyan-300 text-base">/citation</code>, pick your source, and LexTyp formats
-            the footnote for you &mdash; OSCOLA ibid rules, Harvard author-date, all of it. Switch styles anytime.
+            输入 <code class="text-cyan-300 text-base">/citation</code>，选择文献，LexTyp 自动为你生成标准格式的脚注——OSCOLA 的 ibid 规则、Harvard 的作者-日期格式，全部搞定。随时切换样式。
           </p>
           <ul class="space-y-4">
             <li class="flex items-start gap-3">
               <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
               </span>
-              <span class="text-slate-300"><strong class="text-white">OSCOLA</strong> &mdash; Oxford Standard for Citation of Legal Authorities, the UK standard for law journals and dissertations.</span>
+              <span class="text-slate-300"><strong class="text-white">OSCOLA</strong> &mdash; 牛津大学法律引用标准，英国法学期刊和论文的通用格式。</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
               </span>
-              <span class="text-slate-300"><strong class="text-white">APA, Harvard, Chicago</strong> &mdash; widely used across social sciences, humanities, and interdisciplinary legal research.</span>
+              <span class="text-slate-300"><strong class="text-white">APA、Harvard、Chicago</strong> &mdash; 广泛用于社会科学、人文学科和跨学科法学研究。</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
               </span>
-              <span class="text-slate-300"><strong class="text-white">IEEE</strong> &mdash; for technical law and technology policy papers.</span>
+              <span class="text-slate-300"><strong class="text-white">IEEE</strong> &mdash; 适用于科技法律和技术政策论文。</span>
             </li>
           </ul>
         </div>
@@ -236,7 +228,7 @@
   <!-- Tech Stack -->
   <section class="py-16 bg-slate-100 border-y border-slate-200">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-8">Built With</h3>
+      <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-8">技术栈</h3>
       <div class="flex flex-wrap items-center justify-center gap-4">
         <span class="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-sm font-medium text-slate-600 border border-slate-200">
           <img src="https://img.shields.io/badge/Tauri-v2-blue?logo=tauri&logoColor=white&style=flat-square" alt="Tauri v2" class="h-5" />
@@ -263,12 +255,12 @@
     </div>
   </section>
 
-  <!-- Download / Get Started -->
+  <!-- Download -->
   <section id="download" class="py-20 sm:py-28">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Grab it. It's free.</h2>
+      <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">免费下载，即刻使用。</h2>
       <p class="text-lg text-slate-500 mb-10 max-w-xl mx-auto">
-        No sign-up. No trial period. Open source, MIT licensed, yours forever.
+        无需注册，无试用期限。开源 MIT 协议，永久免费。
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
         <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
@@ -276,17 +268,17 @@
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
           </svg>
-          Download Latest Release
+          下载最新版本
         </a>
       </div>
       <div class="grid sm:grid-cols-3 gap-4 text-sm">
         <div class="bg-slate-100 rounded-xl px-5 py-4">
           <div class="font-semibold text-slate-700 mb-1">Windows</div>
-          <div class="text-slate-400">.msi / .exe installer</div>
+          <div class="text-slate-400">.msi / .exe 安装包</div>
         </div>
         <div class="bg-slate-100 rounded-xl px-5 py-4">
           <div class="font-semibold text-slate-700 mb-1">macOS</div>
-          <div class="text-slate-400">.dmg (Apple Silicon &amp; Intel)</div>
+          <div class="text-slate-400">.dmg（Apple Silicon 和 Intel）</div>
         </div>
         <div class="bg-slate-100 rounded-xl px-5 py-4">
           <div class="font-semibold text-slate-700 mb-1">Linux</div>
@@ -300,14 +292,13 @@
   <section id="contact" class="py-20 sm:py-28 bg-slate-100 border-t border-slate-200">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-12">
-        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Get in Touch</h2>
+        <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">联系我们</h2>
         <p class="text-lg text-slate-500 max-w-xl mx-auto">
-          Have a question, feature request, or just want to say hi? Feel free to contact me about anything.
+          有问题、功能建议，或只是想打个招呼？随时联系。
         </p>
       </div>
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-8 sm:p-10">
-          <!-- Contact info -->
           <div class="flex flex-col sm:flex-row items-center gap-6 mb-10">
             <div class="flex items-center gap-4 bg-cyan-50 rounded-xl px-6 py-4 w-full sm:w-auto">
               <div class="w-10 h-10 rounded-full bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0">
@@ -316,7 +307,7 @@
                 </svg>
               </div>
               <div>
-                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Email</div>
+                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">邮箱</div>
                 <a href="mailto:pacer97@163.com" class="text-brand-teal font-semibold hover:underline">pacer97@163.com</a>
               </div>
             </div>
@@ -327,28 +318,27 @@
                 </svg>
               </div>
               <div>
-                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Issues &amp; Ideas</div>
+                <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">问题与建议</div>
                 <a href="https://github.com/broccoli-97/lextyp-tauri/issues" target="_blank" rel="noopener" class="text-slate-700 font-semibold hover:underline">GitHub Issues</a>
               </div>
             </div>
           </div>
-          <!-- Message form (mailto-based) -->
           <form id="contact-form" class="space-y-5">
             <div class="grid sm:grid-cols-2 gap-5">
               <div>
-                <label for="contact-name" class="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
-                <input type="text" id="contact-name" placeholder="Your name"
+                <label for="contact-name" class="block text-sm font-medium text-slate-700 mb-1.5">姓名</label>
+                <input type="text" id="contact-name" placeholder="您的姓名"
                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:border-brand-teal text-sm" />
               </div>
               <div>
-                <label for="contact-email" class="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                <label for="contact-email" class="block text-sm font-medium text-slate-700 mb-1.5">邮箱</label>
                 <input type="email" id="contact-email" placeholder="you@example.com"
                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:border-brand-teal text-sm" />
               </div>
             </div>
             <div>
-              <label for="contact-message" class="block text-sm font-medium text-slate-700 mb-1.5">Message</label>
-              <textarea id="contact-message" rows="4" placeholder="Feedback, questions, feature requests &mdash; anything goes!"
+              <label for="contact-message" class="block text-sm font-medium text-slate-700 mb-1.5">留言</label>
+              <textarea id="contact-message" rows="4" placeholder="反馈、问题、功能建议——什么都可以！"
                         class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:border-brand-teal text-sm resize-y"></textarea>
             </div>
             <button type="submit"
@@ -356,7 +346,7 @@
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
-              Send Message
+              发送消息
             </button>
           </form>
         </div>
@@ -370,11 +360,11 @@
       var name = document.getElementById('contact-name').value.trim();
       var email = document.getElementById('contact-email').value.trim();
       var message = document.getElementById('contact-message').value.trim();
-      if (!message) { alert('Please enter a message.'); return; }
-      var subject = encodeURIComponent('[LexTyp] Message from ' + (name || 'a visitor'));
+      if (!message) { alert('请输入留言内容。'); return; }
+      var subject = encodeURIComponent('[LexTyp] 来自 ' + (name || '访客') + ' 的消息');
       var body = encodeURIComponent(
-        (name ? 'From: ' + name + '\n' : '') +
-        (email ? 'Reply-to: ' + email + '\n' : '') +
+        (name ? '姓名: ' + name + '\n' : '') +
+        (email ? '回复邮箱: ' + email + '\n' : '') +
         '\n' + message
       );
       window.location.href = 'mailto:pacer97@163.com?subject=' + subject + '&body=' + body;
@@ -388,16 +378,16 @@
         <div class="flex items-center gap-3">
           <img src="icon.png" alt="LexTyp" class="w-6 h-6 rounded-md" />
           <span class="text-slate-300 font-semibold">LexTyp</span>
-          <span class="text-slate-500 text-sm">&mdash; Free &amp; open source</span>
+          <span class="text-slate-500 text-sm">&mdash; 免费开源</span>
         </div>
         <div class="flex items-center gap-6 text-sm">
           <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
-          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases</a>
-          <a href="https://github.com/broccoli-97/lextyp-tauri/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">版本发布</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT 协议</a>
         </div>
       </div>
       <div class="mt-8 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-        &copy; 2025 LexTyp Contributors. Built with Tauri, React, and Typst.
+        &copy; 2025 LexTyp Contributors. 基于 Tauri、React 和 Typst 构建。
       </div>
     </div>
   </footer>

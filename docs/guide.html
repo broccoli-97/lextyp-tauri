@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guide — LexTyp</title>
+  <meta name="description" content="Learn how to use LexTyp — the free WYSIWYG editor for legal academic writing. Quick-start guide, citation workflows, and PDF export." />
+  <link rel="icon" href="icon.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              teal: '#06b6d4',
+              'teal-light': '#38bdf8',
+              amber: '#f59e0b',
+              'amber-light': '#fbbf24',
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .gradient-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #0c1929 40%, #0e2a3d 70%, #0f172a 100%);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #38bdf8, #06b6d4, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .step-line::before {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 48px;
+      bottom: -16px;
+      width: 2px;
+      background: linear-gradient(to bottom, #06b6d4, transparent);
+    }
+    .step-line:last-child::before { display: none; }
+    kbd {
+      display: inline-block;
+      padding: 2px 7px;
+      font-size: 0.8em;
+      font-family: ui-monospace, monospace;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      box-shadow: 0 1px 0 #cbd5e1;
+    }
+    .toc a {
+      transition: color 0.15s, padding-left 0.15s;
+    }
+    .toc a:hover {
+      color: #06b6d4;
+      padding-left: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <img src="icon.png" alt="LexTyp" class="w-8 h-8 rounded-lg" />
+        <span class="text-white font-bold text-lg">LexTyp</span>
+      </a>
+      <div class="hidden sm:flex items-center gap-6 text-sm text-slate-300">
+        <a href="index.html" class="hover:text-white transition-colors">Home</a>
+        <a href="index.html#features" class="hover:text-white transition-colors">Features</a>
+        <a href="guide.html" class="text-white font-medium">Guide</a>
+        <a href="index.html#download" class="hover:text-white transition-colors">Download</a>
+        <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+        <a href="guide.zh-CN.html" class="text-slate-400 hover:text-white transition-colors text-xs border border-slate-600 rounded px-2 py-0.5">中文</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="gradient-hero pt-28 pb-14 sm:pt-36 sm:pb-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <span class="inline-block text-brand-amber font-semibold text-sm uppercase tracking-wider mb-4">Guide</span>
+      <h1 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight mb-5">
+        Write once. Cite <span class="gradient-text">any style</span>. Export PDF.
+      </h1>
+      <p class="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        No LaTeX. No manual formatting. Just open LexTyp, write your paper,
+        drop in citations, and hit download. Here's how.
+      </p>
+    </div>
+  </section>
+
+  <!-- Main content -->
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+    <div class="flex gap-12">
+
+      <!-- Sidebar TOC (desktop) -->
+      <aside class="hidden lg:block w-56 flex-shrink-0">
+        <div class="sticky top-24 toc">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">On this page</h4>
+          <nav class="space-y-2.5 text-sm text-slate-500 border-l-2 border-slate-200 pl-4">
+            <a href="#why" class="block">Why LexTyp?</a>
+            <a href="#quick-start" class="block">Quick Start</a>
+            <a href="#workspace" class="block">Workspace</a>
+            <a href="#editor" class="block">The Editor</a>
+            <a href="#citations" class="block">Citations</a>
+            <a href="#pdf" class="block">PDF Preview &amp; Export</a>
+            <a href="#styles" class="block">Citation Styles</a>
+            <a href="#example" class="block">Example Output</a>
+            <a href="#shortcuts" class="block">Shortcuts</a>
+            <a href="#tips" class="block">Tips &amp; Tricks</a>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <main class="flex-1 min-w-0">
+
+        <!-- WHY -->
+        <section id="why" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Why LexTyp?</h2>
+          <p class="text-slate-600 text-lg leading-relaxed mb-8">
+            Legal writing has a specific problem: you need <strong>beautiful PDFs</strong>,
+            <strong>precise citations</strong> that follow strict formatting rules, and an editor
+            that doesn't fight you. Most tools make you choose between ease-of-use and correctness.
+            LexTyp doesn't.
+          </p>
+          <div class="grid sm:grid-cols-3 gap-5">
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="text-2xl mb-3">&#9998;</div>
+              <h3 class="font-semibold text-slate-900 mb-1">Edit-focused</h3>
+              <p class="text-sm text-slate-500">A clean WYSIWYG editor. No markup syntax to learn. Just write like you think — headings, bold, lists, citations flow naturally.</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="text-2xl mb-3">&#128218;</div>
+              <h3 class="font-semibold text-slate-900 mb-1">Citation-format free</h3>
+              <p class="text-sm text-slate-500">Import your .bib file, insert <kbd>/citation</kbd>, and pick a style. OSCOLA, Harvard, APA, Chicago, IEEE — switch with one click. The formatting is handled for you.</p>
+            </div>
+            <div class="bg-white rounded-xl p-5 border border-slate-200">
+              <div class="text-2xl mb-3">&#128196;</div>
+              <h3 class="font-semibold text-slate-900 mb-1">Instant PDF output</h3>
+              <p class="text-sm text-slate-500">Typst compiles your document to a publication-ready PDF in real time. See every change reflected in the live preview — no separate build step.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- QUICK START -->
+        <section id="quick-start" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Quick Start</h2>
+          <p class="text-slate-600 mb-8">From zero to a working paper in four steps.</p>
+
+          <div class="space-y-8">
+            <!-- Step 1 -->
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">1</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">Download &amp; open</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  Grab the installer for your OS from the
+                  <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" class="text-brand-teal font-medium hover:underline">Releases page</a>.
+                  Open the app — that's it. Typst is automatically downloaded on first launch.
+                </p>
+              </div>
+            </div>
+            <!-- Step 2 -->
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">2</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">Create a workspace &amp; document</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  Click <strong>Open Folder</strong> in the sidebar to choose (or create) a folder for your project.
+                  Then hit <strong>+ New Document</strong>. LexTyp saves everything as <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.lextyp</code> project files inside that folder.
+                </p>
+              </div>
+            </div>
+            <!-- Step 3 -->
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">3</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">Import references &amp; start writing</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  Drag a <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.bib</code> file into the sidebar's References panel (or click Import).
+                  Start typing in the editor — the PDF preview updates live on the right.
+                </p>
+              </div>
+            </div>
+            <!-- Step 4 -->
+            <div class="flex gap-5 relative step-line">
+              <div class="w-12 h-12 rounded-xl bg-cyan-50 text-brand-teal font-bold text-lg flex items-center justify-center flex-shrink-0">4</div>
+              <div class="pt-1">
+                <h3 class="font-semibold text-lg text-slate-900 mb-1">Export your PDF</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">
+                  Click the <strong>Download</strong> button in the PDF preview toolbar. Done — a publication-ready PDF on your disk.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- WORKSPACE -->
+        <section id="workspace" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Workspace</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            LexTyp organises your files in a <strong>workspace</strong> — just a regular folder on your computer.
+            Inside it you can create documents and sub-folders. Each document is a self-contained
+            <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.lextyp</code> file (a ZIP archive containing the editor state, Typst source, and bibliography).
+          </p>
+          <div class="bg-white rounded-xl border border-slate-200 p-5 text-sm font-mono text-slate-600 leading-loose">
+            <span class="text-slate-400">my-thesis/</span><br>
+            &nbsp;&nbsp;&#128193; chapter-1/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&#128196; introduction.lextyp<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&#128196; literature-review.lextyp<br>
+            &nbsp;&nbsp;&#128193; chapter-2/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&#128196; methodology.lextyp<br>
+            &nbsp;&nbsp;&#128196; abstract.lextyp
+          </div>
+          <p class="text-slate-500 text-sm mt-4">
+            Right-click items in the sidebar to rename, delete, or create new folders. Changes auto-save every 2 seconds.
+          </p>
+        </section>
+
+        <!-- THE EDITOR -->
+        <section id="editor" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">The Editor</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            The editor is a block-based rich-text area (powered by BlockNote). Everything you'd expect works:
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">Formatting</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li><kbd>Ctrl</kbd> + <kbd>B</kbd> Bold</li>
+                <li><kbd>Ctrl</kbd> + <kbd>I</kbd> Italic</li>
+                <li><kbd>Ctrl</kbd> + <kbd>U</kbd> Underline</li>
+                <li><kbd>Ctrl</kbd> + <kbd>E</kbd> Inline code</li>
+              </ul>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">Block types</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li>Type <kbd>#</kbd> for headings (## for H2, etc.)</li>
+                <li>Type <kbd>-</kbd> for bullet lists</li>
+                <li>Type <kbd>1.</kbd> for numbered lists</li>
+                <li>Type <kbd>/</kbd> for the slash menu</li>
+              </ul>
+            </div>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+            <strong>The slash menu</strong> is your power tool. Type <kbd>/</kbd> anywhere to see all available block types — headings, lists, tables, images, and of course <strong>/citation</strong>.
+          </div>
+        </section>
+
+        <!-- CITATIONS -->
+        <section id="citations" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Citations</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            This is where LexTyp really shines. The citation workflow is designed to be as frictionless as possible:
+          </p>
+
+          <div class="space-y-6 mb-8">
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">1</div>
+              <div>
+                <h4 class="font-semibold text-slate-900">Import your .bib file</h4>
+                <p class="text-sm text-slate-500 mt-1">Click <strong>Import BibTeX</strong> in the sidebar's References section. All entries appear instantly, searchable by author, title, or key.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">2</div>
+              <div>
+                <h4 class="font-semibold text-slate-900">Insert a citation</h4>
+                <p class="text-sm text-slate-500 mt-1">Type <kbd>/citation</kbd> in the editor. A picker appears — search and click the entry. An <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">@key</code> tag is inserted inline.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">3</div>
+              <div>
+                <h4 class="font-semibold text-slate-900">Switch style anytime</h4>
+                <p class="text-sm text-slate-500 mt-1">Use the style dropdown in the sidebar. All citations re-render instantly — OSCOLA footnotes become Harvard author-date references, or vice versa. No manual changes needed.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 rounded-xl p-5 sm:p-6 text-sm font-mono">
+            <div class="flex items-center gap-2 mb-3 text-slate-500 text-xs">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500/80"></span>
+              <span class="ml-2">What you see in the editor</span>
+            </div>
+            <p class="text-slate-300 leading-relaxed">
+              The modern law of negligence originates from the foundational case
+              establishing the neighbour principle. <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-xs font-semibold">@donoghue1932</span>
+            </p>
+            <div class="mt-4 pt-4 border-t border-slate-700">
+              <div class="flex items-center gap-2 mb-2 text-slate-500 text-xs">
+                <span class="ml-0">&#8595; Compiled output (OSCOLA)</span>
+              </div>
+              <p class="text-slate-400 leading-relaxed">
+                The modern law of negligence originates from the foundational case
+                establishing the neighbour principle.<span class="text-brand-amber"><sup>1</sup></span>
+              </p>
+              <p class="text-slate-500 mt-2 text-xs">
+                <span class="text-brand-amber">1.</span> <em>Donoghue v Stevenson</em> [1932] AC 562
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PDF PREVIEW & EXPORT -->
+        <section id="pdf" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">PDF Preview &amp; Export</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            The right panel shows a <strong>live PDF preview</strong> that updates as you type (with a 400ms debounce so it doesn't flicker).
+            It's not a simulation — it's the real compiled PDF.
+          </p>
+          <div class="grid sm:grid-cols-2 gap-5 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">Navigate</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li><strong>Double-click</strong> on the PDF to jump to that line in the editor</li>
+                <li><kbd>Ctrl</kbd> + <kbd>Scroll</kbd> to zoom in/out</li>
+                <li>Click &amp; drag to pan when zoomed in</li>
+              </ul>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-4">
+              <h4 class="font-semibold text-slate-800 text-sm mb-2">Export</h4>
+              <ul class="text-sm text-slate-500 space-y-1.5">
+                <li>Click the <strong>Download</strong> button in the preview toolbar</li>
+                <li>Choose where to save the <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">.pdf</code> file</li>
+                <li>You can also export raw Typst source from the sidebar menu</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- CITATION STYLES -->
+        <section id="styles" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Citation Styles</h2>
+          <p class="text-slate-600 leading-relaxed mb-8">
+            LexTyp supports 6 citation styles. Each handles books, articles, cases, legislation, chapters, theses, and conference papers.
+            Switch between them with one click — your citations re-render instantly.
+          </p>
+
+          <div class="space-y-4">
+            <!-- OSCOLA -->
+            <details class="bg-white rounded-xl border border-slate-200 group" open>
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-50 text-brand-teal flex items-center justify-center flex-shrink-0 text-xs font-bold">OS</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">OSCOLA</span>
+                    <span class="text-slate-400 text-sm ml-2">Oxford Standard for Citation of Legal Authorities</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 space-y-3 border-t border-slate-100 pt-4">
+                <p>The UK standard for law journals, dissertations, and legal scholarship. Uses <strong>footnotes</strong>, not in-text citations.</p>
+                <ul class="space-y-2 text-slate-500">
+                  <li><strong>Book:</strong> Author, <em>Title</em> (Publisher Year)</li>
+                  <li><strong>Article:</strong> Author, 'Title' (Year) Volume <em>Journal</em> First Page</li>
+                  <li><strong>Case:</strong> <em>Party A v Party B</em> [Year] Report Number</li>
+                  <li><strong>Legislation:</strong> Short Title Year (no italics, always full form)</li>
+                  <li><strong>Chapter:</strong> Author, 'Title' in Editor (ed), <em>Book</em> (Publisher Year)</li>
+                  <li><strong>Thesis:</strong> Author, 'Title' (PhD thesis, University Year)</li>
+                </ul>
+                <div class="bg-slate-50 rounded-lg p-3 text-xs">
+                  <strong>Special rules:</strong> OSCOLA uses <em>ibid</em> when the same source is cited consecutively, and short-form <em>Author (n X)</em> for subsequent citations of the same source. LexTyp handles both automatically.
+                </div>
+              </div>
+            </details>
+
+            <!-- Harvard -->
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-amber-50 text-brand-amber flex items-center justify-center flex-shrink-0 text-xs font-bold">HA</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">Harvard</span>
+                    <span class="text-slate-400 text-sm ml-2">Author-Date System</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 space-y-3 border-t border-slate-100 pt-4">
+                <p>An author-date system widely used in social sciences and humanities.</p>
+                <ul class="space-y-2 text-slate-500">
+                  <li><strong>Book:</strong> Author (Year) <em>Title</em>. Place: Publisher.</li>
+                  <li><strong>Article:</strong> Author (Year) 'Title', <em>Journal</em>, vol. X, pp. X&ndash;Y.</li>
+                  <li><strong>Book titles</strong> and <strong>journal names</strong> are italicised; article titles use single quotes.</li>
+                </ul>
+              </div>
+            </details>
+
+            <!-- APA -->
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-50 text-brand-teal flex items-center justify-center flex-shrink-0 text-xs font-bold">AP</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">APA</span>
+                    <span class="text-slate-400 text-sm ml-2">American Psychological Association</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>Author-date style common in psychology, education, and interdisciplinary legal research. Similar to Harvard but with APA-specific punctuation rules.</p>
+              </div>
+            </details>
+
+            <!-- Chicago -->
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-amber-50 text-brand-amber flex items-center justify-center flex-shrink-0 text-xs font-bold">CH</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">Chicago</span>
+                    <span class="text-slate-400 text-sm ml-2">Chicago Manual of Style</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>Footnote-based style popular in history, the arts, and some legal contexts. Uses full and short-form citations in footnotes.</p>
+              </div>
+            </details>
+
+            <!-- IEEE -->
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-cyan-50 text-brand-teal flex items-center justify-center flex-shrink-0 text-xs font-bold">IE</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">IEEE</span>
+                    <span class="text-slate-400 text-sm ml-2">Institute of Electrical and Electronics Engineers</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>Numbered citation style for technical law, technology policy papers, and cross-disciplinary tech/legal work.</p>
+              </div>
+            </details>
+
+            <!-- Plain -->
+            <details class="bg-white rounded-xl border border-slate-200 group">
+              <summary class="px-5 py-4 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center flex-shrink-0 text-xs font-bold">PL</span>
+                  <div>
+                    <span class="font-semibold text-slate-900">Plain</span>
+                    <span class="text-slate-400 text-sm ml-2">Simple Format</span>
+                  </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+              </summary>
+              <div class="px-5 pb-5 text-sm text-slate-600 border-t border-slate-100 pt-4">
+                <p>A minimal, no-frills format. Useful for drafts or when your institution doesn't have a specific style requirement.</p>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- EXAMPLE OUTPUT -->
+        <section id="example" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">Example Output</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            Here's a real PDF generated by LexTyp from our example project — a citation guide covering OSCOLA and Harvard
+            with books, articles, cases, legislation, chapters, theses, and conference papers.
+          </p>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-medium text-slate-500">Citation Guide - OSCOLA &amp; Harvard.pdf</span>
+              <a href="example.pdf" download class="text-xs text-brand-teal font-medium hover:underline flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+                Download PDF
+              </a>
+            </div>
+            <div class="p-2 sm:p-4 bg-slate-50">
+              <iframe src="example.pdf" class="w-full rounded-lg border border-slate-200" style="height: 700px;" title="Example PDF output"></iframe>
+            </div>
+            <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-400 text-center">
+              This PDF was compiled from the included example project using OSCOLA citation style.
+              <a href="https://github.com/broccoli-97/lextyp-tauri/tree/main/examples" target="_blank" class="text-brand-teal hover:underline ml-1">View source on GitHub</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- SHORTCUTS -->
+        <section id="shortcuts" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Keyboard Shortcuts</h2>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="px-5 py-3 text-left font-semibold text-slate-700">Action</th>
+                  <th class="px-5 py-3 text-left font-semibold text-slate-700">Shortcut</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr><td class="px-5 py-3 text-slate-600">Bold</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>B</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Italic</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>I</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Underline</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>U</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Inline code</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>E</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Slash menu</td><td class="px-5 py-3"><kbd>/</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Zoom PDF in</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>Scroll Up</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Zoom PDF out</td><td class="px-5 py-3"><kbd>Ctrl</kbd> + <kbd>Scroll Down</kbd></td></tr>
+                <tr><td class="px-5 py-3 text-slate-600">Jump to source</td><td class="px-5 py-3">Double-click on PDF</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- TIPS -->
+        <section id="tips" class="mb-10">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Tips &amp; Tricks</h2>
+          <div class="space-y-4">
+            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900">
+              <strong>Switch citation styles on the fly.</strong>
+              Writing for a journal that uses Harvard but your supervisor wants OSCOLA? Just flip the dropdown. All your citations re-render. Zero manual work.
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
+              <strong>Double-click the PDF to find source.</strong>
+              Lost track of which paragraph generated a specific section? Double-click it in the preview and the editor scrolls right to it.
+            </div>
+            <div class="bg-slate-100 border border-slate-200 rounded-xl p-5 text-sm text-slate-700">
+              <strong>Collapse panels for focus mode.</strong>
+              Click the arrow icons to collapse the sidebar and/or PDF preview. When you're deep in writing, give yourself the full screen.
+            </div>
+            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900">
+              <strong>Use the floating outline.</strong>
+              The bottom-left outline button shows a clickable table of contents generated from your headings. Great for navigating long documents.
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
+              <strong>Dark mode for late-night sessions.</strong>
+              Toggle the theme from the sidebar settings. Your preference is saved automatically.
+            </div>
+          </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="text-center py-12 mt-8 border-t border-slate-200">
+          <h2 class="text-2xl font-bold text-slate-900 mb-3">Ready to write?</h2>
+          <p class="text-slate-500 mb-6">Download LexTyp and start your paper today.</p>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-lg shadow-lg shadow-cyan-500/25">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Download LexTyp
+          </a>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 py-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <img src="icon.png" alt="LexTyp" class="w-6 h-6 rounded-md" />
+          <span class="text-slate-300 font-semibold">LexTyp</span>
+          <span class="text-slate-500 text-sm">&mdash; Free &amp; open source</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm">
+          <a href="index.html" class="hover:text-white transition-colors">Home</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener" class="hover:text-white transition-colors">Releases</a>
+          <a href="https://github.com/broccoli-97/lextyp-tauri/blob/main/LICENSE" target="_blank" rel="noopener" class="hover:text-white transition-colors">MIT License</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
+        &copy; 2025 LexTyp Contributors. Built with Tauri, React, and Typst.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
