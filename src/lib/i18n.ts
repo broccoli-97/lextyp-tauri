@@ -84,6 +84,19 @@ const translations = {
     // Files panel
     "files.saveAs": "Save As",
     "files.export": "Export .typ",
+
+    // Status bar tips
+    "tip.slash": "Type / to open the slash menu and insert headings, lists, or citations",
+    "tip.citationStyle": "Switch citation styles anytime from the sidebar dropdown",
+    "tip.pdfDoubleClick": "Double-click the PDF preview to jump to that paragraph in the editor",
+    "tip.collapsePanel": "Collapse the sidebar or PDF panel for distraction-free writing",
+    "tip.outline": "Use the outline button at the bottom-left to navigate long documents",
+    "tip.darkMode": "Toggle dark mode from the sidebar settings",
+    "tip.bold": "Ctrl+B for bold, Ctrl+I for italic, Ctrl+U for underline",
+    "tip.bibImport": "Import a .bib file to manage all your references in one place",
+
+    // Update
+    "update.available": "v{version} available — click to download",
   },
   "zh-CN": {
     // Sidebar
@@ -167,6 +180,19 @@ const translations = {
     // Files panel
     "files.saveAs": "另存为",
     "files.export": "导出 .typ",
+
+    // Status bar tips
+    "tip.slash": "输入 / 打开斜杠菜单，插入标题、列表或引用",
+    "tip.citationStyle": "随时从侧边栏下拉菜单切换引用样式",
+    "tip.pdfDoubleClick": "双击 PDF 预览可跳转到编辑器中的对应段落",
+    "tip.collapsePanel": "收起侧边栏或 PDF 面板，获得无干扰的写作体验",
+    "tip.outline": "使用左下角的大纲按钮浏览长文档",
+    "tip.darkMode": "在侧边栏设置中切换深色模式",
+    "tip.bold": "Ctrl+B 加粗、Ctrl+I 斜体、Ctrl+U 下划线",
+    "tip.bibImport": "导入 .bib 文件，集中管理所有参考文献",
+
+    // Update
+    "update.available": "v{version} 可用 — 点击下载",
   },
 } as const;
 

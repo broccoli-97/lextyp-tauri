@@ -1,5 +1,6 @@
 mod project;
 mod typst;
+mod update;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,6 +20,7 @@ pub fn run() {
             project::create_document,
             project::rename_item,
             project::delete_item,
+            update::check_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
