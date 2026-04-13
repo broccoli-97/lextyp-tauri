@@ -40,10 +40,9 @@
   --accent-light: #EEF2FF;
   --accent-dark: #3730A3;
   --accent-muted: rgba(79, 70, 229, 0.08);
-  --jump-highlight-bg-strong: rgba(79, 70, 229, 0.20);
-  --jump-highlight-bg-soft: rgba(79, 70, 229, 0.08);
-  --jump-highlight-border: rgba(79, 70, 229, 0.72);
-  --jump-highlight-ring: rgba(79, 70, 229, 0.14);
+  --jump-highlight-bg: rgba(79, 70, 229, 0.13);
+  --jump-highlight-bg-strong: rgba(79, 70, 229, 0.22);
+  --jump-highlight-border: rgba(79, 70, 229, 0.50);
 
   /* Semantic */
   --success: #059669;
@@ -100,10 +99,9 @@
   --accent-light: rgba(129, 140, 248, 0.12);
   --accent-dark: #C7D2FE;
   --accent-muted: rgba(129, 140, 248, 0.08);
-  --jump-highlight-bg-strong: rgba(129, 140, 248, 0.32);
-  --jump-highlight-bg-soft: rgba(129, 140, 248, 0.12);
-  --jump-highlight-border: rgba(199, 210, 254, 0.92);
-  --jump-highlight-ring: rgba(129, 140, 248, 0.16);
+  --jump-highlight-bg: rgba(129, 140, 248, 0.15);
+  --jump-highlight-bg-strong: rgba(129, 140, 248, 0.28);
+  --jump-highlight-border: rgba(199, 210, 254, 0.60);
 
   /* Semantic */
   --success: #34D399;
@@ -235,27 +233,19 @@ textarea {
 .lextyp-line-highlight {
   position: absolute;
   pointer-events: none;
-  border-radius: 8px;
-  background:
-    linear-gradient(
-      90deg,
-      var(--jump-highlight-bg-strong) 0%,
-      var(--jump-highlight-bg-soft) 58%,
-      transparent 100%
-    );
-  border-left: 4px solid var(--jump-highlight-border);
-  box-shadow:
-    inset 0 0 0 1px var(--jump-highlight-ring),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  background: var(--jump-highlight-bg);
+  border-left: 3px solid var(--jump-highlight-border);
   opacity: 0;
   z-index: 2;
-  animation: lextyp-line-flash 1.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: lextyp-line-flash 1.6s ease-out forwards;
 }
 
 @keyframes lextyp-line-flash {
-  0% { opacity: 0; transform: translateX(-2px); }
-  12% { opacity: 1; transform: translateX(0); }
-  42% { opacity: 0.78; }
+  0%   { opacity: 0; }
+  8%   { opacity: 1; background: var(--jump-highlight-bg-strong); }
+  25%  { opacity: 1; background: var(--jump-highlight-bg); }
+  60%  { opacity: 0.6; }
   100% { opacity: 0; }
 }
 

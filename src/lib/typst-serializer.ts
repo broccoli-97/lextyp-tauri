@@ -132,7 +132,7 @@ function serializeInlineContent(
         const tokens = rawText.match(/\s+|\S+/g) ?? [];
         for (const token of tokens) {
           if (/\S/.test(token)) {
-            out += `#__w("${trackBlockId}",${charOffset})`;
+            out += `#__w("${trackBlockId}",${charOffset});`;
             out += applyTextStyles(escapeTypst(token), styles);
           } else {
             // Whitespace stays outside style markers so adjacent styled
@@ -178,7 +178,7 @@ function serializeInlineContent(
         ? item.content.map((c: any) => c.text ?? "").join("")
         : href;
       if (trackBlockId && linkText) {
-        out += `#__w("${trackBlockId}",${charOffset})`;
+        out += `#__w("${trackBlockId}",${charOffset});`;
       }
       out += `#link("${href}")[${escapeTypst(linkText)}]`;
       charOffset += linkText.length;
