@@ -123,7 +123,7 @@ jobs:
             -W clippy::needless_pass_by_value \
             -W clippy::or_fun_call \
             -W clippy::redundant_clone \
-            -W clippy::string_to_string \
+            -W clippy::str_to_string \
             -W clippy::trivially_copy_pass_by_ref \
             -W clippy::unused_async
 
