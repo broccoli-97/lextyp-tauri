@@ -41,6 +41,7 @@ pub enum FileTreeEntry {
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn save_project(
     path: String,
     document_json: String,
@@ -84,6 +85,7 @@ pub fn save_project(
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn load_project(path: String) -> Result<ProjectData, String> {
     let file = fs::File::open(&path).map_err(|e| e.to_string())?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
@@ -94,7 +96,7 @@ pub fn load_project(path: String) -> Result<ProjectData, String> {
 
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
-        let name = entry.name().to_string();
+        let name = entry.name().to_owned();
 
         if name == "document.json" {
             entry
@@ -112,7 +114,7 @@ pub fn load_project(path: String) -> Result<ProjectData, String> {
     }
 
     if document_json.is_empty() {
-        return Err("No document.json found in project file".to_string());
+        return Err("No document.json found in project file".to_owned());
     }
 
     // Parse meta or use defaults
@@ -134,10 +136,10 @@ fn default_meta(path: &str) -> DocumentMeta {
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("Untitled")
-        .to_string();
+        .to_owned();
     DocumentMeta {
         title,
-        citation_style: "oscola".to_string(),
+        citation_style: "oscola".to_owned(),
         created_at: String::new(),
         modified_at: String::new(),
     }
@@ -148,6 +150,7 @@ fn default_meta(path: &str) -> DocumentMeta {
 // ---------------------------------------------------------------------------
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn list_workspace(path: String) -> Result<Vec<FileTreeEntry>, String> {
     let root = Path::new(&path);
     if !root.is_dir() {
@@ -209,7 +212,7 @@ fn read_meta_from_zip(path: &Path) -> (String, String) {
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("Untitled")
-        .to_string();
+        .to_owned();
 
     let file = match fs::File::open(path) {
         Ok(f) => f,
@@ -237,15 +240,17 @@ fn read_meta_from_zip(path: &Path) -> (String, String) {
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn create_folder(path: String) -> Result<(), String> {
     fs::create_dir_all(&path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn create_document(path: String, title: String, created_at: String) -> Result<(), String> {
     let meta = DocumentMeta {
         title,
-        citation_style: "oscola".to_string(),
+        citation_style: "oscola".to_owned(),
         created_at: created_at.clone(),
         modified_at: created_at,
     };
@@ -274,11 +279,13 @@ pub fn create_document(path: String, title: String, created_at: String) -> Resul
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn rename_item(old_path: String, new_path: String) -> Result<(), String> {
     fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn delete_item(path: String) -> Result<(), String> {
     let p = Path::new(&path);
     if p.is_dir() {
@@ -289,6 +296,7 @@ pub fn delete_item(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn read_bib_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }

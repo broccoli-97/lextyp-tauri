@@ -52,11 +52,8 @@ pub async fn check_update() -> Result<UpdateInfo, String> {
 
 /// Compare two semver-like version strings (e.g. "0.2.0" > "0.1.0").
 fn version_is_newer(latest: &str, current: &str) -> bool {
-    let parse = |s: &str| -> Vec<u64> {
-        s.split('.')
-            .filter_map(|p| p.parse::<u64>().ok())
-            .collect()
-    };
+    let parse =
+        |s: &str| -> Vec<u64> { s.split('.').filter_map(|p| p.parse::<u64>().ok()).collect() };
     let l = parse(latest);
     let c = parse(current);
     for i in 0..l.len().max(c.len()) {

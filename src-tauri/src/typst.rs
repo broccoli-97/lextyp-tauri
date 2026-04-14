@@ -171,7 +171,7 @@ fn download_url() -> Result<String, String> {
 
 fn ensure_parent_dir(path: &Path) -> Result<(), String> {
     let Some(parent) = path.parent() else {
-        return Err("Invalid Typst destination path".to_string());
+        return Err("Invalid Typst destination path".to_owned());
     };
     fs::create_dir_all(parent).map_err(|e| format!("Failed to create Typst directory: {e}"))
 }
@@ -288,7 +288,7 @@ fn ensure_typst_binary(app: &AppHandle) -> Result<PathBuf, String> {
     let _guard = DOWNLOAD_MUTEX
         .get_or_init(|| Mutex::new(()))
         .lock()
-        .map_err(|_| "Failed to lock Typst download mutex".to_string())?;
+        .map_err(|_| "Failed to lock Typst download mutex".to_owned())?;
 
     if let Some(path) = existing_binary_path(Some(app)) {
         return Ok(path);
@@ -301,7 +301,7 @@ fn ensure_typst_binary(app: &AppHandle) -> Result<PathBuf, String> {
     if dest.exists() {
         Ok(dest)
     } else {
-        Err("Typst download completed but binary was not found".to_string())
+        Err("Typst download completed but binary was not found".to_owned())
     }
 }
 
@@ -318,11 +318,13 @@ fn compile_output_dir(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn resolve_typst_path(app: AppHandle) -> Result<String, String> {
     ensure_typst_binary(&app).map(|p| p.to_string_lossy().to_string())
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileResult, String> {
     let typst_bin = ensure_typst_binary(&app)?;
 
@@ -355,6 +357,7 @@ pub async fn compile_typst(app: AppHandle, content: String) -> Result<CompileRes
         .await
         .map_err(|e| format!("Failed to run typst: {}", e))?;
 
+    #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
     let duration_ms = start.elapsed().as_millis() as u64;
 
     if output.status.success() {
@@ -387,7 +390,7 @@ pub async fn query_source_map(app: AppHandle) -> Result<Vec<SourceMapEntry>, Str
     let input_path = out_dir.join("input.typ");
 
     if !input_path.exists() {
-        return Err("No compiled input file found".to_string());
+        return Err("No compiled input file found".to_owned());
     }
 
     let input_str = input_path.to_string_lossy().to_string();
