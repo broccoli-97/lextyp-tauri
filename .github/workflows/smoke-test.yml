@@ -1,0 +1,190 @@
+name: Smoke Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    name: Smoke Test (${{ matrix.label }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            label: linux
+          - os: macos-latest
+            label: macos
+          - os: windows-latest
+            label: windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # ── System deps (Linux) ──────────────────────────────────
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
+            xvfb imagemagick xdotool
+
+      # ── Build ────────────────────────────────────────────────
+      - run: npm ci
+
+      - name: Build Tauri app
+        run: npm run tauri build
+
+      # ── Launch app & take screenshot (Linux) ─────────────────
+      - name: Launch app and screenshot (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1280x800x24 &
+          sleep 2
+
+          # Launch the app in the background
+          ./src-tauri/target/release/lextyp &
+          APP_PID=$!
+          echo "App PID: $APP_PID"
+
+          # Wait for the window to appear (up to 30s)
+          for i in $(seq 1 30); do
+            if xdotool search --name "LexTyp" 2>/dev/null | head -1; then
+              echo "Window found after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+          # Extra wait for the UI to fully render
+          sleep 5
+
+          # Take screenshot
+          import -window root screenshot.png
+
+          # Clean up
+          kill $APP_PID 2>/dev/null || true
+
+      # ── Launch app & take screenshot (macOS) ─────────────────
+      - name: Launch app and screenshot (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Launch the .app bundle
+          open src-tauri/target/release/bundle/macos/LexTyp.app &
+
+          # Wait for the app process to appear (up to 30s)
+          for i in $(seq 1 30); do
+            if pgrep -x "LexTyp" > /dev/null 2>&1; then
+              echo "App process found after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+          # Extra wait for the UI to fully render
+          sleep 10
+
+          # Take screenshot
+          screencapture -x screenshot.png
+
+          # Clean up
+          pkill -x "LexTyp" 2>/dev/null || true
+
+      # ── Launch app & take screenshot (Windows) ───────────────
+      - name: Launch app and screenshot (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Launch the app in the background
+          $appPath = "src-tauri\target\release\lextyp.exe"
+          $process = Start-Process -FilePath $appPath -PassThru
+          Write-Host "App PID: $($process.Id)"
+
+          # Wait for the main window to appear (up to 30s)
+          for ($i = 1; $i -le 30; $i++) {
+            $process.Refresh()
+            if ($process.MainWindowHandle -ne [IntPtr]::Zero) {
+              Write-Host "Window found after ${i}s"
+              break
+            }
+            Start-Sleep -Seconds 1
+          }
+
+          # Extra wait for the UI to fully render
+          Start-Sleep -Seconds 10
+
+          # Take screenshot using .NET
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          $bitmap.Save("screenshot.png")
+          $graphics.Dispose()
+          $bitmap.Dispose()
+
+          # Clean up
+          Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+
+      # ── Upload screenshot ────────────────────────────────────
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-${{ matrix.label }}
+          path: screenshot.png
+          if-no-files-found: warn
+
+      # ── Upload built binaries ────────────────────────────────
+      - name: Upload binaries (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-linux
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: warn
+
+      - name: Upload binaries (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-macos
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+
+      - name: Upload binaries (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-windows
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn

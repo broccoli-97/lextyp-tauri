@@ -30,3 +30,8 @@ typst = "0.14"
 typst-pdf = "0.14"
 typst-kit = { version = "0.14", default-features = false, features = ["embed-fonts"] }
 chrono = "0.4"
+
+# Optimize all dependencies in dev mode — critical for Typst performance.
+# Without this, the Typst compiler runs ~10-20x slower in debug builds.
+[profile.dev.package."*"]
+opt-level = 2
