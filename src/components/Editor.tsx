@@ -388,7 +388,7 @@ export function Editor() {
 
   return (
     <div className="h-full overflow-auto relative" ref={editorContainerRef}>
-      <div className="max-w-[880px] mx-auto px-8 py-10">
+      <div className="w-full px-8 py-10">
         <BlockNoteView
           editor={editor}
           theme="light"
