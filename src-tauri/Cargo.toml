@@ -22,7 +22,11 @@ serde_json = "1"
 zip = "2"
 tempfile = "3"
 base64 = "0.22"
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
-tar = "0.4"
-xz2 = "0.1"
-tokio = { version = "1", features = ["process"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["rt"] }
+
+# Typst library compilation (replaces CLI subprocess)
+typst = "0.14"
+typst-pdf = "0.14"
+typst-kit = { version = "0.14", default-features = false, features = ["embed-fonts"] }
+chrono = "0.4"
