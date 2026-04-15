@@ -137,21 +137,22 @@ impl World for LexTypWorld<'_> {
     fn today(&self, offset: Option<i64>) -> Option<Datetime> {
         let now = if let Some(hours) = offset {
             let utc = Utc::now();
-            let offset_secs = (hours * 3600) as i32;
+            let offset_secs = i32::try_from(hours * 3600).ok()?;
             let tz = chrono::FixedOffset::east_opt(offset_secs)?;
             utc.with_timezone(&tz).date_naive()
         } else {
             Local::now().date_naive()
         };
-        Datetime::from_ymd(now.year(), now.month().try_into().ok()?, now.day().try_into().ok()?)
+        Datetime::from_ymd(
+            now.year(),
+            now.month().try_into().ok()?,
+            now.day().try_into().ok()?,
+        )
     }
 }
 
 /// Format compilation diagnostics into a readable error string.
-fn format_diagnostics(
-    world: &dyn World,
-    errors: &[typst::diag::SourceDiagnostic],
-) -> String {
+fn format_diagnostics(world: &dyn World, errors: &[typst::diag::SourceDiagnostic]) -> String {
     let mut msg = String::new();
     for diag in errors {
         if !msg.is_empty() {
@@ -170,7 +171,7 @@ fn format_diagnostics(
         }
     }
     if msg.is_empty() {
-        "Typst compilation failed".to_string()
+        "Typst compilation failed".to_owned()
     } else {
         msg
     }
@@ -229,17 +230,13 @@ pub async fn query_source_map(
         .lock()
         .map_err(|_| "Failed to lock document state")?;
 
-    let document = guard
-        .as_ref()
-        .ok_or("No compiled document available")?;
+    let document = guard.as_ref().ok_or("No compiled document available")?;
 
     let introspector = &document.introspector;
 
     // Query all metadata elements
-    let selector = typst::foundations::Selector::Elem(
-        typst::introspection::MetadataElem::ELEM,
-        None,
-    );
+    let selector =
+        typst::foundations::Selector::Elem(typst::introspection::MetadataElem::ELEM, None);
 
     let elements = introspector.query(&selector);
     let mut entries = Vec::new();
@@ -261,10 +258,14 @@ pub async fn query_source_map(
             continue;
         };
 
-        let off = dict.get("off").ok().and_then(|v| match v {
-            Value::Int(n) => u32::try_from(*n).ok(),
-            _ => None,
-        }).unwrap_or(0);
+        let off = dict
+            .get("off")
+            .ok()
+            .and_then(|v| match v {
+                Value::Int(n) => u32::try_from(*n).ok(),
+                _ => None,
+            })
+            .unwrap_or(0);
 
         // Get position from introspector using the element's location
         let Some(location) = elem.location() else {
@@ -275,7 +276,7 @@ pub async fn query_source_map(
         entries.push(SourceMapEntry {
             id,
             off,
-            page: position.page.get() as u32,
+            page: u32::try_from(position.page.get()).unwrap_or(1),
             x: position.point.x.to_pt(),
             y: position.point.y.to_pt(),
         });

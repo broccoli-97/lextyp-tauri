@@ -61,6 +61,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           export DISPLAY=:99
+          export WEBKIT_DISABLE_COMPOSITING_MODE=1
           Xvfb :99 -screen 0 1280x800x24 &
           sleep 2
 
@@ -167,7 +168,6 @@ jobs:
           name: binary-linux
           path: |
             src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/appimage/*.AppImage
           if-no-files-found: warn
 
       - name: Upload binaries (macOS)

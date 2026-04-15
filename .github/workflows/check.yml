@@ -27,6 +27,9 @@ jobs:
       - name: TypeScript type check
         run: npx tsc --noEmit
 
+      - name: Run tests
+        run: npm test
+
   rust-check:
     name: Rust (fmt + clippy + check)
     runs-on: ubuntu-latest
