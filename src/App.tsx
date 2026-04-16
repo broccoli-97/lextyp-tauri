@@ -3,7 +3,9 @@ import { Editor } from "./components/Editor";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
+import { VersionDiffView } from "./components/VersionDiffView";
 import { useWorkspaceStore } from "./stores/workspace-store";
+import { useVersionStore } from "./stores/version-store";
 import { useSettingsStore } from "./stores/settings-store";
 import { useT } from "./lib/i18n";
 
@@ -30,6 +32,7 @@ function App() {
   const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
   const saveActiveDocument = useWorkspaceStore((s) => s.saveActiveDocument);
   const isDirty = useWorkspaceStore((s) => s.isDirty);
+  const diffMode = useVersionStore((s) => s.diffMode);
   const theme = useSettingsStore((s) => s.theme);
 
   // Apply theme to document root
@@ -172,7 +175,9 @@ function App() {
         {/* Editor panel */}
         <div className="flex flex-col flex-1 min-w-0">
           <div className="flex-1 overflow-hidden bg-[var(--bg-primary)]">
-            {activeDocumentPath ? (
+            {diffMode ? (
+              <VersionDiffView />
+            ) : activeDocumentPath ? (
               <Editor />
             ) : (
               <EmptyState />

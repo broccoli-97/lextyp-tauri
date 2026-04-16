@@ -22,6 +22,10 @@ pub fn run() {
             project::create_document,
             project::rename_item,
             project::delete_item,
+            project::load_version_index,
+            project::load_version,
+            project::save_version,
+            project::delete_version,
             update::check_update,
         ])
         .run(tauri::generate_context!())

@@ -4,9 +4,14 @@ import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialo
 import { writeFile } from "@tauri-apps/plugin-fs";
 import type { DocumentMeta, FileTreeEntry } from "../types/workspace";
 import { useReferenceStore } from "./reference-store";
+import { useReviewStore } from "./review-store";
+import { useVersionStore } from "./version-store";
+import { useSettingsStore } from "./settings-store";
 import { useAppStore } from "./app-store";
 import { serializeToTypst } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
+
+let saveCounter = 0;
 
 interface WorkspaceState {
   // Workspace
@@ -109,6 +114,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const result = await invoke<{
       document_json: string;
       bib_content: string | null;
+      review_json: string | null;
       meta: DocumentMeta;
     }>("load_project", { path });
 
@@ -126,6 +132,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       refStore.setFromRaw(result.bib_content);
     }
     refStore.setCitationStyle(result.meta.citation_style || "oscola");
+
+    // Update review store
+    const reviewStore = useReviewStore.getState();
+    reviewStore.clear();
+    if (result.review_json) {
+      try {
+        reviewStore.loadReviews(JSON.parse(result.review_json));
+      } catch {
+        // Ignore malformed review data
+      }
+    }
+
+    // Load version index
+    useVersionStore.getState().loadIndex(path).catch(console.error);
 
     // Single atomic update — old doc → new doc, no intermediate null state
     set({
@@ -165,17 +185,45 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const metaJson = JSON.stringify(meta);
       const bibContent = refStore.rawBibContent || null;
 
+      // Serialize review comments
+      const reviewStore = useReviewStore.getState();
+      const reviewJson = reviewStore.comments.length > 0
+        ? reviewStore.toJSON()
+        : null;
+
       await invoke("save_project", {
         path: state.activeDocumentPath,
         documentJson,
         typstSource,
         bibContent,
         metaJson,
+        reviewJson,
       });
 
       // Only update if the same document is still active
       if (get().activeDocumentPath === state.activeDocumentPath) {
         set({ activeDocumentMeta: meta, isDirty: false });
+      }
+
+      // Auto-snapshot logic
+      const settings = useSettingsStore.getState();
+      if (settings.autoSnapshot) {
+        saveCounter++;
+        if (saveCounter >= settings.autoSnapshotInterval) {
+          saveCounter = 0;
+          const versionStore = useVersionStore.getState();
+          const reviewStore = useReviewStore.getState();
+          versionStore
+            .saveVersion(
+              state.activeDocumentPath,
+              `Auto-save`,
+              "",
+              reviewStore.authorName || "Auto",
+              documentJson,
+              metaJson
+            )
+            .catch(console.error);
+        }
       }
     } finally {
       set({ _saving: false } as any);
@@ -288,6 +336,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     await new Promise((r) => requestAnimationFrame(r));
 
     useReferenceStore.getState().clear();
+    useReviewStore.getState().clear();
+    useVersionStore.getState().clear();
     set({
       activeDocumentPath: null,
       activeDocumentMeta: null,

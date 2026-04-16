@@ -13,19 +13,24 @@ import {
   FolderTree,
   Settings,
   X,
+  MessageSquare,
+  History,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { useWorkspaceStore } from "../stores/workspace-store";
 import { useReferenceStore } from "../stores/reference-store";
+import { useReviewStore } from "../stores/review-store";
 import { getFormatter } from "../lib/citation/registry";
 import { filterBibEntries } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
 import { FilesPanel } from "./FilesPanel";
 import { ReferencesPanel } from "./ReferencesPanel";
+import { ReviewPanel } from "./ReviewPanel";
+import { HistoryPanel } from "./HistoryPanel";
 import { SettingsPanel } from "./SettingsPanel";
 
-type SidebarTab = "files" | "references" | "settings";
+type SidebarTab = "files" | "references" | "review" | "history" | "settings";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -185,6 +190,18 @@ export function Sidebar({
           title={t("sidebar.references")}
           onClick={() => { setActiveTab("references"); onToggle(); }}
         />
+        <ActivityBarButton
+          icon={<ReviewTabIcon size={18} />}
+          active={activeTab === "review"}
+          title={t("sidebar.review")}
+          onClick={() => { setActiveTab("review"); onToggle(); }}
+        />
+        <ActivityBarButton
+          icon={<History size={18} />}
+          active={activeTab === "history"}
+          title={t("sidebar.history")}
+          onClick={() => { setActiveTab("history"); onToggle(); }}
+        />
         <div className="flex-1" />
         <ActivityBarButton
           icon={<Settings size={18} />}
@@ -215,6 +232,18 @@ export function Sidebar({
           active={activeTab === "references"}
           title={t("sidebar.references")}
           onClick={() => setActiveTab("references")}
+        />
+        <ActivityBarButton
+          icon={<ReviewTabIcon size={16} />}
+          active={activeTab === "review"}
+          title={t("sidebar.review")}
+          onClick={() => setActiveTab("review")}
+        />
+        <ActivityBarButton
+          icon={<History size={16} />}
+          active={activeTab === "history"}
+          title={t("sidebar.history")}
+          onClick={() => setActiveTab("history")}
         />
         <div className="flex-1" />
         <ActivityBarButton
@@ -313,6 +342,10 @@ export function Sidebar({
               openFile={openFile}
               exportTypst={exportTypst}
             />
+          ) : activeTab === "review" ? (
+            <ReviewPanel />
+          ) : activeTab === "history" ? (
+            <HistoryPanel />
           ) : (
             <ReferencesPanel
               entries={entries}
@@ -382,6 +415,24 @@ function ActivityBarButton({
     >
       {icon}
     </button>
+  );
+}
+
+/* ─── Review tab icon with unresolved badge ─── */
+
+function ReviewTabIcon({ size }: { size: number }) {
+  const unresolvedCount = useReviewStore((s) =>
+    s.comments.filter((c) => !c.resolved).length
+  );
+  return (
+    <span className="relative inline-flex">
+      <MessageSquare size={size} />
+      {unresolvedCount > 0 && (
+        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-500 text-white text-[7px] font-bold flex items-center justify-center leading-none">
+          {unresolvedCount > 9 ? "9+" : unresolvedCount}
+        </span>
+      )}
+    </span>
   );
 }
 
