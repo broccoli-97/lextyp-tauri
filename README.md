@@ -1,15 +1,14 @@
 # LexTyp
 
-A WYSIWYG academic document editor that compiles to [Typst](https://typst.app/) and renders live PDF previews. Built with Tauri v2, React 19, and BlockNote.
+A citation format-free academic document editor. Import your references, pick a citation style, and get a publication-ready PDF -- live, as you type. Built with Tauri v2, React 19, and BlockNote.
 
 <!-- TODO: add screenshot here -->
 <!-- ![LexTyp screenshot](docs/screenshot.png) -->
 
 ## Features
 
-- **WYSIWYG editing** -- rich-text editing powered by BlockNote with live PDF preview side-by-side
-- **Typst compilation** -- documents are serialized to Typst source and compiled to PDF via a bundled or auto-downloaded Typst binary
-- **Citation management** -- BibTeX bibliography support with multiple citation styles (OSCOLA, APA, Harvard, Chicago, IEEE)
+- **Citation format-free** -- OSCOLA, APA, Harvard, Chicago, IEEE -- switch styles with one click. Import your `.bib` file and never hand-format a footnote again
+- **Live PDF preview** -- documents are compiled to PDF via the Typst engine in real time, side-by-side with the editor
 - **Source map navigation** -- click-to-scroll between editor and PDF preview
 - **Dark / Light theme** -- CSS custom-property-based theming
 - **i18n** -- English and Simplified Chinese (`zh-CN`)
@@ -34,11 +33,28 @@ LexTyp documents (`.lextyp`) are ZIP archives containing:
 - [Rust](https://www.rust-lang.org/tools/install) (stable toolchain)
 - [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your platform
 
+#### Linux notes
+
+LexTyp uses the system WebView2 (webkit2gtk) on Linux. If the app fails to launch or you see WebView-related errors, install the required libraries:
+
+```bash
+# Debian / Ubuntu
+sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+# Fedora
+sudo dnf install webkit2gtk4.1-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel
+
+# Arch
+sudo pacman -S webkit2gtk-4.1 gtk3 libappindicator-gtk3 librsvg
+```
+
+See the [Tauri v2 prerequisites guide](https://v2.tauri.app/start/prerequisites/#linux) for the full list.
+
 ### Install & Run
 
 ```bash
 # clone the repo
-git clone https://github.com/YOUR_USERNAME/lextyp-tauri.git
+git clone https://github.com/broccoli-97/lextyp-tauri.git
 cd lextyp-tauri
 
 # install frontend dependencies
@@ -53,7 +69,6 @@ npm run tauri dev
 ```bash
 npm run dev          # frontend-only dev server (port 1420)
 npm run build        # TypeScript check + Vite production build
-npm run test         # run tests
 npx tsc --noEmit     # type-check frontend TypeScript
 ```
 
