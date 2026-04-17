@@ -8,7 +8,8 @@ import type { BlockNoteEditorType } from "./schema";
  */
 export function getSlashMenuItems(
   editor: BlockNoteEditorType,
-  onOpenCitationPicker: () => void
+  onOpenCitationPicker: () => void,
+  onOpenDocumentPicker: () => void
 ): DefaultReactSuggestionItem[] {
   return [
     {
@@ -26,19 +27,7 @@ export function getSlashMenuItems(
     {
       title: "Section",
       subtext: "Large section heading",
-      aliases: ["section", "heading", "h1"],
-      group: "Structure",
-      onItemClick: () => {
-        insertOrUpdateBlockForSlashMenu(editor as any, {
-          type: "heading",
-          props: { level: 1 as any },
-        });
-      },
-    },
-    {
-      title: "Subsection",
-      subtext: "Medium subsection heading",
-      aliases: ["subsection", "heading2", "h2"],
+      aliases: ["section", "heading", "h2"],
       group: "Structure",
       onItemClick: () => {
         insertOrUpdateBlockForSlashMenu(editor as any, {
@@ -48,14 +37,26 @@ export function getSlashMenuItems(
       },
     },
     {
-      title: "Sub-subsection",
-      subtext: "Small sub-subsection heading",
-      aliases: ["subsubsection", "heading3", "h3"],
+      title: "Subsection",
+      subtext: "Medium subsection heading",
+      aliases: ["subsection", "heading3", "h3"],
       group: "Structure",
       onItemClick: () => {
         insertOrUpdateBlockForSlashMenu(editor as any, {
           type: "heading",
           props: { level: 3 as any },
+        });
+      },
+    },
+    {
+      title: "Sub-subsection",
+      subtext: "Small sub-subsection heading",
+      aliases: ["subsubsection", "heading4", "h4"],
+      group: "Structure",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "heading",
+          props: { level: 4 as any },
         });
       },
     },
@@ -77,6 +78,15 @@ export function getSlashMenuItems(
       group: "References",
       onItemClick: () => {
         onOpenCitationPicker();
+      },
+    },
+    {
+      title: "Include document",
+      subtext: "Insert the contents of another document",
+      aliases: ["include", "import", "subdoc", "chapter", "embed"],
+      group: "References",
+      onItemClick: () => {
+        onOpenDocumentPicker();
       },
     },
     {

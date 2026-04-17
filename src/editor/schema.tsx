@@ -4,7 +4,8 @@ import {
   defaultInlineContentSpecs,
   defaultStyleSpecs,
 } from "@blocknote/core";
-import { createReactInlineContentSpec } from "@blocknote/react";
+import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
+import { FileText } from "lucide-react";
 
 // Custom inline content: Citation tag (@key)
 export const Citation = createReactInlineContentSpec(
@@ -35,6 +36,47 @@ export const Citation = createReactInlineContentSpec(
   }
 );
 
+// Custom block: Document include — references another .lextyp whose contents
+// are inlined at compile time. Non-editable; the card shows the target title
+// and path so authors can see the chain at a glance.
+export const DocumentInclude = createReactBlockSpec(
+  {
+    type: "documentInclude" as const,
+    propSchema: {
+      path: { default: "" },
+      title: { default: "" },
+    },
+    content: "none",
+  },
+  {
+    render: (props) => {
+      const { path, title } = props.block.props;
+      const displayPath = (path || "").replace(/\\/g, "/");
+      return (
+        <div
+          className="my-1 w-full flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-tertiary)] px-3 py-2 select-none"
+          data-include-path={path}
+        >
+          <FileText size={14} className="text-[var(--accent)] shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[12px] font-medium text-[var(--text-primary)] truncate">
+              {title || "Untitled"}
+            </div>
+            {displayPath && (
+              <div className="text-[10px] text-[var(--text-tertiary)] truncate">
+                {displayPath}
+              </div>
+            )}
+          </div>
+          <span className="text-[10px] font-medium text-[var(--text-tertiary)] uppercase tracking-wide shrink-0">
+            Include
+          </span>
+        </div>
+      );
+    },
+  }
+);
+
 // Restrict the schema to block types the Typst serializer handles.
 // Anything else (codeBlock, quote, toggleListItem, image, video, audio, file,
 // table, divider) would silently drop or degrade during PDF compilation, so
@@ -47,6 +89,7 @@ export const schema = BlockNoteSchema.create({
     bulletListItem: defaultBlockSpecs.bulletListItem,
     numberedListItem: defaultBlockSpecs.numberedListItem,
     checkListItem: defaultBlockSpecs.checkListItem,
+    documentInclude: DocumentInclude(),
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

@@ -199,17 +199,16 @@ textarea {
 }
 
 /* BlockNote's default heading sizes (`--level`: 3em / 2em / 1.3em) are
-   web-editor scale and clash with the academic PDF output (17pt / 12pt /
-   12pt italic). Tighten them so the editor roughly mirrors the printed
-   hierarchy — H1 is the paper title (notably larger), H2–H4 sit close to
-   body size with emphasis via weight/italic. */
-.bn-editor [data-content-type="heading"][data-level="1"] { --level: 1.25em; }
-.bn-editor [data-content-type="heading"][data-level="2"] { --level: 1.2em; }
-.bn-editor [data-content-type="heading"][data-level="3"] { --level: 1.08em; font-style: italic; }
-.bn-editor [data-content-type="heading"][data-level="4"] { --level: 1em; font-style: italic; font-weight: 600; }
-.bn-editor [data-prev-level="1"] { --prev-level: 1.25em; }
-.bn-editor [data-prev-level="2"] { --prev-level: 1.2em; }
-.bn-editor [data-prev-level="3"] { --prev-level: 1.08em; }
+   web-editor scale and clash with the academic PDF output. Scale them to
+   match the PDF: 16 / 14 / 12 / 12 pt on a 12pt body — H3 is bold, H4 is
+   bold italic, all distinct enough that the hierarchy reads cleanly. */
+.bn-editor [data-content-type="heading"][data-level="1"] { --level: 1.33em; }
+.bn-editor [data-content-type="heading"][data-level="2"] { --level: 1.17em; }
+.bn-editor [data-content-type="heading"][data-level="3"] { --level: 1em; }
+.bn-editor [data-content-type="heading"][data-level="4"] { --level: 1em; font-style: italic; }
+.bn-editor [data-prev-level="1"] { --prev-level: 1.33em; }
+.bn-editor [data-prev-level="2"] { --prev-level: 1.17em; }
+.bn-editor [data-prev-level="3"] { --prev-level: 1em; }
 .bn-editor [data-prev-level="4"] { --prev-level: 1em; }
 
 .bn-block-group .bn-block-outer {

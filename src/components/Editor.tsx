@@ -1,5 +1,5 @@
 import "@blocknote/core/fonts/inter.css";
-import { SideMenuController, useCreateBlockNote } from "@blocknote/react";
+import { FormattingToolbarController, SideMenuController, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { filterSuggestionItems } from "@blocknote/core/extensions";
 import { SuggestionMenuController } from "@blocknote/react";
@@ -12,10 +12,12 @@ import { serializeToTypst } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
 import { useAppStore } from "../stores/app-store";
 import { useReferenceStore } from "../stores/reference-store";
-import { useWorkspaceStore } from "../stores/workspace-store";
+import { useWorkspaceStore, makeIncludeResolver } from "../stores/workspace-store";
 import { FloatingOutline } from "./FloatingOutline";
 import { CitationPicker } from "./CitationPicker";
+import { DocumentPicker } from "./DocumentPicker";
 import { EditorSideMenu } from "./EditorSideMenu";
+import { EditorFormattingToolbar } from "./EditorFormattingToolbar";
 import { SlashMenu } from "./SlashMenu";
 
 /**
@@ -212,6 +214,7 @@ export function Editor() {
   const compileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [citationPickerOpen, setCitationPickerOpen] = useState(false);
+  const [documentPickerOpen, setDocumentPickerOpen] = useState(false);
   const loadedPathRef = useRef<string | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
@@ -222,6 +225,8 @@ export function Editor() {
   // Only subscribe to the specific values needed from workspace-store
   const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
   const activeDocumentBlocks = useWorkspaceStore((s) => s.activeDocumentBlocks);
+  const fileTree = useWorkspaceStore((s) => s.fileTree);
+  const workspacePath = useWorkspaceStore((s) => s.workspacePath);
   const setDirty = useWorkspaceStore((s) => s.setDirty);
   const setEditorInstance = useWorkspaceStore((s) => s.setEditorInstance);
   const saveActiveDocument = useWorkspaceStore((s) => s.saveActiveDocument);
@@ -231,6 +236,42 @@ export function Editor() {
     setEditorInstance(editor);
     return () => setEditorInstance(null);
   }, [editor, setEditorInstance]);
+
+  // Swallow BlockNote shortcuts for features this app doesn't support, so
+  // they never reach ProseMirror. We use capture phase and stopPropagation
+  // but skip preventDefault for Tab so it falls through to native focus move.
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      const key = e.key.toLowerCase();
+
+      // Tab / Shift+Tab — nest/unnest. Block PM handler; let browser keep
+      // its default (focus move) by not preventing the event.
+      if (e.key === "Tab") {
+        e.stopPropagation();
+        return;
+      }
+
+      const block =
+        // Mod+E — inline code
+        (mod && !e.shiftKey && !e.altKey && key === "e") ||
+        // Mod+Alt+c (code block) / Mod+Alt+q (quote)
+        (mod && e.altKey && !e.shiftKey && (key === "c" || key === "q")) ||
+        // Mod+Alt+5 / Mod+Alt+6 — heading levels we don't ship
+        (mod && e.altKey && !e.shiftKey && (key === "5" || key === "6")) ||
+        // Mod+Shift+L/E/R/J — text alignment
+        (mod && e.shiftKey && !e.altKey && (key === "l" || key === "e" || key === "r" || key === "j"));
+
+      if (block) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    container.addEventListener("keydown", onKeyDown, true);
+    return () => container.removeEventListener("keydown", onKeyDown, true);
+  }, []);
 
   // Load document blocks when active document changes
   useEffect(() => {
@@ -260,6 +301,14 @@ export function Editor() {
     setCitationPickerOpen(false);
   }, []);
 
+  const openDocumentPicker = useCallback(() => {
+    setDocumentPickerOpen(true);
+  }, []);
+
+  const closeDocumentPicker = useCallback(() => {
+    setDocumentPickerOpen(false);
+  }, []);
+
   const setSourceMap = useAppStore((s) => s.setSourceMap);
 
   const compileDocument = useCallback(async () => {
@@ -267,7 +316,13 @@ export function Editor() {
       const blocks = editor.document;
       const formatter = getFormatter(useReferenceStore.getState().citationStyle);
       const { entries } = useReferenceStore.getState();
-      const source = serializeToTypst(blocks as any, entries, formatter, true);
+      const source = await serializeToTypst(
+        blocks as any,
+        entries,
+        formatter,
+        true,
+        makeIncludeResolver()
+      );
       setCompiling(true);
 
       const result = await invoke<{ pdf_base64: string; duration_ms: number }>(
@@ -339,6 +394,29 @@ export function Editor() {
     [editor]
   );
 
+  const insertDocumentInclude = useCallback(
+    (path: string, title: string) => {
+      const cursor = editor.getTextCursorPosition();
+      editor.insertBlocks(
+        [
+          {
+            type: "documentInclude",
+            props: { path, title },
+          } as any,
+        ],
+        cursor.block,
+        "after"
+      );
+      setDocumentPickerOpen(false);
+      try {
+        editor.focus();
+      } catch {
+        // Ignore if not yet mounted
+      }
+    },
+    [editor]
+  );
+
   const jumpToBlock = useCallback(
     (blockId: string, charOffset: number = 0) => {
       const block = editor.getBlock(blockId);
@@ -378,17 +456,19 @@ export function Editor() {
   useEffect(() => {
     (window as any).__lextyp_insertCitation = insertCitation;
     (window as any).__lextyp_openCitationPicker = openCitationPicker;
+    (window as any).__lextyp_openDocumentPicker = openDocumentPicker;
     (window as any).__lextyp_jumpToBlock = jumpToBlock;
     return () => {
       delete (window as any).__lextyp_insertCitation;
       delete (window as any).__lextyp_openCitationPicker;
+      delete (window as any).__lextyp_openDocumentPicker;
       delete (window as any).__lextyp_jumpToBlock;
     };
-  }, [insertCitation, openCitationPicker, jumpToBlock]);
+  }, [insertCitation, openCitationPicker, openDocumentPicker, jumpToBlock]);
 
   return (
     <div className="h-full relative">
-      <div className="h-full overflow-auto" ref={editorContainerRef}>
+      <div className="h-full overflow-auto" ref={editorContainerRef} onContextMenu={(e) => e.preventDefault()}>
         <div className="w-full px-8 py-10">
           <BlockNoteView
             editor={editor}
@@ -401,10 +481,14 @@ export function Editor() {
             <SuggestionMenuController
               triggerCharacter="/"
               getItems={async (query) =>
-                filterSuggestionItems(getSlashMenuItems(editor, openCitationPicker), query)
+                filterSuggestionItems(
+                  getSlashMenuItems(editor, openCitationPicker, openDocumentPicker),
+                  query
+                )
               }
               suggestionMenuComponent={SlashMenu}
             />
+            <FormattingToolbarController formattingToolbar={EditorFormattingToolbar} />
             <SideMenuController sideMenu={EditorSideMenu} />
           </BlockNoteView>
         </div>
@@ -418,6 +502,14 @@ export function Editor() {
         formatter={getFormatter(citationStyle)}
         onClose={closeCitationPicker}
         onSelect={insertCitation}
+      />
+      <DocumentPicker
+        open={documentPickerOpen}
+        fileTree={fileTree}
+        workspacePath={workspacePath}
+        currentDocumentPath={activeDocumentPath}
+        onClose={closeDocumentPicker}
+        onSelect={insertDocumentInclude}
       />
     </div>
   );

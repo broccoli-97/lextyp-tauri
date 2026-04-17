@@ -2,17 +2,54 @@ import type { BibEntry, CitationHistoryEntry } from "../types/bib";
 import type { CitationFormatter } from "./citation/formatter";
 
 /**
+ * Resolver that loads an included document's blocks and bibliography so the
+ * serializer can inline them. Provided by the app at compile/save time.
+ */
+export type IncludeResolver = (path: string) => Promise<{
+  blocks: any[];
+  entries: BibEntry[];
+  citationStyle: string;
+}>;
+
+interface SerializeContext {
+  entries: BibEntry[];
+  formatter?: CitationFormatter;
+  history: CitationHistoryEntry[];
+  footnoteCounter: { value: number };
+  trackBlocks: boolean;
+  resolveInclude?: IncludeResolver;
+  visited: Set<string>;
+}
+
+/**
  * Serialize BlockNote document to Typst source.
  * Citation @keys are expanded to #footnote[...] using the active formatter.
  * When `trackBlocks` is true, each block is wrapped with a metadata tracker
  * so that `typst query` can return page positions for each block.
+ * When `resolveInclude` is provided, `documentInclude` blocks are inlined
+ * recursively (with cycle detection).
  */
-export function serializeToTypst(
+export async function serializeToTypst(
   blocks: any[],
   entries?: BibEntry[],
   formatter?: CitationFormatter,
-  trackBlocks = false
-): string {
+  trackBlocks = false,
+  resolveInclude?: IncludeResolver
+): Promise<string> {
+  const ctx: SerializeContext = {
+    entries: entries ? [...entries] : [],
+    formatter,
+    history: [],
+    footnoteCounter: { value: 0 },
+    trackBlocks,
+    resolveInclude,
+    visited: new Set<string>(),
+  };
+
+  return buildPreamble(trackBlocks) + (await serializeBody(blocks, ctx, trackBlocks));
+}
+
+function buildPreamble(trackBlocks: boolean): string {
   let output = "";
 
   // Preamble — academic / law-paper conventions (OSCOLA, Bluebook, APA Level-1,
@@ -20,7 +57,7 @@ export function serializeToTypst(
   //   • 12pt Times-family body, justified, 1.5 line spacing
   //     (strict Bluebook/OSCOLA submissions use double — change leading to 1.65em)
   //   • 2.54cm (1") margins all sides
-  //   • H1 centered + bold (APA/Chicago Level-1); sub-headings flush-left
+  //   • H1 centered + bold 17pt; H2 14pt bold; H3 12pt bold; H4 12pt bold italic
   //   • 10pt single-spaced footnotes
   output += '#set page(paper: "a4", margin: 2.54cm)\n';
   // Font fallback chain: Times New Roman → Times → Libertinus Serif (Typst's
@@ -28,12 +65,14 @@ export function serializeToTypst(
   output += '#set text(size: 12pt, font: ("Times New Roman", "Times", "Libertinus Serif"))\n';
   output += "#set par(justify: true, leading: 1em)\n"; // ≈ 1.5 line spacing
   output += '#show link: it => underline(text(fill: rgb("#2563eb"), it))\n';
-  // Heading hierarchy — emphasis by weight/italic + alignment, not size.
+  // Balanced heading hierarchy — size falls off gradually and every level
+  // reads as distinctly heading-weight (H4 is bold-italic, not plain italic,
+  // so it doesn't blend into body text).
   output += "#show heading.where(level: 1): it => align(center, it)\n";
   output += '#show heading.where(level: 1): set text(size: 17pt, weight: "bold")\n';
-  output += '#show heading.where(level: 2): set text(size: 12pt, weight: "bold")\n';
-  output += '#show heading.where(level: 3): set text(size: 12pt, weight: "bold", style: "italic")\n';
-  output += '#show heading.where(level: 4): set text(size: 12pt, style: "italic")\n';
+  output += '#show heading.where(level: 2): set text(size: 14pt, weight: "bold")\n';
+  output += '#show heading.where(level: 3): set text(size: 12pt, weight: "bold")\n';
+  output += '#show heading.where(level: 4): set text(size: 12pt, weight: "bold", style: "italic")\n';
   // Generous spacing around headings — academic papers breathe. H1 gets the
   // most room above (it's typically a title / major section break).
   output += "#show heading.where(level: 1): set block(above: 2.4em, below: 1.4em)\n";
@@ -54,33 +93,38 @@ export function serializeToTypst(
   }
 
   output += "\n";
+  return output;
+}
 
-  const history: CitationHistoryEntry[] = [];
-  let footnoteCounter = 0;
+async function serializeBody(
+  blocks: any[],
+  ctx: SerializeContext,
+  trackOwnBlocks: boolean
+): Promise<string> {
+  let output = "";
 
   for (const block of blocks) {
-    const blockContent = serializeBlock(
-      block,
-      entries,
-      formatter,
-      history,
-      footnoteCounter,
-      trackBlocks ? block.id : undefined
-    );
-    if (trackBlocks && block.id && blockContent.trim()) {
-      // Wrap in tracker: #__track("blockId")[<content>]
-      // Strip trailing newlines from content for wrapping, then re-add them
+    if (block?.type === "documentInclude") {
+      output += await serializeInclude(block, ctx);
+      continue;
+    }
+
+    const trackId = trackOwnBlocks && block.id ? block.id : undefined;
+    const blockContent = serializeBlock(block, ctx, trackId);
+
+    if (trackId && blockContent.trim()) {
       const trimmed = blockContent.replace(/\n+$/, "");
       const trailing = blockContent.slice(trimmed.length);
-      output += `#__track("${block.id}")[${trimmed}]${trailing}`;
+      output += `#__track("${trackId}")[${trimmed}]${trailing}`;
     } else {
       output += blockContent;
     }
+
     // Count footnotes produced in this block
     const content = Array.isArray(block.content) ? block.content : [];
     for (const item of content) {
       if (item.type === "citation" && item.props?.key) {
-        footnoteCounter++;
+        ctx.footnoteCounter.value++;
       }
     }
   }
@@ -88,12 +132,43 @@ export function serializeToTypst(
   return output;
 }
 
+async function serializeInclude(
+  block: any,
+  ctx: SerializeContext
+): Promise<string> {
+  const path: string = block?.props?.path ?? "";
+  if (!path) return "";
+  if (!ctx.resolveInclude) return "";
+
+  if (ctx.visited.has(path)) {
+    return `// skipped cyclic include: ${path}\n`;
+  }
+
+  ctx.visited.add(path);
+  let child: { blocks: any[]; entries: BibEntry[]; citationStyle: string };
+  try {
+    child = await ctx.resolveInclude(path);
+  } catch (err) {
+    ctx.visited.delete(path);
+    return `// failed to load include ${path}: ${String(err)}\n`;
+  }
+
+  // Merge child bib entries into ctx.entries — root wins on key collision.
+  for (const entry of child.entries) {
+    if (!ctx.entries.some((e) => e.key === entry.key)) {
+      ctx.entries.push(entry);
+    }
+  }
+
+  // Recursively serialize child body. No preamble, no own-block tracking.
+  const childBody = await serializeBody(child.blocks, ctx, false);
+  ctx.visited.delete(path);
+  return childBody;
+}
+
 function serializeBlock(
   block: any,
-  entries?: BibEntry[],
-  formatter?: CitationFormatter,
-  history?: CitationHistoryEntry[],
-  fnStart?: number,
+  ctx: SerializeContext,
   trackBlockId?: string
 ): string {
   const content = Array.isArray(block.content) ? block.content : [];
@@ -113,25 +188,25 @@ function serializeBlock(
     case "heading": {
       const level = block.props?.level ?? 1;
       const prefix = "=".repeat(level);
-      const text = serializeInlineContent(content, entries, formatter, history, fnStart, trackBlockId);
+      const text = serializeInlineContent(content, ctx, trackBlockId);
       return `${prefix} ${wrapBlockColors(text)}\n`;
     }
     case "paragraph": {
-      const text = serializeInlineContent(content, entries, formatter, history, fnStart, trackBlockId);
+      const text = serializeInlineContent(content, ctx, trackBlockId);
       if (!text.trim()) return "\n";
       return wrapBlockColors(text) + "\n\n";
     }
     case "bulletListItem":
-      return `- ${wrapBlockColors(serializeInlineContent(content, entries, formatter, history, fnStart, trackBlockId))}\n`;
+      return `- ${wrapBlockColors(serializeInlineContent(content, ctx, trackBlockId))}\n`;
     case "numberedListItem":
-      return `+ ${wrapBlockColors(serializeInlineContent(content, entries, formatter, history, fnStart, trackBlockId))}\n`;
+      return `+ ${wrapBlockColors(serializeInlineContent(content, ctx, trackBlockId))}\n`;
     case "checkListItem": {
       const checked = block.props?.checked ? "[x]" : "[ ]";
-      return `- ${checked} ${wrapBlockColors(serializeInlineContent(content, entries, formatter, history, fnStart, trackBlockId))}\n`;
+      return `- ${checked} ${wrapBlockColors(serializeInlineContent(content, ctx, trackBlockId))}\n`;
     }
     default:
       if (content.length > 0) {
-        return wrapBlockColors(serializeInlineContent(content, entries, formatter, history, fnStart, trackBlockId)) + "\n\n";
+        return wrapBlockColors(serializeInlineContent(content, ctx, trackBlockId)) + "\n\n";
       }
       return "";
   }
@@ -139,15 +214,11 @@ function serializeBlock(
 
 function serializeInlineContent(
   content: any[],
-  entries?: BibEntry[],
-  formatter?: CitationFormatter,
-  history?: CitationHistoryEntry[],
-  fnStart?: number,
+  ctx: SerializeContext,
   trackBlockId?: string
 ): string {
   if (!content || !Array.isArray(content)) return "";
 
-  let fnCounter = fnStart ?? 0;
   // Character offset within the block's *raw* (unescaped, unstyled) text.
   // Used to emit `#__w` markers for word-level position queries. Citations
   // and other non-text inline content do not advance this counter so the
@@ -187,16 +258,14 @@ function serializeInlineContent(
       if (!key) continue;
 
       // If we have a formatter and entries, produce a proper footnote
-      if (formatter && entries) {
-        const entry = entries.find((e) => e.key === key);
+      if (ctx.formatter && ctx.entries.length > 0) {
+        const entry = ctx.entries.find((e) => e.key === key);
         if (entry) {
-          fnCounter++;
-          const footnoteText = formatter.formatFootnote(
-            entry, "", history ?? [], fnCounter
+          ctx.footnoteCounter.value++;
+          const footnoteText = ctx.formatter.formatFootnote(
+            entry, "", ctx.history, ctx.footnoteCounter.value
           );
-          if (history) {
-            history.push({ key, footnoteNumber: fnCounter });
-          }
+          ctx.history.push({ key, footnoteNumber: ctx.footnoteCounter.value });
           out += `#footnote[${footnoteText}]`;
           continue;
         }

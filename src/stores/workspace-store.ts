@@ -5,8 +5,9 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import type { DocumentMeta, FileTreeEntry } from "../types/workspace";
 import { useReferenceStore } from "./reference-store";
 import { useAppStore } from "./app-store";
-import { serializeToTypst } from "../lib/typst-serializer";
+import { serializeToTypst, type IncludeResolver } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
+import { parseBibtex } from "../lib/bib-parser";
 
 interface WorkspaceState {
   // Workspace
@@ -46,12 +47,46 @@ interface WorkspaceState {
 const WORKSPACE_KEY = "lextyp_workspace_path";
 const ACTIVE_DOC_KEY = "lextyp_active_document_path";
 
+/**
+ * Build a resolver that loads an included `.lextyp` document's blocks and
+ * bibliography. Shared by the workspace store (save/export) and the editor
+ * (live compile) so both paths inline child documents consistently.
+ */
+export function makeIncludeResolver(): IncludeResolver {
+  return async (path) => {
+    const result = await invoke<{
+      document_json: string;
+      bib_content: string | null;
+      meta: DocumentMeta;
+    }>("load_project", { path });
+
+    let blocks: any[] = [];
+    try {
+      blocks = JSON.parse(result.document_json || "[]");
+    } catch {
+      blocks = [];
+    }
+    const entries = result.bib_content ? parseBibtex(result.bib_content) : [];
+    return {
+      blocks,
+      entries,
+      citationStyle: result.meta?.citation_style || "oscola",
+    };
+  };
+}
+
 /** Serialize the current editor document to Typst source. */
-function buildTypstSource(editorInstance: any): string {
+async function buildTypstSource(editorInstance: any): Promise<string> {
   const blocks = editorInstance.document;
   const refStore = useReferenceStore.getState();
   const formatter = getFormatter(refStore.citationStyle);
-  return serializeToTypst(blocks, refStore.entries, formatter);
+  return serializeToTypst(
+    blocks,
+    refStore.entries,
+    formatter,
+    false,
+    makeIncludeResolver()
+  );
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -147,7 +182,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const blocks = state.editorInstance.document;
       const documentJson = JSON.stringify(blocks);
-      const typstSource = buildTypstSource(state.editorInstance);
+      const typstSource = await buildTypstSource(state.editorInstance);
 
       const refStore = useReferenceStore.getState();
       const now = new Date().toISOString();
@@ -318,7 +353,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const blocks = editorInstance.document;
     const documentJson = JSON.stringify(blocks);
-    const typstSource = buildTypstSource(editorInstance);
+    const typstSource = await buildTypstSource(editorInstance);
 
     const refStore = useReferenceStore.getState();
     const now = new Date().toISOString();
@@ -359,7 +394,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
     if (!dest) return;
 
-    const typstSource = buildTypstSource(editorInstance);
+    const typstSource = await buildTypstSource(editorInstance);
 
     const encoder = new TextEncoder();
     await writeFile(dest, encoder.encode(typstSource));
