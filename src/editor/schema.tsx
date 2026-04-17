@@ -35,10 +35,18 @@ export const Citation = createReactInlineContentSpec(
   }
 );
 
-// Build the custom schema extending defaults
+// Restrict the schema to block types the Typst serializer handles.
+// Anything else (codeBlock, quote, toggleListItem, image, video, audio, file,
+// table, divider) would silently drop or degrade during PDF compilation, so
+// we keep them out of the editor entirely — that also hides them from the
+// formatting toolbar's block-type dropdown (triggered by double-click).
 export const schema = BlockNoteSchema.create({
   blockSpecs: {
-    ...defaultBlockSpecs,
+    paragraph: defaultBlockSpecs.paragraph,
+    heading: defaultBlockSpecs.heading,
+    bulletListItem: defaultBlockSpecs.bulletListItem,
+    numberedListItem: defaultBlockSpecs.numberedListItem,
+    checkListItem: defaultBlockSpecs.checkListItem,
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

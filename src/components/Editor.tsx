@@ -387,26 +387,30 @@ export function Editor() {
   }, [insertCitation, openCitationPicker, jumpToBlock]);
 
   return (
-    <div className="h-full overflow-auto relative" ref={editorContainerRef}>
-      <div className="w-full px-8 py-10">
-        <BlockNoteView
-          editor={editor}
-          theme="light"
-          formattingToolbar={false}
-          slashMenu={false}
-          sideMenu={false}
-          onChange={handleChange}
-        >
-          <SuggestionMenuController
-            triggerCharacter="/"
-            getItems={async (query) =>
-              filterSuggestionItems(getSlashMenuItems(editor, openCitationPicker), query)
-            }
-            suggestionMenuComponent={SlashMenu}
-          />
-          <SideMenuController sideMenu={EditorSideMenu} />
-        </BlockNoteView>
+    <div className="h-full relative">
+      <div className="h-full overflow-auto" ref={editorContainerRef}>
+        <div className="w-full px-8 py-10">
+          <BlockNoteView
+            editor={editor}
+            theme="light"
+            formattingToolbar={false}
+            slashMenu={false}
+            sideMenu={false}
+            onChange={handleChange}
+          >
+            <SuggestionMenuController
+              triggerCharacter="/"
+              getItems={async (query) =>
+                filterSuggestionItems(getSlashMenuItems(editor, openCitationPicker), query)
+              }
+              suggestionMenuComponent={SlashMenu}
+            />
+            <SideMenuController sideMenu={EditorSideMenu} />
+          </BlockNoteView>
+        </div>
       </div>
+      {/* Outline sits outside the scroll container so it stays pinned at the
+          top-right while the user scrolls through the document. */}
       <FloatingOutline editor={editor} />
       <CitationPicker
         open={citationPickerOpen}

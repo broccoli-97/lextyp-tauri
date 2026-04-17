@@ -460,7 +460,9 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
                       pageNumber={i + 1}
                       width={renderPageWidth}
                       renderTextLayer={false}
-                      renderAnnotationLayer={false}
+                      // Annotation layer carries the clickable <a> elements
+                      // for `#link(...)` hyperlinks produced by Typst.
+                      renderAnnotationLayer={true}
                     />
                   </div>
                 ))}

@@ -1,4 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Editor } from "./components/Editor";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
@@ -56,6 +57,41 @@ function App() {
     };
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, []);
+
+  // Route external-URL anchor clicks to the OS default browser. In a Tauri
+  // webview, a plain `<a href="https://…">` click (pdf.js annotation links,
+  // Ctrl+click on editor links) otherwise navigates the single webview away
+  // from the app with no way back. Inside the editor itself we additionally
+  // swallow plain clicks so the caret can land in a link for editing —
+  // only a modifier click opens the URL, matching Notion/VS Code.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0) return; // ignore right/middle buttons
+      const anchor = (e.target as HTMLElement | null)?.closest?.(
+        "a[href]"
+      ) as HTMLAnchorElement | null;
+      if (!anchor) return;
+
+      const href = anchor.getAttribute("href") ?? "";
+      const external =
+        /^https?:\/\//i.test(href) || /^mailto:/i.test(href);
+      if (!external) return;
+
+      const inEditor = !!anchor.closest(".bn-container");
+      const modifier = e.ctrlKey || e.metaKey;
+
+      // Always block the webview's built-in navigation.
+      e.preventDefault();
+      e.stopPropagation();
+
+      // In the editor, a plain click just edits; require modifier to open.
+      if (inEditor && !modifier) return;
+
+      openUrl(href).catch((err) => console.error("Failed to open URL:", err));
+    };
+    window.addEventListener("click", onClick, { capture: true });
+    return () => window.removeEventListener("click", onClick, { capture: true });
   }, []);
 
   // Scale panels proportionally on window resize / fullscreen
