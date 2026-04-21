@@ -25,8 +25,7 @@ export function EditorFormattingToolbar() {
     }
     return item.type === "paragraph"
       || item.type === "bulletListItem"
-      || item.type === "numberedListItem"
-      || item.type === "checkListItem";
+      || item.type === "numberedListItem";
   });
 
   return (

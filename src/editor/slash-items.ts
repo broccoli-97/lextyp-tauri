@@ -90,6 +90,17 @@ export function getSlashMenuItems(
       },
     },
     {
+      title: "Contents",
+      subtext: "Auto-generated table of contents",
+      aliases: ["content", "contents", "toc", "outline"],
+      group: "Structure",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "tableOfContents" as any,
+        });
+      },
+    },
+    {
       title: "Bullet List",
       subtext: "Unordered list item",
       aliases: ["bullet", "list", "ul"],

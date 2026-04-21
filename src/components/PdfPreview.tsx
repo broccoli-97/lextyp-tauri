@@ -330,7 +330,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
           <FileText size={14} className="text-[var(--accent)]" />
           <span className="text-[12px] font-medium text-[var(--text-primary)]">{t("pdf.preview")}</span>
           {numPages > 0 && (
-            <span className="text-[10px] text-[var(--text-tertiary)] ml-1">
+            <span className="text-[11px] text-[var(--text-tertiary)] ml-1">
               {numPages} {numPages === 1 ? t("pdf.page") : t("pdf.pages")}
             </span>
           )}
@@ -349,7 +349,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
             </button>
             <button
               onClick={handleZoomReset}
-              className="text-[10px] font-semibold text-[var(--text-primary)] w-10 text-center hover:bg-[var(--bg-hover)] rounded transition-colors"
+              className="text-[11px] font-semibold text-[var(--text-primary)] w-10 text-center hover:bg-[var(--bg-hover)] rounded transition-colors tabular-nums"
               title="Reset zoom"
             >
               {zoomPercent}%

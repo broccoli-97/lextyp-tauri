@@ -59,7 +59,7 @@ function buildPreamble(trackBlocks: boolean): string {
   //   • 2.54cm (1") margins all sides
   //   • H1 centered + bold 17pt; H2 14pt bold; H3 12pt bold; H4 12pt bold italic
   //   • 10pt single-spaced footnotes
-  output += '#set page(paper: "a4", margin: 2.54cm)\n';
+  output += '#set page(paper: "a4", margin: 2.54cm, numbering: "1")\n';
   // Font fallback chain: Times New Roman → Times → Libertinus Serif (Typst's
   // bundled default, visually Times-like and available on every platform).
   output += '#set text(size: 12pt, font: ("Times New Roman", "Times", "Libertinus Serif"))\n';
@@ -106,6 +106,11 @@ async function serializeBody(
   for (const block of blocks) {
     if (block?.type === "documentInclude") {
       output += await serializeInclude(block, ctx);
+      continue;
+    }
+
+    if (block?.type === "tableOfContents") {
+      output += "#outline()\n\n";
       continue;
     }
 
@@ -161,9 +166,12 @@ async function serializeInclude(
   }
 
   // Recursively serialize child body. No preamble, no own-block tracking.
+  // Wrap with weak pagebreaks so the include starts on a fresh page and any
+  // content following it also starts on a fresh page. `weak: true` avoids
+  // blank pages when adjacent to page boundaries.
   const childBody = await serializeBody(child.blocks, ctx, false);
   ctx.visited.delete(path);
-  return childBody;
+  return `#pagebreak(weak: true)\n${childBody}#pagebreak(weak: true)\n`;
 }
 
 function serializeBlock(
