@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 CLAUDE.md
 *.lextyp
+!examples/citation-demo.lextyp
 
 # Typst binary (downloaded at dev time)
 src-tauri/resources/typst
