@@ -19,6 +19,11 @@ interface SerializeContext {
   trackBlocks: boolean;
   resolveInclude?: IncludeResolver;
   visited: Set<string>;
+  /**
+   * Insertion-ordered list of citation keys that actually appear in the body.
+   * Drives the auto-generated References section at the end of the document.
+   */
+  citedKeys: string[];
 }
 
 /**
@@ -34,7 +39,8 @@ export async function serializeToTypst(
   entries?: BibEntry[],
   formatter?: CitationFormatter,
   trackBlocks = false,
-  resolveInclude?: IncludeResolver
+  resolveInclude?: IncludeResolver,
+  bibliographyHeading = "References"
 ): Promise<string> {
   const ctx: SerializeContext = {
     entries: entries ? [...entries] : [],
@@ -44,9 +50,13 @@ export async function serializeToTypst(
     trackBlocks,
     resolveInclude,
     visited: new Set<string>(),
+    citedKeys: [],
   };
 
-  return buildPreamble(trackBlocks) + (await serializeBody(blocks, ctx, trackBlocks));
+  const preamble = buildPreamble(trackBlocks);
+  const body = await serializeBody(blocks, ctx, trackBlocks);
+  const bibliography = buildBibliography(ctx, bibliographyHeading);
+  return preamble + body + bibliography;
 }
 
 function buildPreamble(trackBlocks: boolean): string {
@@ -96,6 +106,36 @@ function buildPreamble(trackBlocks: boolean): string {
   return output;
 }
 
+/**
+ * Emit an auto-generated References section listing every entry that the body
+ * actually cited, in first-cite order. The section starts on a fresh page
+ * (`weak: true` collapses against existing page boundaries). Returns "" if
+ * nothing was cited or the formatter cannot render bibliography entries.
+ */
+function buildBibliography(ctx: SerializeContext, heading: string): string {
+  if (ctx.citedKeys.length === 0) return "";
+  if (!ctx.formatter || typeof ctx.formatter.formatBibliography !== "function") return "";
+
+  const lines: string[] = [];
+  let index = 1;
+  for (const key of ctx.citedKeys) {
+    const entry = ctx.entries.find((e) => e.key === key);
+    if (!entry) continue;
+    const text = ctx.formatter.formatBibliography(entry, index);
+    if (!text.trim()) continue;
+    lines.push(text);
+    index++;
+  }
+  if (lines.length === 0) return "";
+
+  let output = "\n#pagebreak(weak: true)\n";
+  output += `= ${escapeTypst(heading)}\n\n`;
+  for (const line of lines) {
+    output += `${line}\n\n`;
+  }
+  return output;
+}
+
 async function serializeBody(
   blocks: any[],
   ctx: SerializeContext,
@@ -110,7 +150,10 @@ async function serializeBody(
     }
 
     if (block?.type === "tableOfContents") {
-      output += "#outline()\n\n";
+      // Wrap in weak pagebreaks so the TOC sits on its own page. `weak: true`
+      // collapses against existing page boundaries, so it doesn't add a blank
+      // page when the TOC happens to already be at the top of one.
+      output += "#pagebreak(weak: true)\n#outline()\n#pagebreak(weak: true)\n\n";
       continue;
     }
 
@@ -123,14 +166,6 @@ async function serializeBody(
       output += `#__track("${trackId}")[${trimmed}]${trailing}`;
     } else {
       output += blockContent;
-    }
-
-    // Count footnotes produced in this block
-    const content = Array.isArray(block.content) ? block.content : [];
-    for (const item of content) {
-      if (item.type === "citation" && item.props?.key) {
-        ctx.footnoteCounter.value++;
-      }
     }
   }
 
@@ -265,21 +300,34 @@ function serializeInlineContent(
       const key = item.props?.key ?? "";
       if (!key) continue;
 
-      // If we have a formatter and entries, produce a proper footnote
       if (ctx.formatter && ctx.entries.length > 0) {
         const entry = ctx.entries.find((e) => e.key === key);
         if (entry) {
-          ctx.footnoteCounter.value++;
-          const footnoteText = ctx.formatter.formatFootnote(
-            entry, "", ctx.history, ctx.footnoteCounter.value
-          );
-          ctx.history.push({ key, footnoteNumber: ctx.footnoteCounter.value });
-          out += `#footnote[${footnoteText}]`;
+          if (!ctx.citedKeys.includes(key)) ctx.citedKeys.push(key);
+
+          if (ctx.formatter.kind === "footnote") {
+            // Footnote styles (OSCOLA, Chicago): each occurrence gets its own
+            // footnote number; the formatter consults `history` for ibid /
+            // short-form behavior.
+            ctx.footnoteCounter.value++;
+            const text = ctx.formatter.formatCitation(
+              entry, "", ctx.history, ctx.footnoteCounter.value
+            );
+            ctx.history.push({ key, footnoteNumber: ctx.footnoteCounter.value });
+            out += `#footnote[${text}]`;
+          } else {
+            // In-text styles (APA/Harvard author-date, IEEE/plain numeric):
+            // splice the marker directly into the running text. The numeric
+            // styles want the bibliography index — same number on every reuse.
+            const bibIndex = ctx.citedKeys.indexOf(key) + 1;
+            out += ctx.formatter.formatCitation(entry, "", ctx.history, bibIndex);
+          }
           continue;
         }
       }
 
-      // Fallback: Typst native cite syntax
+      // Fallback: Typst native cite syntax (no formatter or unknown key).
+      if (!ctx.citedKeys.includes(key)) ctx.citedKeys.push(key);
       out += `#cite(<${key}>)`;
       continue;
     }

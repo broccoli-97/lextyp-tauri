@@ -42,14 +42,26 @@ describe("examples/citation-demo.lextyp", () => {
   });
 
   it("compiles to Typst under every bundled citation style", async () => {
-    const styles = ["oscola", "harvard", "apa", "chicago", "ieee", "plain"] as const;
-    for (const style of styles) {
+    const footnoteStyles = ["oscola", "chicago"] as const;
+    const inTextStyles = ["harvard", "apa", "ieee", "plain"] as const;
+    for (const style of [...footnoteStyles, ...inTextStyles]) {
       const formatter = getFormatter(style);
       const out = await serializeToTypst(blocks, entries, formatter);
       expect(out).toContain("#set page");
       expect(out).toContain("Legal Positivism");
-      // Every style should produce at least one footnote or cite marker.
-      expect(/#footnote|#cite/.test(out)).toBe(true);
+      // Every style should auto-generate the References section for cited
+      // entries.
+      expect(out).toContain("= References");
+    }
+    // Footnote styles render citations as #footnote[...] in the body; in-text
+    // styles do not (they splice "(Author, Year)" or "[N]" inline).
+    for (const style of footnoteStyles) {
+      const out = await serializeToTypst(blocks, entries, getFormatter(style));
+      expect(out).toContain("#footnote[");
+    }
+    for (const style of inTextStyles) {
+      const out = await serializeToTypst(blocks, entries, getFormatter(style));
+      expect(out).not.toContain("#footnote[");
     }
   });
 

@@ -3,9 +3,16 @@ import { italicize, field } from "./formatter";
 
 export const ieeeFormatter: CitationFormatter = {
   styleName: "ieee",
-  formatFootnote(entry, pinpoint, _history, fn) {
+  kind: "in-text",
+  formatCitation(_entry, pinpoint, _history, index) {
+    // IEEE in-text marker: [N] keyed to the bibliography index. Same number
+    // is reused on every cite of the same source — the serializer hands us
+    // the bibliography index, not a per-occurrence counter.
+    return `[${index}${pinpoint ? `, ${pinpoint}` : ""}]`;
+  },
+  formatBibliography(entry, index) {
     if (!entry.key) return "[unknown reference]";
-    let r = `[${fn}] `;
+    let r = `[${index}] `;
     const author = field(entry, "author");
     const title = field(entry, "title");
     const year = field(entry, "year");
@@ -29,7 +36,6 @@ export const ieeeFormatter: CitationFormatter = {
       if (publisher) r += `${publisher}, `;
       if (year) r += `${year}.`;
     }
-    if (pinpoint) r += ` ${pinpoint}`;
     return r;
   },
 };

@@ -8,6 +8,7 @@ import { useAppStore } from "./app-store";
 import { serializeToTypst, type IncludeResolver } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
 import { parseBibtex } from "../lib/bib-parser";
+import { t } from "../lib/i18n";
 
 interface WorkspaceState {
   // Workspace
@@ -85,7 +86,8 @@ async function buildTypstSource(editorInstance: any): Promise<string> {
     refStore.entries,
     formatter,
     false,
-    makeIncludeResolver()
+    makeIncludeResolver(),
+    t("doc.references")
   );
 }
 

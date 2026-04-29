@@ -3,7 +3,8 @@ import { type CitationFormatter, shortAuthor, italicize, field } from "./formatt
 
 export const oscolaFormatter: CitationFormatter = {
   styleName: "oscola",
-  formatFootnote(entry, pinpoint, history, _fn) {
+  kind: "footnote",
+  formatCitation(entry, pinpoint, history, _fn) {
     if (!entry.key) return "[unknown reference]";
     // Ibid
     if (history.length > 0 && history[history.length - 1].key === entry.key)
@@ -31,6 +32,11 @@ export const oscolaFormatter: CitationFormatter = {
     t += italicize(field(entry, "title"));
     if (pinpoint) t += ` ${pinpoint}`;
     return t;
+  },
+  formatBibliography(entry, _index) {
+    // OSCOLA bibliography mirrors the first-cite full form, no pinpoint, no
+    // ibid/short-form (empty history forces the full branch).
+    return this.formatCitation(entry, "", [], 0);
   },
 };
 

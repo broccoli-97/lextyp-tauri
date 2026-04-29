@@ -28,8 +28,11 @@ export function filterBibEntries(entries: BibEntry[], query: string) {
 }
 
 export function formatCitationPreview(entry: BibEntry, formatter: CitationFormatter) {
-  const raw = formatter.formatFootnote(entry, "", [], 1);
-  return raw.replace(/_/g, "").replace(/\s+/g, " ").trim();
+  // Preview the full bibliography form — what users recognize the entry by.
+  // For numbered styles (IEEE/plain) the leading "[1] " is stripped along with
+  // other markdown so the preview reads as plain author / title text.
+  const raw = formatter.formatBibliography(entry, 1);
+  return raw.replace(/^\[\d+\]\s*/, "").replace(/_/g, "").replace(/\s+/g, " ").trim();
 }
 
 export function formatEntryMeta(entry: BibEntry) {

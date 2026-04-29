@@ -10,6 +10,7 @@ import { schema } from "../editor/schema";
 import { getSlashMenuItems } from "../editor/slash-items";
 import { serializeToTypst } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
+import { t } from "../lib/i18n";
 import { useAppStore } from "../stores/app-store";
 import { useReferenceStore } from "../stores/reference-store";
 import { useWorkspaceStore, makeIncludeResolver } from "../stores/workspace-store";
@@ -321,7 +322,8 @@ export function Editor() {
         entries,
         formatter,
         true,
-        makeIncludeResolver()
+        makeIncludeResolver(),
+        t("doc.references")
       );
       setCompiling(true);
 

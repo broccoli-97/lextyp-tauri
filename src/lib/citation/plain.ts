@@ -3,9 +3,15 @@ import { italicize, field } from "./formatter";
 
 export const plainFormatter: CitationFormatter = {
   styleName: "plain",
-  formatFootnote(entry, pinpoint, _history, fn) {
+  kind: "in-text",
+  formatCitation(_entry, pinpoint, _history, index) {
+    // BibTeX `plain` style — numeric in-text marker [N] keyed to bibliography
+    // index, just like IEEE.
+    return `[${index}${pinpoint ? `, ${pinpoint}` : ""}]`;
+  },
+  formatBibliography(entry, index) {
     if (!entry.key) return "[unknown reference]";
-    let r = `[${fn}] `;
+    let r = `[${index}] `;
     const author = field(entry, "author");
     const title = field(entry, "title");
     const year = field(entry, "year");
@@ -21,7 +27,6 @@ export const plainFormatter: CitationFormatter = {
       r += ", ";
     }
     if (year) r += `${year}.`;
-    if (pinpoint) r += ` ${pinpoint}`;
     return r;
   },
 };

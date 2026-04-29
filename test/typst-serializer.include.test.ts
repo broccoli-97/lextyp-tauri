@@ -68,7 +68,8 @@ describe("serializeToTypst — documentInclude", () => {
       fields: { author: "Child, A.", title: "Child Title", year: "2024" },
     };
     const formatter = {
-      formatFootnote: (entry: BibEntry) => `FN(${entry.key})`,
+      kind: "footnote",
+      formatCitation: (entry: BibEntry) => `FN(${entry.key})`,
       formatBibliography: () => "",
     } as any;
 

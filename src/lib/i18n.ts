@@ -111,6 +111,9 @@ const translations = {
 
     // Update
     "update.available": "v{version} available — click to download",
+
+    // Document output
+    "doc.references": "References",
   },
   "zh-CN": {
     // Sidebar
@@ -221,6 +224,9 @@ const translations = {
 
     // Update
     "update.available": "v{version} 可用 — 点击下载",
+
+    // Document output
+    "doc.references": "参考文献",
   },
 } as const;
 

@@ -3,7 +3,8 @@ import { shortAuthor, italicize, field } from "./formatter";
 
 export const chicagoFormatter: CitationFormatter = {
   styleName: "chicago",
-  formatFootnote(entry, pinpoint, history, _fn) {
+  kind: "footnote",
+  formatCitation(entry, pinpoint, history, _fn) {
     if (!entry.key) return "[unknown reference]";
     // Ibid
     if (history.length > 0 && history[history.length - 1].key === entry.key)
@@ -48,5 +49,9 @@ export const chicagoFormatter: CitationFormatter = {
     }
     if (pinpoint) r += `, ${pinpoint}`;
     return r;
+  },
+  formatBibliography(entry, _index) {
+    // Empty history forces the full first-cite form (no Ibid/short-form).
+    return this.formatCitation(entry, "", [], 0);
   },
 };
