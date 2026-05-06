@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/app-store";
-import { Circle, Loader2, AlertCircle, CheckCircle, Lightbulb, ArrowDownCircle, X } from "lucide-react";
+import { useReferenceStore } from "../stores/reference-store";
+import { useWorkspaceStore } from "../stores/workspace-store";
+import { getOrderedStyleNames, PRIMARY_STYLES } from "../lib/citation/registry";
+import { Circle, Loader2, AlertCircle, CheckCircle, Lightbulb, ArrowDownCircle, X, BookMarked, Check } from "lucide-react";
 import { useT } from "../lib/i18n";
 
 const TIP_KEYS = [
@@ -80,26 +84,30 @@ export function StatusBar() {
         </div>
       </div>
 
-      {/* Right side - Update + App info */}
+      {/* Right side - Style + Update + App info */}
       <div className="flex items-center gap-3 shrink-0">
+        <StyleChip />
         {showUpdate && (
-          <div className="flex items-center gap-1">
+          <div className="group flex items-center">
             <a
               href={updateInfo.release_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80 transition-opacity"
+              title={t("update.available").replace("{version}", updateInfo.latest_version)}
+              className="flex items-center px-1.5 py-0.5 rounded-full bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80 transition-opacity"
             >
-              <ArrowDownCircle size={11} />
-              <span className="text-[10px] font-medium">
+              <ArrowDownCircle size={11} className="shrink-0" />
+              <span className="overflow-hidden whitespace-nowrap text-[10px] font-medium max-w-0 group-hover:max-w-[260px] group-hover:ml-1 transition-[max-width,margin] duration-200 ease-out">
                 {t("update.available").replace("{version}", updateInfo.latest_version)}
               </span>
             </a>
             <button
               onClick={dismissUpdate}
-              className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+              title="Dismiss"
+              aria-label="Dismiss update notice"
+              className="overflow-hidden max-w-0 group-hover:max-w-[20px] group-hover:ml-1 transition-[max-width,margin] duration-200 ease-out text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
             >
-              <X size={11} />
+              <X size={11} className="shrink-0" />
             </button>
           </div>
         )}
@@ -108,5 +116,99 @@ export function StatusBar() {
         </span>
       </div>
     </div>
+  );
+}
+
+/**
+ * Compact citation-style indicator that lives in the status bar so the active
+ * convention (OSCOLA / Harvard / …) is visible while writing — not buried in
+ * the References tab. Click to switch styles inline.
+ */
+function StyleChip() {
+  const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
+  const citationStyle = useReferenceStore((s) => s.citationStyle);
+  const setCitationStyle = useReferenceStore((s) => s.setCitationStyle);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (anchorRef.current?.contains(t)) return;
+      if (portalRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !anchorRef.current) return;
+    const r = anchorRef.current.getBoundingClientRect();
+    const menuWidth = 160;
+    setPos({
+      top: r.top - 4, // anchored to bottom edge of menu via translateY(-100%)
+      left: Math.max(8, r.right - menuWidth),
+    });
+  }, [open]);
+
+  if (!activeDocumentPath) return null;
+
+  const ordered = getOrderedStyleNames();
+  const dividerAfter = PRIMARY_STYLES.length;
+
+  return (
+    <>
+      <button
+        ref={anchorRef}
+        onClick={() => setOpen((o) => !o)}
+        title="Citation style"
+        className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--bg-tertiary)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+      >
+        <BookMarked size={11} />
+        <span className="text-[10px] font-semibold tracking-wide">
+          {citationStyle.toUpperCase()}
+        </span>
+      </button>
+
+      {open && pos && createPortal(
+        <div
+          ref={portalRef}
+          style={{
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
+            transform: "translateY(-100%)",
+            zIndex: 9999,
+          }}
+          className="menu-surface w-[160px] py-1 animate-fade-in"
+        >
+          {ordered.map((s, i) => {
+            const active = s === citationStyle;
+            return (
+              <div key={s}>
+                {i === dividerAfter && (
+                  <div className="my-0.5 border-t border-[var(--border-light)]" />
+                )}
+                <button
+                  onClick={() => {
+                    setCitationStyle(s);
+                    setOpen(false);
+                  }}
+                  className={`menu-item justify-between ${active ? "text-[var(--accent-dark)] bg-[var(--accent-light)]" : ""}`}
+                >
+                  <span className="font-semibold tracking-wide">{s.toUpperCase()}</span>
+                  {active && <Check size={12} className="shrink-0" />}
+                </button>
+              </div>
+            );
+          })}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

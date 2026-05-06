@@ -34,3 +34,21 @@ export function getFormatter(style: string): CitationFormatter {
 export function getStyleNames(): string[] {
   return Object.keys(formatters).sort();
 }
+
+/**
+ * Styles surfaced first in pickers. LexTyp targets UK law / academic writers,
+ * so OSCOLA and Harvard sit above the rest with a divider in the UI.
+ */
+export const PRIMARY_STYLES: readonly string[] = ["oscola", "harvard"] as const;
+
+/**
+ * Style names ordered for UI pickers: primary styles first, then the rest
+ * alphabetically. Consumers render a divider between the two groups using
+ * `PRIMARY_STYLES.length` as the boundary.
+ */
+export function getOrderedStyleNames(): string[] {
+  const all = getStyleNames();
+  const primary = PRIMARY_STYLES.filter((s) => all.includes(s));
+  const rest = all.filter((s) => !PRIMARY_STYLES.includes(s));
+  return [...primary, ...rest];
+}

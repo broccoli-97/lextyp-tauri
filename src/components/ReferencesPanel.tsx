@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { BookOpen, Search, ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
-import { getStyleNames } from "../lib/citation/registry";
+import { getOrderedStyleNames, PRIMARY_STYLES } from "../lib/citation/registry";
 import { formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
 import { useReferenceStore } from "../stores/reference-store";
@@ -97,8 +97,11 @@ export function ReferencesPanel({
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4">
         <BookOpen size={24} className="text-[var(--text-tertiary)]" />
-        <p className="text-[12px] text-[var(--text-tertiary)] text-center">
-          Open a document to manage references
+        <p className="text-[12px] text-[var(--text-secondary)] text-center">
+          {t("refs.needDocument")}
+        </p>
+        <p className="text-[11px] text-[var(--text-tertiary)] text-center">
+          {t("refs.needDocumentHint")}
         </p>
       </div>
     );
@@ -156,21 +159,25 @@ export function ReferencesPanel({
             </button>
             {styleDropdownOpen && (
               <div className="menu-surface absolute top-full left-0 right-0 mt-1 overflow-hidden z-50">
-                {getStyleNames().map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      setCitationStyle(s);
-                      setStyleDropdownOpen(false);
-                    }}
-                    className={`menu-item ${
-                      citationStyle === s
-                        ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-                        : ""
-                    }`}
-                  >
-                    {s.toUpperCase()}
-                  </button>
+                {getOrderedStyleNames().map((s, i) => (
+                  <div key={s}>
+                    {i === PRIMARY_STYLES.length && (
+                      <div className="my-0.5 border-t border-[var(--border-light)]" />
+                    )}
+                    <button
+                      onClick={() => {
+                        setCitationStyle(s);
+                        setStyleDropdownOpen(false);
+                      }}
+                      className={`menu-item ${
+                        citationStyle === s
+                          ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
+                          : ""
+                      }`}
+                    >
+                      {s.toUpperCase()}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

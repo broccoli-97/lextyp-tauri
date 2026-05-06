@@ -20,8 +20,8 @@ const translations = {
     "sidebar.closeWorkspace": "Close Workspace",
 
     // Editor
-    "editor.noDocument": "No document open",
-    "editor.noDocumentHint": "Create or open a document from the sidebar",
+    "editor.noDocument": "Start your essay",
+    "editor.noDocumentHint": "Create or open a document from the sidebar. OSCOLA citations are on by default — switch styles from the chip in the status bar.",
     "editor.outline": "Outline",
 
     // PDF Preview
@@ -94,6 +94,8 @@ const translations = {
     "refs.errorBibEmpty": "BibTeX text is empty",
     "refs.errorBibParseFail": "Could not parse BibTeX entry",
     "refs.edit": "Edit",
+    "refs.needDocument": "Open a document to manage references",
+    "refs.needDocumentHint": "Each document has its own bibliography saved inside it.",
 
     // Files panel
     "files.saveAs": "Save As",
@@ -101,7 +103,7 @@ const translations = {
 
     // Status bar tips
     "tip.slash": "Type / to open the slash menu and insert headings, lists, or citations",
-    "tip.citationStyle": "Switch citation styles anytime from the sidebar dropdown",
+    "tip.citationStyle": "Switch citation styles anytime from the chip in the status bar",
     "tip.pdfDoubleClick": "Double-click the PDF preview to jump to that paragraph in the editor",
     "tip.collapsePanel": "Collapse the sidebar or PDF panel for distraction-free writing",
     "tip.outline": "Use the outline button at the bottom-left to navigate long documents",
@@ -133,8 +135,8 @@ const translations = {
     "sidebar.closeWorkspace": "关闭工作区",
 
     // Editor
-    "editor.noDocument": "未打开文档",
-    "editor.noDocumentHint": "从侧边栏创建或打开文档",
+    "editor.noDocument": "开始撰写论文",
+    "editor.noDocumentHint": "从侧边栏新建或打开文档。默认使用 OSCOLA 引注 — 可在状态栏的标签切换样式。",
     "editor.outline": "大纲",
 
     // PDF Preview
@@ -207,6 +209,8 @@ const translations = {
     "refs.errorBibEmpty": "BibTeX 文本为空",
     "refs.errorBibParseFail": "无法解析 BibTeX 条目",
     "refs.edit": "编辑",
+    "refs.needDocument": "请先打开一篇文档以管理参考文献",
+    "refs.needDocumentHint": "每篇文档都保存自己的参考文献库。",
 
     // Files panel
     "files.saveAs": "另存为",
@@ -214,7 +218,7 @@ const translations = {
 
     // Status bar tips
     "tip.slash": "输入 / 打开斜杠菜单，插入标题、列表或引用",
-    "tip.citationStyle": "随时从侧边栏下拉菜单切换引用样式",
+    "tip.citationStyle": "可在状态栏的引注样式标签随时切换",
     "tip.pdfDoubleClick": "双击 PDF 预览可跳转到编辑器中的对应段落",
     "tip.collapsePanel": "收起侧边栏或 PDF 面板，获得无干扰的写作体验",
     "tip.outline": "使用左下角的大纲按钮浏览长文档",
