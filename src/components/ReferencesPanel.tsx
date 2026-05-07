@@ -1,6 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
-import { BookOpen, Search, ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
-import { getOrderedStyleNames, PRIMARY_STYLES } from "../lib/citation/registry";
+import { BookOpen, Search, ChevronDown, Plus, Pencil, Trash2, Quote, FileUp } from "lucide-react";
+import {
+  getOrderedStyleNames,
+  getStyleDescription,
+  PRIMARY_STYLES,
+} from "../lib/citation/registry";
 import { formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
 import { useReferenceStore } from "../stores/reference-store";
@@ -22,6 +26,37 @@ interface ReferencesPanelProps {
   activeDocumentPath: string | null;
   onInsertCitation: (key: string) => void;
   onImportBib: () => void;
+}
+
+// Pluralize a BibTeX entry-type for the filter pills. Falls back to a naive
+// "type + s" for anything we don't know about — keeps the panel forgiving
+// when users invent custom types in their .bib files.
+const TYPE_LABELS: Record<string, string> = {
+  article: "Articles",
+  book: "Books",
+  inbook: "Chapters",
+  incollection: "Chapters",
+  inproceedings: "Proceedings",
+  proceedings: "Proceedings",
+  conference: "Proceedings",
+  case: "Cases",
+  statute: "Statutes",
+  legislation: "Legislation",
+  hansard: "Hansard",
+  online: "Online",
+  manual: "Manuals",
+  mastersthesis: "Theses",
+  phdthesis: "Theses",
+  techreport: "Reports",
+  unpublished: "Unpublished",
+  booklet: "Booklets",
+  misc: "Misc",
+};
+
+function pluralizeType(type: string): string {
+  const key = type.toLowerCase();
+  if (TYPE_LABELS[key]) return TYPE_LABELS[key];
+  return key.charAt(0).toUpperCase() + key.slice(1) + "s";
 }
 
 export function ReferencesPanel({
@@ -88,6 +123,14 @@ export function ReferencesPanel({
     return Array.from(types).sort();
   }, [entries]);
 
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const e of entries) {
+      counts[e.type] = (counts[e.type] || 0) + 1;
+    }
+    return counts;
+  }, [entries]);
+
   const displayedEntries = useMemo(() => {
     if (!typeFilter) return filtered;
     return filtered.filter((e) => e.type === typeFilter);
@@ -107,7 +150,6 @@ export function ReferencesPanel({
     );
   }
 
-  // Show citation editor overlay
   if (editorMode) {
     return (
       <CitationEditor
@@ -121,44 +163,64 @@ export function ReferencesPanel({
 
   return (
     <>
-      {/* Toolbar: import + add + style */}
-      <div className="shrink-0 px-2 pt-2 pb-1 space-y-1.5 border-b border-[var(--border-light)]">
+      {/* Toolbar: import + add → search → style card. The trio is the
+          information density at the top of the panel — every action a user
+          starts with happens here. */}
+      <div className="shrink-0 px-2 pt-2 pb-2 space-y-2 border-b border-[var(--border-light)]">
         <div className="flex gap-1.5">
           <button
             onClick={onImportBib}
-            className="sidebar-row-btn sidebar-row-btn-accent flex-1"
+            className="btn btn-quiet flex-1"
           >
-            <BookOpen size={14} className="shrink-0" />
+            <FileUp size={13} className="shrink-0" />
             <span className="truncate">{t("refs.importBib")}</span>
           </button>
           <button
             onClick={handleCreate}
-            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md text-[var(--accent)] hover:bg-[var(--accent-light)] transition-all"
+            className="btn btn-soft"
             title={t("refs.addNew")}
           >
-            <Plus size={16} />
+            <Plus size={13} className="shrink-0" />
+            <span>{t("refs.add")}</span>
           </button>
         </div>
 
         {entries.length > 0 && (
+          <div className="ref-search">
+            <Search size={12} className="ref-search-icon" />
+            <input
+              type="text"
+              placeholder={t("refs.search")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
+
+        {entries.length > 0 && (
           <div className="relative" ref={styleDropdownRef}>
-            <label className="panel-section-label block px-1 mb-0.5">
+            <label className="panel-section-label block px-1 mb-1">
               {t("refs.style")}
             </label>
             <button
               onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
-              className="compact-control flex items-center justify-between px-2 font-medium cursor-pointer"
+              className={`ref-style-card ${styleDropdownOpen ? "is-open" : ""}`}
             >
-              <span>{citationStyle.toUpperCase()}</span>
-              <ChevronDown
-                size={11}
-                className={`text-[var(--text-tertiary)] transition-transform ${
-                  styleDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
+              <span className="ref-style-icon">
+                <Quote size={14} />
+              </span>
+              <span className="ref-style-meta">
+                <span className="ref-style-name">{citationStyle.toUpperCase()}</span>
+                {getStyleDescription(citationStyle) && (
+                  <span className="ref-style-desc">
+                    {getStyleDescription(citationStyle)}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={12} className="ref-style-chevron" />
             </button>
             {styleDropdownOpen && (
-              <div className="menu-surface absolute top-full left-0 right-0 mt-1 overflow-hidden z-50">
+              <div className="menu-surface absolute top-full left-0 right-0 mt-1 overflow-hidden z-50 animate-fade-in">
                 {getOrderedStyleNames().map((s, i) => (
                   <div key={s}>
                     {i === PRIMARY_STYLES.length && (
@@ -169,13 +231,20 @@ export function ReferencesPanel({
                         setCitationStyle(s);
                         setStyleDropdownOpen(false);
                       }}
-                      className={`menu-item ${
+                      className={`menu-item flex-col items-start ${
                         citationStyle === s
                           ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
                           : ""
                       }`}
                     >
-                      {s.toUpperCase()}
+                      <span className="font-semibold tracking-wide text-[11px]">
+                        {s.toUpperCase()}
+                      </span>
+                      {getStyleDescription(s) && (
+                        <span className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+                          {getStyleDescription(s)}
+                        </span>
+                      )}
                     </button>
                   </div>
                 ))}
@@ -185,8 +254,8 @@ export function ReferencesPanel({
         )}
       </div>
 
-      {/* Search + list */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-2 pt-1.5">
+      {/* List body */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-2 pt-2">
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8">
             <BookOpen size={20} className="text-[var(--text-tertiary)]" />
@@ -199,113 +268,78 @@ export function ReferencesPanel({
           </div>
         ) : (
           <>
-            {/* Search */}
-            <div className="relative mb-1.5">
-              <Search
-                size={12}
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none"
-              />
-              <input
-                type="text"
-                placeholder={t("refs.search")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="compact-control compact-control-search"
-              />
-            </div>
-
-            {/* Type filter tags */}
+            {/* Type filter pills with counts */}
             {entryTypes.length > 1 && (
-              <div className="flex flex-wrap gap-1 mb-1.5">
+              <div className="flex flex-wrap gap-1 mb-2">
                 <button
                   onClick={() => setTypeFilter(null)}
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
-                    typeFilter === null
-                      ? "bg-[var(--accent)] text-white"
-                      : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                  }`}
+                  className={`ref-pill ${typeFilter === null ? "ref-pill-active" : ""}`}
                 >
-                  All
+                  <span>All</span>
+                  <span className="ref-pill-count">{entries.length}</span>
                 </button>
-                {entryTypes.map((t) => (
+                {entryTypes.map((type) => (
                   <button
-                    key={t}
-                    onClick={() => setTypeFilter(typeFilter === t ? null : t)}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
-                      typeFilter === t
-                        ? "bg-[var(--accent)] text-white"
-                        : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                    }`}
+                    key={type}
+                    onClick={() => setTypeFilter(typeFilter === type ? null : type)}
+                    className={`ref-pill ${typeFilter === type ? "ref-pill-active" : ""}`}
                   >
-                    {t}
+                    <span>{pluralizeType(type)}</span>
+                    <span className="ref-pill-count">{typeCounts[type]}</span>
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Count */}
-            <div className="flex items-center px-1 mb-1">
-              <span className="text-[10px] text-[var(--text-tertiary)]">
-                {displayedEntries.length}/{entries.length}
+            {/* Counter row */}
+            <div className="ref-counter">
+              <span>
+                <strong>{displayedEntries.length}</strong>
+                {" / "}
+                {entries.length} {t("refs.references")}
               </span>
             </div>
 
             {/* Citation cards */}
-            <div className="space-y-1.5 pb-2">
+            <div className="space-y-1.5 pb-3">
               {displayedEntries.length === 0 ? (
-                <div className="py-3 text-[11px] text-[var(--text-tertiary)] text-center rounded-xl border border-dashed border-[var(--border)]">
-                  No matches
-                </div>
+                <div className="ref-empty">{t("refs.noMatches")}</div>
               ) : (
                 displayedEntries.map((entry) => {
-                  const isExpanded = expandedKey === entry.key;
+                  const isOpen = expandedKey === entry.key;
                   return (
                     <div
                       key={entry.key}
-                      onClick={() => setExpandedKey(isExpanded ? null : entry.key)}
-                      className={[
-                        "group rounded-xl border cursor-pointer transition-all duration-200",
-                        isExpanded
-                          ? "border-[var(--accent)] bg-[var(--accent-light)] shadow-sm"
-                          : "border-[var(--border)] bg-[var(--bg-primary)] hover:border-[var(--border-hover)] hover:shadow-sm",
-                      ].join(" ")}
+                      onClick={() => setExpandedKey(isOpen ? null : entry.key)}
+                      className={`ref-card ${isOpen ? "is-open" : ""}`}
                     >
-                      {/* Card header */}
-                      <div className="px-2.5 py-2">
-                        <div className="flex items-center justify-between min-w-0">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className={`badge shrink-0 text-[9px] ${isExpanded ? "badge-accent" : ""}`}>
-                              {entry.type}
-                            </span>
-                            <span className="text-[10px] font-mono text-[var(--text-tertiary)] truncate">
-                              @{entry.key}
-                            </span>
-                          </div>
+                      <div className="ref-card-head">
+                        <div className="ref-card-meta">
+                          <span className="ref-card-tag">{entry.type}</span>
+                          <span className="ref-card-key">@{entry.key}</span>
                           <button
-                            onClick={(ev) => { ev.stopPropagation(); onInsertCitation(entry.key); }}
-                            className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-medium text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              onInsertCitation(entry.key);
+                            }}
+                            className="btn btn-soft btn-sm"
                           >
                             {t("refs.insert")}
                           </button>
                         </div>
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-[1.4] text-[var(--text-primary)] break-words">
+                        <p className="ref-card-title">
                           {entry.fields.title || `@${entry.key}`}
                         </p>
-                        <p className="mt-0.5 truncate text-[10px] text-[var(--text-secondary)]">
-                          {formatEntryMeta(entry)}
-                        </p>
+                        <p className="ref-card-source">{formatEntryMeta(entry)}</p>
                       </div>
 
-                      {/* Expanded details */}
-                      {isExpanded && (
-                        <div className="px-2.5 pb-2.5 pt-0 border-t border-[var(--accent)]/20 animate-fade-in">
-                          {/* Formatted citation preview */}
-                          <p className="mt-2 text-[11px] leading-[1.6] text-[var(--text-primary)] italic">
+                      {isOpen && (
+                        <div className="ref-card-body animate-fade-in">
+                          <p className="ref-card-preview">
                             {formatCitationPreview(entry, formatter)}
                           </p>
 
-                          {/* Structured fields */}
-                          <div className="mt-2 space-y-1">
+                          <div className="ref-card-fields">
                             <DetailField label="Author" value={entry.fields.author} />
                             <DetailField label="Editor" value={entry.fields.editor} />
                             <DetailField label="Year" value={entry.fields.year} />
@@ -321,35 +355,45 @@ export function ReferencesPanel({
                             <DetailField label="URL" value={entry.fields.url} mono />
                           </div>
 
-                          {/* Edit / Delete actions */}
-                          <div className="mt-2.5 pt-2 border-t border-[var(--accent)]/15 flex gap-1.5">
+                          <div className="ref-card-actions">
                             <button
-                              onClick={(ev) => { ev.stopPropagation(); handleEdit(entry); }}
-                              className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
+                              onClick={(ev) => {
+                                ev.stopPropagation();
+                                handleEdit(entry);
+                              }}
+                              className="btn btn-quiet btn-sm"
                             >
                               <Pencil size={11} />
                               {t("refs.edit")}
                             </button>
                             {deleteConfirmKey === entry.key ? (
-                              <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
-                                <span className="text-[10px] text-[var(--error)]">{t("refs.deleteConfirm")}</span>
+                              <div
+                                className="flex items-center gap-1.5 flex-wrap"
+                                onClick={(ev) => ev.stopPropagation()}
+                              >
+                                <span className="text-[10.5px] text-[var(--error)]">
+                                  {t("refs.deleteConfirm")}
+                                </span>
                                 <button
                                   onClick={() => handleDelete(entry.key)}
-                                  className="px-1.5 py-0.5 rounded text-[10px] font-medium text-white bg-[var(--error)] hover:opacity-90 transition-opacity"
+                                  className="btn btn-danger btn-sm"
                                 >
                                   {t("refs.delete")}
                                 </button>
                                 <button
                                   onClick={() => setDeleteConfirmKey(null)}
-                                  className="px-1.5 py-0.5 rounded text-[10px] font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
+                                  className="btn btn-quiet btn-sm"
                                 >
                                   {t("refs.cancel")}
                                 </button>
                               </div>
                             ) : (
                               <button
-                                onClick={(ev) => { ev.stopPropagation(); setDeleteConfirmKey(entry.key); }}
-                                className="flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-[var(--error)] hover:bg-[var(--error-light)] transition-colors"
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  setDeleteConfirmKey(entry.key);
+                                }}
+                                className="btn btn-quiet btn-sm btn-danger-soft"
                               >
                                 <Trash2 size={11} />
                                 {t("refs.delete")}
@@ -370,14 +414,20 @@ export function ReferencesPanel({
   );
 }
 
-function DetailField({ label, value, mono }: { label: string; value?: string; mono?: boolean }) {
+function DetailField({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value?: string;
+  mono?: boolean;
+}) {
   if (!value) return null;
   return (
-    <div className="flex gap-2 text-[10px] leading-[1.4]">
-      <span className="shrink-0 w-[60px] text-[var(--text-tertiary)] font-medium">{label}</span>
-      <span className={`min-w-0 break-words text-[var(--text-secondary)] ${mono ? "font-mono" : ""}`}>
-        {value}
-      </span>
+    <div className="ref-card-field">
+      <span className="ref-card-field-label">{label}</span>
+      <span className={`ref-card-field-value ${mono ? "is-mono" : ""}`}>{value}</span>
     </div>
   );
 }

@@ -295,7 +295,7 @@ export function Sidebar({
               </div>
               <button
                 onClick={handleOpenWorkspace}
-                className="btn btn-primary h-8 px-4 text-[12px]"
+                className="btn btn-primary btn-lg"
               >
                 {t("sidebar.openWorkspace")}
               </button>

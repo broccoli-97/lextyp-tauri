@@ -367,7 +367,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
           {/* Download */}
           <button
             onClick={handleDownload}
-            className="btn btn-ghost h-7 px-2 text-[11px] font-medium gap-1"
+            className="btn btn-quiet btn-sm"
             title={t("pdf.download")}
           >
             <Download size={14} />

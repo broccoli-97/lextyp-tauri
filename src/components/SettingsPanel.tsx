@@ -75,7 +75,7 @@ export function SettingsPanel() {
           <button
             onClick={runUpdateCheck}
             disabled={checkState.kind === "checking"}
-            className="panel-toggle-btn self-start disabled:opacity-60 disabled:cursor-not-allowed"
+            className="btn btn-soft self-start"
           >
             <RefreshCw
               size={14}
@@ -225,11 +225,7 @@ function ThemeButton({
   return (
     <button
       onClick={onClick}
-      className={`panel-toggle-btn ${
-        active
-          ? "panel-toggle-btn-active"
-          : ""
-      }`}
+      className={`btn btn-toggle ${active ? "is-active" : ""}`}
     >
       {icon}
       {label}
@@ -249,11 +245,7 @@ function LangButton({
   return (
     <button
       onClick={onClick}
-      className={`panel-toggle-btn ${
-        active
-          ? "panel-toggle-btn-active"
-          : ""
-      }`}
+      className={`btn btn-toggle ${active ? "is-active" : ""}`}
     >
       {label}
     </button>

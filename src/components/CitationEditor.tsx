@@ -168,22 +168,14 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
       <div className="flex gap-1 px-3 pt-2 pb-1 shrink-0">
         <button
           onClick={() => setMode("form")}
-          className={`panel-toggle-btn panel-toggle-btn-compact ${
-            mode === "form"
-              ? "panel-toggle-btn-active"
-              : ""
-          }`}
+          className={`btn btn-toggle btn-sm ${mode === "form" ? "is-active" : ""}`}
         >
           <FormInput size={12} />
           {t("refs.modeForm")}
         </button>
         <button
           onClick={() => setMode("bibtex")}
-          className={`panel-toggle-btn panel-toggle-btn-compact ${
-            mode === "bibtex"
-              ? "panel-toggle-btn-active"
-              : ""
-          }`}
+          className={`btn btn-toggle btn-sm ${mode === "bibtex" ? "is-active" : ""}`}
         >
           <Code size={12} />
           BibTeX
@@ -265,13 +257,13 @@ export function CitationEditor({ editEntry, existingKeys, onSave, onCancel }: Ci
       <div className="shrink-0 px-3 py-2 border-t border-[var(--border-light)] flex gap-2">
         <button
           onClick={onCancel}
-          className="flex-1 btn btn-secondary h-8 text-[12px]"
+          className="flex-1 btn btn-quiet"
         >
           {t("refs.cancel")}
         </button>
         <button
           onClick={mode === "bibtex" ? handleSaveBibtex : handleSaveForm}
-          className="flex-1 btn btn-primary h-8 text-[12px]"
+          className="flex-1 btn btn-primary"
         >
           {isEditing ? t("refs.save") : t("refs.create")}
         </button>
