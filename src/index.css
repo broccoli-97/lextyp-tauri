@@ -176,12 +176,35 @@ textarea {
    BlockNote Editor Overrides
    ═══════════════════════════════════════ */
 
+/* Body in the editing surface mirrors the PDF: 12pt Times New Roman with
+   1.5 leading. We keep the screen size at 16px (= 12pt @ 96dpi) and let the
+   serif do the work — what the writer sees is what compiles, modulo the
+   editor's max content width. */
 .bn-editor {
-  font-family: var(--font-editor);
+  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro", "Times New Roman", Times, Georgia, serif;
   font-size: 16px;
-  line-height: 1.75;
+  line-height: 1.6;
   color: var(--text-primary);
   background: transparent;
+}
+
+/* Notion-style content cap. We deliberately don't add horizontal padding
+   here — BlockNote's `.bn-editor` ships with `padding-inline: 54px` to give
+   the drag/add handles room, and stacking another 56px on top squeezed the
+   text column down to ~470px on a half-width pane. So the wrap controls
+   only the maximum width and vertical rhythm; horizontal whitespace comes
+   entirely from BlockNote's own padding. */
+.editor-content-wrap {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 48px 0 96px;
+}
+
+@media (max-width: 720px) {
+  .editor-content-wrap {
+    padding: 28px 0 72px;
+  }
 }
 
 .bn-container [contenteditable="true"]:focus,
@@ -193,21 +216,41 @@ textarea {
 }
 
 .bn-editor [class*="heading"] {
-  font-family: var(--font-editor);
-  letter-spacing: -0.02em;
+  font-family: inherit; /* keep the serif body face; the PDF uses one family */
+  letter-spacing: 0;
   font-weight: 700;
 }
 
-/* BlockNote's default heading sizes (`--level`: 3em / 2em / 1.3em) are
-   web-editor scale and clash with the academic PDF output. Scale them to
-   match the PDF: 16 / 14 / 12 / 12 pt on a 12pt body — H3 is bold, H4 is
-   bold italic, all distinct enough that the hierarchy reads cleanly. */
-.bn-editor [data-content-type="heading"][data-level="1"] { --level: 1.33em; }
-.bn-editor [data-content-type="heading"][data-level="2"] { --level: 1.17em; }
-.bn-editor [data-content-type="heading"][data-level="3"] { --level: 1em; }
-.bn-editor [data-content-type="heading"][data-level="4"] { --level: 1em; font-style: italic; }
-.bn-editor [data-prev-level="1"] { --prev-level: 1.33em; }
-.bn-editor [data-prev-level="2"] { --prev-level: 1.17em; }
+/* PDF-faithful heading scale: H1 17pt centered (paper title); H2–H4 all 12pt
+   on a 12pt body, with hierarchy carried by weight/italic/alignment, not size
+   — exactly the contract documented in CLAUDE.md and the Typst preamble.
+
+   IMPORTANT: BlockNote omits the `data-level` attribute on level-1 headings
+   (it's the default). So we set the H1 size on the unattributed selector and
+   override for explicit levels 2–4. Specificity is bumped past BlockNote's
+   own `[data-content-type=heading][data-level="N"]` rules by qualifying with
+   `.bn-editor`; without that, BlockNote's --level: 2em wins on H2. */
+.bn-editor [data-content-type="heading"] {
+  --level: 1.42em;          /* 17pt @ 96dpi — paper title */
+  text-align: center;
+}
+.bn-editor [data-content-type="heading"][data-level="2"] {
+  --level: 1em;
+  text-align: left;
+}
+.bn-editor [data-content-type="heading"][data-level="3"] {
+  --level: 1em;
+  text-align: left;
+  font-style: italic;
+}
+.bn-editor [data-content-type="heading"][data-level="4"] {
+  --level: 1em;
+  text-align: left;
+  font-weight: 400;
+  font-style: italic;
+}
+.bn-editor [data-prev-level="1"] { --prev-level: 1.42em; }
+.bn-editor [data-prev-level="2"] { --prev-level: 1em; }
 .bn-editor [data-prev-level="3"] { --prev-level: 1em; }
 .bn-editor [data-prev-level="4"] { --prev-level: 1em; }
 
@@ -729,4 +772,580 @@ textarea {
   .sidebar-content-responsive {
     display: none;
   }
+}
+
+/* ═══════════════════════════════════════
+   /cite Palette
+   Native to the app design system: warm off-white surfaces, indigo accent
+   for selection/tabs, semantic per-type kind colors (case=indigo,
+   book=emerald, article=amber, statute=rose). The card scales with the
+   editor pane so it never feels cramped on a wide window.
+   ═══════════════════════════════════════ */
+
+.palette-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 72px 24px 24px;
+  background: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.palette {
+  width: clamp(380px, 60%, 720px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: min(640px, calc(100% - 16px));
+}
+
+.palette-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.palette-tab {
+  padding: 4px 10px;
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.palette-tab:hover {
+  color: var(--text-secondary);
+}
+
+.palette-tab-active,
+.palette-tab-active:hover {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  font-weight: 600;
+}
+
+.palette-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.palette-prefix {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.4;
+  caret-color: var(--accent);
+}
+
+.palette-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.palette-list {
+  flex: 1;
+  min-height: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.palette-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 16px 11px 14px;
+  background: transparent;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.palette-item:hover {
+  background: var(--bg-hover);
+}
+
+.palette-item-sel,
+.palette-item-sel:hover {
+  background: var(--accent-light);
+  border-left-color: var(--accent);
+}
+
+.palette-item:last-child {
+  border-bottom: none;
+}
+
+.palette-kind {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Fixed width keeps every row's title flush-left at the same x-axis,
+     no matter the label length (BOOK / ARTICLE / STATUTE …). */
+  width: 64px;
+  margin-top: 2px;
+  padding: 3px 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-light);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.palette-item-text {
+  display: block;
+  min-width: 0;
+  flex: 1;
+}
+
+.palette-title {
+  display: block;
+  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro", "Times New Roman", Georgia, serif;
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-meta {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-empty {
+  padding: 36px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.palette-empty-title {
+  font-family: "Newsreader", "Source Serif 4", "Times New Roman", Georgia, serif;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.palette-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-light);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+
+.palette-foot-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 17px;
+  padding: 0 5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 var(--border-hover);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════
+   Editor top toolbar
+   Every interactive element is a 28px-tall control. Items live on a single
+   row that never wraps; cramped widths progressively hide the cite button's
+   label and the edition suffix instead. The OSCOLA chip is anchored to the
+   trailing edge with `margin-left: auto`.
+   ═══════════════════════════════════════ */
+
+.editor-toolbar {
+  flex-shrink: 0;
+  height: 44px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.editor-toolbar-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.editor-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.editor-toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.editor-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.editor-toolbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.editor-toolbar-btn-text {
+  width: 28px;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.editor-toolbar-btn.is-active {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+.editor-toolbar-style {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 6px 0 9px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: auto; /* anchor to the trailing edge of the toolbar */
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.editor-toolbar-style:hover,
+.editor-toolbar-style.is-open {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.editor-toolbar-style-icon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.editor-toolbar-style:hover .editor-toolbar-style-icon,
+.editor-toolbar-style.is-open .editor-toolbar-style-icon {
+  color: var(--accent);
+}
+
+.editor-toolbar-style-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor-toolbar-style-name {
+  font-family: var(--font-ui);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.editor-toolbar-style-edn {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.editor-toolbar-style-chevron {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.editor-toolbar-style.is-open .editor-toolbar-style-chevron {
+  transform: rotate(180deg);
+  color: var(--text-secondary);
+}
+
+/* Progressive collapse — keep the toolbar on a single row no matter the
+   window width. Buttons themselves never collapse. */
+@media (max-width: 880px) {
+  .editor-toolbar-style-edn { display: none; }
+}
+
+@media (max-width: 560px) {
+  .editor-toolbar-inner { gap: 4px; padding: 0 8px; }
+  .editor-toolbar-divider { height: 14px; }
+}
+
+/* ═══════════════════════════════════════
+   Citation tag — two display modes
+   • `chip`     → @key pill, click to open the details card
+   • `footnote` → invisible chip, CSS counter renders a superscript and
+                  the containing block gains a thin underline so the
+                  cited passage is still visible to the author.
+   The DOM is identical in both modes; only the parent class on
+   `.editor-content-wrap` differs.
+   ═══════════════════════════════════════ */
+
+.lextyp-citation {
+  cursor: pointer;
+  user-select: none;
+}
+
+.editor-citations-chip .lextyp-citation .lextyp-citation-key {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: var(--accent-light);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.editor-citations-chip .lextyp-citation:hover .lextyp-citation-key {
+  background-color: color-mix(in srgb, var(--accent-light) 60%, var(--accent) 18%);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* Footnote mode — reset counter at the editor and increment on each tag. */
+.editor-citations-footnote .bn-editor {
+  counter-reset: lextyp-cite;
+}
+
+.editor-citations-footnote .lextyp-citation {
+  counter-increment: lextyp-cite;
+}
+
+.editor-citations-footnote .lextyp-citation .lextyp-citation-key {
+  display: none;
+}
+
+.editor-citations-footnote .lextyp-citation::after {
+  content: counter(lextyp-cite);
+  font-family: var(--font-ui);
+  font-size: 0.62em;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 1;
+  color: var(--accent);
+  margin-left: 1px;
+}
+
+/* Underline the block of text that contains a citation so the cited
+   passage is still visible. The chip itself is excluded so the superscript
+   number doesn't pick up the line. */
+.editor-citations-footnote .bn-block-content:has(.lextyp-citation) {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.editor-citations-footnote .lextyp-citation,
+.editor-citations-footnote .lextyp-citation::after {
+  text-decoration: none;
+}
+
+/* ═══════════════════════════════════════
+   Citation details card (chip-mode popover)
+   ═══════════════════════════════════════ */
+
+.lextyp-citation-card {
+  width: 320px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  animation: fade-in 120ms ease-out;
+}
+
+.lextyp-citation-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.lextyp-citation-card-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.lextyp-citation-card-type {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.lextyp-citation-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.lextyp-citation-card-author {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-style: italic;
+}
+
+.lextyp-citation-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+
+.lextyp-citation-card-venue {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lextyp-citation-card-sep {
+  color: var(--text-muted);
+}
+
+.lextyp-citation-card-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 10px;
+  row-gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+.lextyp-citation-card-field-name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  align-self: start;
+  padding-top: 1px;
+}
+
+.lextyp-citation-card-field-value {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.lextyp-citation-card-empty {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-style: italic;
 }

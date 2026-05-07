@@ -2,11 +2,27 @@ import { create } from "zustand";
 import type { BibEntry } from "../types/bib";
 import { parseBibtex } from "../lib/bib-parser";
 
+/**
+ * Editor-side rendering of citation tags.
+ *
+ * - `chip` — show the `@key` tag inline. Clicking it opens a small card with
+ *   the underlying bibliography record.
+ * - `footnote` — hide `@key` and render a small superscript number that
+ *   mirrors the footnote markers in the compiled PDF. The block of text
+ *   containing the citation is decorated with a thin underline so authors can
+ *   still see at a glance which passages carry references.
+ *
+ * This is purely a *display* setting — it does not change the BibTeX, the
+ * stored document, or the Typst output.
+ */
+export type CitationDisplay = "chip" | "footnote";
+
 interface ReferenceState {
   entries: BibEntry[];
   rawBibContent: string;
   searchQuery: string;
   citationStyle: string;
+  citationDisplay: CitationDisplay;
   setEntries: (entries: BibEntry[], raw: string) => void;
   setFromRaw: (raw: string) => void;
   addEntry: (entry: BibEntry) => void;
@@ -14,6 +30,8 @@ interface ReferenceState {
   removeEntry: (key: string) => void;
   setSearchQuery: (query: string) => void;
   setCitationStyle: (style: string) => void;
+  setCitationDisplay: (display: CitationDisplay) => void;
+  toggleCitationDisplay: () => void;
   clear: () => void;
 }
 
@@ -36,6 +54,7 @@ export const useReferenceStore = create<ReferenceState>((set) => ({
   rawBibContent: "",
   searchQuery: "",
   citationStyle: "oscola",
+  citationDisplay: "chip",
   setEntries: (entries, raw) => set({ entries, rawBibContent: raw }),
   setFromRaw: (raw) => {
     const entries = parseBibtex(raw);
@@ -60,5 +79,9 @@ export const useReferenceStore = create<ReferenceState>((set) => ({
   },
   setSearchQuery: (query) => set({ searchQuery: query }),
   setCitationStyle: (style) => set({ citationStyle: style }),
+  setCitationDisplay: (display) => set({ citationDisplay: display }),
+  toggleCitationDisplay: () => set((s) => ({
+    citationDisplay: s.citationDisplay === "chip" ? "footnote" : "chip",
+  })),
   clear: () => set({ entries: [], rawBibContent: "", searchQuery: "" }),
 }));

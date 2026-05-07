@@ -6,8 +6,14 @@ import {
 } from "@blocknote/core";
 import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
 import { FileText, ListTree } from "lucide-react";
+import { CitationTag } from "../components/CitationTag";
 
-// Custom inline content: Citation tag (@key)
+// Custom inline content: Citation tag.
+//
+// Visual appearance is delegated to <CitationTag/>, which subscribes to the
+// `citationDisplay` setting on the reference store and switches between the
+// `@key` chip (with a details popover) and a numbered superscript that mirrors
+// the compiled PDF.
 export const Citation = createReactInlineContentSpec(
   {
     type: "citation" as const,
@@ -17,22 +23,7 @@ export const Citation = createReactInlineContentSpec(
     content: "none",
   },
   {
-    render: (props) => {
-      const key = props.inlineContent.props.key;
-      return (
-        <span
-          className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold cursor-default select-none"
-          style={{
-            backgroundColor: "var(--accent-light)",
-            color: "var(--accent)",
-            border: "1px solid rgba(35, 131, 226, 0.2)",
-          }}
-          data-citation-key={key}
-        >
-          @{key}
-        </span>
-      );
-    },
+    render: (props) => <CitationTag entryKey={props.inlineContent.props.key} />,
   }
 );
 

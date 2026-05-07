@@ -3,6 +3,7 @@ import { FormattingToolbarController, SideMenuController, useCreateBlockNote } f
 import { BlockNoteView } from "@blocknote/mantine";
 import { filterSuggestionItems } from "@blocknote/core/extensions";
 import { SuggestionMenuController } from "@blocknote/react";
+import { flip, offset, shift, size } from "@floating-ui/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -19,7 +20,47 @@ import { CitationPicker } from "./CitationPicker";
 import { DocumentPicker } from "./DocumentPicker";
 import { EditorSideMenu } from "./EditorSideMenu";
 import { EditorFormattingToolbar } from "./EditorFormattingToolbar";
+import { EditorTopToolbar } from "./EditorTopToolbar";
 import { SlashMenu } from "./SlashMenu";
+
+// Slash-menu placement: BlockNote's defaults only flip vertically, so when the
+// caret sits near the right edge of the editor pane the 340px popup spills past
+// the gutter. Allow corner flips and add a viewport-padded shift so it always
+// lands inside the editor area; size() caps the height to whatever's available.
+const SLASH_MENU_FLOATING_OPTIONS = {
+  useFloatingOptions: {
+    placement: "bottom-start" as const,
+    middleware: [
+      offset(8),
+      flip({
+        fallbackPlacements: ["bottom-end", "top-start", "top-end"],
+        padding: 12,
+      }),
+      shift({ padding: 12 }),
+      size({
+        apply({ elements, availableHeight, availableWidth }) {
+          elements.floating.style.maxHeight = `${Math.max(160, availableHeight)}px`;
+          elements.floating.style.maxWidth = `${Math.max(240, availableWidth)}px`;
+        },
+        padding: 12,
+      }),
+    ],
+  },
+};
+
+// Side-menu (drag/add handle) placement: BlockNote defaults to "left-start"
+// which top-aligns the handle with the block's bounding box. For headings,
+// the larger line-height pushes the visible glyphs down past the handle, so
+// the handle reads as "above" the text and — once the body switched to a
+// serif with looser leading — it landed visibly off-line. Centering on the
+// cross-axis lets the handle settle on the block's optical midpoint, which
+// for one-to-two line blocks (the academic-prose norm) lines up with the
+// text baseline cleanly for both paragraphs and headings.
+const SIDE_MENU_FLOATING_OPTIONS = {
+  useFloatingOptions: {
+    placement: "left" as const,
+  },
+};
 
 /**
  * Walk visible text nodes inside a block element until we accumulate
@@ -223,6 +264,7 @@ export function Editor() {
   // Only subscribe to the specific values needed from reference-store
   const entries = useReferenceStore((s) => s.entries);
   const citationStyle = useReferenceStore((s) => s.citationStyle);
+  const citationDisplay = useReferenceStore((s) => s.citationDisplay);
   // Only subscribe to the specific values needed from workspace-store
   const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
   const activeDocumentBlocks = useWorkspaceStore((s) => s.activeDocumentBlocks);
@@ -469,9 +511,13 @@ export function Editor() {
   }, [insertCitation, openCitationPicker, openDocumentPicker, jumpToBlock]);
 
   return (
-    <div className="h-full relative">
-      <div className="h-full overflow-auto" ref={editorContainerRef} onContextMenu={(e) => e.preventDefault()}>
-        <div className="w-full px-8 py-10">
+    <div className="h-full relative flex flex-col">
+      <EditorTopToolbar
+        editor={editor}
+        onInsertCitation={openCitationPicker}
+      />
+      <div className="flex-1 min-h-0 overflow-auto" ref={editorContainerRef} onContextMenu={(e) => e.preventDefault()}>
+        <div className={`editor-content-wrap editor-citations-${citationDisplay}`}>
           <BlockNoteView
             editor={editor}
             theme="light"
@@ -489,9 +535,13 @@ export function Editor() {
                 )
               }
               suggestionMenuComponent={SlashMenu}
+              floatingUIOptions={SLASH_MENU_FLOATING_OPTIONS}
             />
             <FormattingToolbarController formattingToolbar={EditorFormattingToolbar} />
-            <SideMenuController sideMenu={EditorSideMenu} />
+            <SideMenuController
+              sideMenu={EditorSideMenu}
+              floatingUIOptions={SIDE_MENU_FLOATING_OPTIONS}
+            />
           </BlockNoteView>
         </div>
       </div>

@@ -179,77 +179,81 @@ function App() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-[var(--bg-primary)] overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-        onInsertCitation={handleInsertCitation}
-        width={sidebarWidth}
-      />
+    <div className="flex flex-col h-screen bg-[var(--bg-primary)] overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onInsertCitation={handleInsertCitation}
+          width={sidebarWidth}
+        />
 
-      {/* Sidebar resize handle */}
-      {!sidebarCollapsed && (
-        <div
-          onMouseDown={startSidebarResize}
-          className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-            resizingPanel === "sidebar" ? "bg-[var(--accent)]" : ""
-          }`}
-        >
-          <div className="absolute inset-y-0 -left-1 -right-1" />
-          {resizingPanel === "sidebar" && (
-            <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
-          )}
-        </div>
-      )}
-
-      {/* Main content area */}
-      <div className="flex flex-1 min-w-0 overflow-hidden">
-        {/* Editor panel */}
-        <div className="flex flex-col flex-1 min-w-0">
-          <div className="flex-1 overflow-hidden bg-[var(--bg-primary)]">
-            {activeDocumentPath ? (
-              <Editor />
-            ) : (
-              <EmptyState />
-            )}
-          </div>
-          <StatusBar />
-        </div>
-
-        {/* PDF resize handle */}
-        {!pdfPanelCollapsed && activeDocumentPath && (
+        {/* Sidebar resize handle */}
+        {!sidebarCollapsed && (
           <div
-            ref={resizeRef}
-            onMouseDown={startPdfResize}
+            onMouseDown={startSidebarResize}
             className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-              resizingPanel === "pdf" ? "bg-[var(--accent)]" : ""
+              resizingPanel === "sidebar" ? "bg-[var(--accent)]" : ""
             }`}
           >
             <div className="absolute inset-y-0 -left-1 -right-1" />
-            {resizingPanel === "pdf" && (
+            {resizingPanel === "sidebar" && (
               <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
             )}
           </div>
         )}
 
-        {/* PDF Preview panel */}
-        {activeDocumentPath && (
-          <div
-            className={`hidden md:flex flex-col bg-[var(--bg-secondary)] overflow-hidden ${
-              pdfPanelCollapsed ? "w-12" : ""
-            } ${resizingPanel ? "" : "transition-[width] duration-200"}`}
-            style={{ width: pdfPanelCollapsed ? 48 : pdfPanelWidth }}
-          >
-            <PdfPreview
-              collapsed={pdfPanelCollapsed}
-              onToggleCollapse={() => setPdfPanelCollapsed(!pdfPanelCollapsed)}
-              panelWidth={pdfPanelWidth}
-              isResizing={resizingPanel === "pdf"}
-            />
+        {/* Main content area */}
+        <div className="flex flex-1 min-w-0 overflow-hidden">
+          {/* Editor panel */}
+          <div className="flex flex-col flex-1 min-w-0">
+            <div className="flex-1 overflow-hidden bg-[var(--bg-primary)]">
+              {activeDocumentPath ? (
+                <Editor />
+              ) : (
+                <EmptyState />
+              )}
+            </div>
           </div>
-        )}
+
+          {/* PDF resize handle */}
+          {!pdfPanelCollapsed && activeDocumentPath && (
+            <div
+              ref={resizeRef}
+              onMouseDown={startPdfResize}
+              className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
+                resizingPanel === "pdf" ? "bg-[var(--accent)]" : ""
+              }`}
+            >
+              <div className="absolute inset-y-0 -left-1 -right-1" />
+              {resizingPanel === "pdf" && (
+                <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
+              )}
+            </div>
+          )}
+
+          {/* PDF Preview panel */}
+          {activeDocumentPath && (
+            <div
+              className={`hidden md:flex flex-col bg-[var(--bg-secondary)] overflow-hidden ${
+                pdfPanelCollapsed ? "w-12" : ""
+              } ${resizingPanel ? "" : "transition-[width] duration-200"}`}
+              style={{ width: pdfPanelCollapsed ? 48 : pdfPanelWidth }}
+            >
+              <PdfPreview
+                collapsed={pdfPanelCollapsed}
+                onToggleCollapse={() => setPdfPanelCollapsed(!pdfPanelCollapsed)}
+                panelWidth={pdfPanelWidth}
+                isResizing={resizingPanel === "pdf"}
+              />
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Full-width status bar — spans sidebar + editor + PDF panel */}
+      <StatusBar />
     </div>
   );
 }

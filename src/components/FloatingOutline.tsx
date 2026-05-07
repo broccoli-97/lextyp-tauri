@@ -62,7 +62,7 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
         setExpanded(false);
         setHoveredIndex(null);
       }}
-      className={`absolute top-4 right-4 z-50 transition-all duration-200 ${
+      className={`absolute top-[56px] right-4 z-50 transition-all duration-200 ${
         expanded
           ? "w-52 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl shadow-lg"
           : "w-9 h-9 bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-lg"

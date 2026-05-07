@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
 import type { BibEntry } from "../types/bib";
 import type { CitationFormatter } from "../lib/citation/formatter";
-import { filterBibEntries, formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
-import { CitationEntryCard } from "./CitationEntryCard";
+import { filterBibEntries, formatCitationPreview } from "../lib/citation-search";
 
 interface CitationPickerProps {
   open: boolean;
@@ -11,6 +9,96 @@ interface CitationPickerProps {
   formatter: CitationFormatter;
   onClose: () => void;
   onSelect: (key: string) => void;
+}
+
+type TabId = "all" | "cases" | "books" | "journals" | "statutes" | "recent";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "cases", label: "Cases" },
+  { id: "books", label: "Books" },
+  { id: "journals", label: "Journals" },
+  { id: "statutes", label: "Statutes" },
+  { id: "recent", label: "Recent" },
+];
+
+const RECENT_STORAGE_KEY = "lextyp.citation-picker.recent";
+const RECENT_MAX = 12;
+
+const TYPE_TO_TAB: Record<string, TabId> = {
+  case: "cases",
+  book: "books",
+  inbook: "books",
+  incollection: "books",
+  booklet: "books",
+  manual: "books",
+  proceedings: "books",
+  article: "journals",
+  statute: "statutes",
+  act: "statutes",
+  legislation: "statutes",
+};
+
+const TYPE_TO_KIND: Record<string, string> = {
+  case: "CASE",
+  book: "BOOK",
+  inbook: "CHAPTER",
+  incollection: "CHAPTER",
+  booklet: "BOOK",
+  manual: "MANUAL",
+  proceedings: "PROC",
+  article: "ARTICLE",
+  statute: "STATUTE",
+  act: "STATUTE",
+  legislation: "STATUTE",
+  thesis: "THESIS",
+  phdthesis: "THESIS",
+  mastersthesis: "THESIS",
+  techreport: "REPORT",
+  online: "ONLINE",
+  misc: "MISC",
+};
+
+function loadRecent(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(key: string) {
+  try {
+    const next = [key, ...loadRecent().filter((k) => k !== key)].slice(0, RECENT_MAX);
+    localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore quota / serialization errors */
+  }
+}
+
+function kindLabel(type: string) {
+  return TYPE_TO_KIND[type.toLowerCase()] ?? type.toUpperCase().slice(0, 6);
+}
+
+function entryTitle(entry: BibEntry) {
+  return entry.fields.title?.replace(/[{}]/g, "").trim() || entry.key;
+}
+
+function entryMeta(entry: BibEntry, formatter: CitationFormatter) {
+  const preview = formatCitationPreview(entry, formatter);
+  const title = entry.fields.title?.replace(/[{}]/g, "").trim();
+  if (!title) return preview;
+  // Remove the title (and surrounding punctuation) from the preview so the
+  // meta line carries only the reference details — author, year, citation.
+  const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return preview
+    .replace(new RegExp(`['"‘’“”]?${escaped}['"‘’“”]?[,.;:]?`), "")
+    .replace(/\s+/g, " ")
+    .replace(/^[—–-]\s*/, "")
+    .trim();
 }
 
 export function CitationPicker({
@@ -21,25 +109,48 @@ export function CitationPicker({
   onSelect,
 }: CitationPickerProps) {
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<TabId>("all");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [recentKeys, setRecentKeys] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = useMemo(() => filterBibEntries(entries, query), [entries, query]);
+  useEffect(() => {
+    if (open) setRecentKeys(loadRecent());
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    let pool = entries;
+    if (tab === "recent") {
+      const order = new Map(recentKeys.map((k, i) => [k, i] as const));
+      pool = entries
+        .filter((e) => order.has(e.key))
+        .sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0));
+    } else if (tab !== "all") {
+      pool = entries.filter((e) => TYPE_TO_TAB[e.type.toLowerCase()] === tab);
+    }
+    return filterBibEntries(pool, query);
+  }, [entries, query, tab, recentKeys]);
 
   useEffect(() => {
     if (!open) {
       setQuery("");
+      setTab("all");
       setActiveIndex(0);
       return;
     }
-
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
   }, [open]);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [query]);
+  }, [query, tab]);
+
+  function handleSelect(key: string) {
+    pushRecent(key);
+    setRecentKeys((prev) => [key, ...prev.filter((k) => k !== key)].slice(0, RECENT_MAX));
+    onSelect(key);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -63,74 +174,110 @@ export function CitationPicker({
         return;
       }
 
+      if (event.key === "Tab" && !event.shiftKey) {
+        event.preventDefault();
+        const idx = TABS.findIndex((t) => t.id === tab);
+        setTab(TABS[(idx + 1) % TABS.length].id);
+        return;
+      }
+
+      if (event.key === "Tab" && event.shiftKey) {
+        event.preventDefault();
+        const idx = TABS.findIndex((t) => t.id === tab);
+        setTab(TABS[(idx - 1 + TABS.length) % TABS.length].id);
+        return;
+      }
+
       if (event.key === "Enter" && filtered[activeIndex]) {
         event.preventDefault();
-        onSelect(filtered[activeIndex].key);
+        handleSelect(filtered[activeIndex].key);
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeIndex, filtered, onClose, onSelect, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, filtered, onClose, open, tab]);
 
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-40 flex items-start justify-center bg-black/20 backdrop-blur-sm px-6 pt-20 animate-fade-in">
-      <div className="w-full max-w-[640px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-elevated)] shadow-xl animate-slide-in">
-        <div className="flex items-center gap-3 border-b border-[var(--border-light)] px-4 py-3">
-          <div className="relative flex-1">
-            <Search
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]"
-            />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search citations by key, title, author..."
-              className="input h-10 pl-10 text-[13px]"
-            />
-          </div>
-
-          <button
-            onClick={onClose}
-            className="icon-btn w-9 h-9"
-            title="Close"
-          >
-            <X size={16} />
-          </button>
+    <div
+      className="palette-overlay animate-fade-in"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="palette" role="dialog" aria-label="Insert citation">
+        <div className="palette-tabs" role="tablist">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`palette-tab ${tab === t.id ? "palette-tab-active" : ""}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-4 py-2 text-[11px] text-[var(--text-tertiary)]">
-          <span className="font-medium">{filtered.length} references</span>
-          <span className="px-2 py-0.5 rounded bg-[var(--bg-tertiary)] text-[10px]">Enter to insert</span>
+        <div className="palette-search">
+          <span className="palette-prefix">/cite</span>
+          <input
+            ref={inputRef}
+            type="text"
+            className="palette-input"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="search by title, author, key…"
+            spellCheck={false}
+          />
+          <span className="kbd" aria-hidden="true">⌘K</span>
         </div>
 
-        <div className="max-h-[420px] overflow-auto p-3">
+        <div className="palette-list">
           {filtered.length === 0 ? (
-            <div className="card py-10 text-center border-dashed">
-              <p className="text-[13px] font-medium text-[var(--text-primary)]">No matching citations</p>
-              <p className="mt-1.5 text-[11px] text-[var(--text-secondary)]">
-                Load a bibliography or refine your search terms
-              </p>
+            <div className="palette-empty">
+              <div className="palette-empty-title">No matching citations</div>
+              <div>Try a different tab or refine your search.</div>
             </div>
           ) : (
-            <div className="space-y-1.5">
-              {filtered.map((entry, index) => (
-                <CitationEntryCard
+            filtered.map((entry, index) => {
+              const selected = index === activeIndex;
+              return (
+                <button
                   key={entry.key}
-                  entry={entry}
-                  preview={formatCitationPreview(entry, formatter)}
-                  meta={formatEntryMeta(entry)}
-                  active={index === activeIndex}
-                  onClick={() => onSelect(entry.key)}
-                  onInsert={() => onSelect(entry.key)}
-                />
-              ))}
-            </div>
+                  type="button"
+                  className={`palette-item ${selected ? "palette-item-sel" : ""}`}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => handleSelect(entry.key)}
+                >
+                  <span className="palette-kind">{kindLabel(entry.type)}</span>
+                  <span className="palette-item-text">
+                    <span className="palette-title">{entryTitle(entry)}</span>
+                    <span className="palette-meta">{entryMeta(entry, formatter)}</span>
+                  </span>
+                </button>
+              );
+            })
           )}
+        </div>
+
+        <div className="palette-foot">
+          <span className="palette-foot-group">
+            <span className="kbd">↑↓</span> navigate
+          </span>
+          <span className="palette-foot-group">
+            <span className="kbd">↵</span> insert
+          </span>
+          <span className="palette-foot-group">
+            <span className="kbd">⇥</span> switch tab
+          </span>
+          <span className="palette-foot-group">
+            <span className="kbd">esc</span>
+          </span>
         </div>
       </div>
     </div>
