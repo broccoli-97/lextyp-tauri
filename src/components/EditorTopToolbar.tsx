@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AtSign,
   Bold,
   BookMarked,
   Check,
   ChevronDown,
+  Eye,
+  EyeOff,
   Italic,
   List,
   ListOrdered,
   Pilcrow,
   Quote,
-  Superscript,
   Underline,
 } from "lucide-react";
 import type { BlockNoteEditor } from "@blocknote/core";
@@ -222,7 +222,7 @@ function CitationDisplayToggle() {
       aria-pressed={isFootnote}
       onClick={toggle}
     >
-      {isFootnote ? <Superscript size={14} /> : <AtSign size={14} />}
+      {isFootnote ? <EyeOff size={14} /> : <Eye size={14} />}
     </button>
   );
 }

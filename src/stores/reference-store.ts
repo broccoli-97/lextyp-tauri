@@ -23,6 +23,13 @@ interface ReferenceState {
   searchQuery: string;
   citationStyle: string;
   citationDisplay: CitationDisplay;
+  /**
+   * DOM id of the citation tag whose details card is currently open, or
+   * `null` if no card is showing. Centralised here so opening one card
+   * closes any other — clicks across tags coordinate through the store
+   * instead of each tag carrying its own open/closed state.
+   */
+  openCitationTagId: string | null;
   setEntries: (entries: BibEntry[], raw: string) => void;
   setFromRaw: (raw: string) => void;
   addEntry: (entry: BibEntry) => void;
@@ -32,6 +39,7 @@ interface ReferenceState {
   setCitationStyle: (style: string) => void;
   setCitationDisplay: (display: CitationDisplay) => void;
   toggleCitationDisplay: () => void;
+  setOpenCitationTagId: (id: string | null) => void;
   clear: () => void;
 }
 
@@ -55,6 +63,7 @@ export const useReferenceStore = create<ReferenceState>((set) => ({
   searchQuery: "",
   citationStyle: "oscola",
   citationDisplay: "chip",
+  openCitationTagId: null,
   setEntries: (entries, raw) => set({ entries, rawBibContent: raw }),
   setFromRaw: (raw) => {
     const entries = parseBibtex(raw);
@@ -83,5 +92,6 @@ export const useReferenceStore = create<ReferenceState>((set) => ({
   toggleCitationDisplay: () => set((s) => ({
     citationDisplay: s.citationDisplay === "chip" ? "footnote" : "chip",
   })),
+  setOpenCitationTagId: (id) => set({ openCitationTagId: id }),
   clear: () => set({ entries: [], rawBibContent: "", searchQuery: "" }),
 }));

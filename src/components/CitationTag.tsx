@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useReferenceStore } from "../stores/reference-store";
 import type { BibEntry } from "../types/bib";
@@ -18,44 +18,46 @@ interface CitationTagProps {
  *
  * Both modes are rendered into the same DOM shape so document state never
  * changes when the user toggles modes — only CSS does.
+ *
+ * Open/closed state for the details card lives in the reference store
+ * (`openCitationTagId`) — a singleton, so opening one tag's card automatically
+ * dismisses any other.
  */
 export function CitationTag({ entryKey }: CitationTagProps) {
+  const tagId = useId();
   const display = useReferenceStore((s) => s.citationDisplay);
   const entry = useReferenceStore((s) =>
     s.entries.find((e) => e.key === entryKey)
   );
+  const openId = useReferenceStore((s) => s.openCitationTagId);
+  const setOpenId = useReferenceStore((s) => s.setOpenCitationTagId);
+  const open = openId === tagId;
 
-  const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // Click-outside handler — only the *currently open* tag installs it, and a
+  // click outside any chip/card resets the singleton. Clicks on a different
+  // chip don't need to be handled here: that chip's own onClick will replace
+  // `openCitationTagId` with its own id, which closes us via re-render.
   useEffect(() => {
     if (!open) return;
     const onDown = (event: MouseEvent) => {
       const target = event.target as Node;
       if (anchorRef.current?.contains(target)) return;
       if (cardRef.current?.contains(target)) return;
-      setOpen(false);
+      // Don't fight another citation tag claiming the singleton.
+      const el = target instanceof Element ? target : null;
+      if (el?.closest(".lextyp-citation")) return;
+      setOpenId(null);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
+  }, [open, setOpenId]);
 
-  useEffect(() => {
-    if (!open || !anchorRef.current) return;
-    const r = anchorRef.current.getBoundingClientRect();
-    const cardWidth = 320;
-    const left = Math.min(
-      Math.max(8, r.left),
-      window.innerWidth - cardWidth - 8
-    );
-    setPos({ top: r.bottom + 6, left });
-  }, [open]);
-
-  // Re-anchor the popover the next paint after a mode flip — the chip and
-  // the superscript have different bounding boxes so the card would otherwise
-  // appear in the old spot.
+  // Anchor the card to the chip / superscript. Re-runs on mode flips because
+  // the bounding box differs between the chip and the superscript counter.
   useEffect(() => {
     if (!open || !anchorRef.current) return;
     const r = anchorRef.current.getBoundingClientRect();
@@ -84,7 +86,7 @@ export function CitationTag({ entryKey }: CitationTagProps) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setOpen((o) => !o);
+          setOpenId(open ? null : tagId);
         }}
       >
         <span className="lextyp-citation-key">@{entryKey}</span>
