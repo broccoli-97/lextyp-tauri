@@ -110,7 +110,10 @@
             <a href="#quick-start" class="block">快速入门</a>
             <a href="#workspace" class="block">工作区</a>
             <a href="#editor" class="block">编辑器</a>
+            <a href="#cover-page" class="block">封面页</a>
             <a href="#citations" class="block">引用</a>
+            <a href="#bib" class="block">什么是 .bib 文件？</a>
+            <a href="#word-count" class="block">字数统计</a>
             <a href="#pdf" class="block">PDF 预览与导出</a>
             <a href="#styles" class="block">引用样式</a>
             <a href="#example" class="block">示例项目</a>
@@ -159,7 +162,7 @@
               <div class="pt-1">
                 <h3 class="font-semibold text-lg text-slate-900 mb-1">下载并打开</h3>
                 <p class="text-slate-500 text-sm leading-relaxed">
-                  从 <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" class="text-brand-teal font-medium hover:underline">Releases 页面</a> 下载对应系统的安装包。打开应用——就这样。Typst 会在首次启动时自动下载。
+                  从 <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" class="text-brand-teal font-medium hover:underline">Releases 页面</a> 下载对应系统的安装包。打开应用——就这样。Typst 引擎已内置在 LexTyp 中，无需额外安装运行环境。
                 </p>
               </div>
             </div>
@@ -190,6 +193,11 @@
                 </p>
               </div>
             </div>
+          </div>
+
+          <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900 mt-8">
+            <strong>想先看一份完整示例？</strong>
+            打开工作区后，点击空编辑器界面上的<strong>打开示例模板</strong>。LexTyp 会向你的工作区生成一份名为 <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">Welcome to LexTyp.lextyp</code> 的完整教学文档——封面、各类块、可用的参考文献和说明文字。可自由编辑，或在熟悉之后直接删除。
           </div>
         </section>
 
@@ -243,12 +251,42 @@
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 space-y-2">
             <p><strong>斜杠菜单</strong>是你的超级工具。在任意位置输入 <kbd>/</kbd> 选择块类型：</p>
             <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-1 mt-2 list-disc pl-5">
+              <li><kbd>/cover</kbd>——封面页（含作者、日期、字数等）</li>
               <li><kbd>/title</kbd>、<kbd>/section</kbd>、<kbd>/subsection</kbd>——一至四级标题</li>
               <li><kbd>/paragraph</kbd>、<kbd>/bullet</kbd>、<kbd>/numbered</kbd>——段落与列表</li>
               <li><kbd>/citation</kbd>——从 <code class="text-xs bg-amber-100 px-1 py-0.5 rounded">.bib</code> 插入引用</li>
               <li><kbd>/include</kbd>——引入另一个 <code class="text-xs bg-amber-100 px-1 py-0.5 rounded">.lextyp</code>（每个引入从新页开始）</li>
               <li><kbd>/contents</kbd>——根据标题自动生成目录</li>
             </ul>
+          </div>
+        </section>
+
+        <!-- COVER PAGE -->
+        <section id="cover-page" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">封面页</h2>
+          <p class="text-slate-600 leading-relaxed mb-4">
+            学术作业大多需要一张封面——论文标题、作者、导师、所在院校、日期，有时还要写考生编号、课程代码。在文档开头输入 <kbd>/cover</kbd>，LexTyp 就会插入一个封面页块，所有字段都可以填写。
+          </p>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            编辑器中显示的是可点击的预览卡片。点击后会打开专门的编辑窗口，含实时预览、三种排版样式，以及日期与字数的"自动"开关——它们会随每次编译自动更新，无需手动刷新。空字段会从最终 PDF 中自动隐藏，因此同一个封面块既能呈现简约的"标题 + 作者"封面，也能容纳完整的院校封面页。
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">日期自动</h4>
+              <p class="text-sm text-slate-500">开关打开时，封面会显示当前的<em>2026 年 5 月</em>（中文模式）或 <em>May 2026</em>（英文模式）——适合草稿状态。直接在字段中输入具体日期即可覆盖；再次点击开关恢复自动。</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">字数自动</h4>
+              <p class="text-sm text-slate-500">字数从正文实时统计，包含通过 <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">/include</code> 引入的子文档。可设置一个目标值（例如 3000），封面会显示 <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">2940 / 3000</code>——非常适合有严格字数要求的写作。</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">三种排版</h4>
+              <p class="text-sm text-slate-500"><strong>经典</strong>把标题放在顶端，日期排在页底；<strong>居中</strong>所有内容垂直居中；<strong>极简</strong>紧凑地排在页面顶部，不撑满整页。在对话框中切换，编辑器中的预览即时更新。</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">附加信息</h4>
+              <p class="text-sm text-slate-500">一个自由的多行文本框，用于写考生编号、课程代码、声明文字等院校特定行。每行一条，会居中排在其他元数据下方。</p>
+            </div>
           </div>
         </section>
 
@@ -264,7 +302,7 @@
               <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">1</div>
               <div>
                 <h4 class="font-semibold text-slate-900">导入 .bib 文件</h4>
-                <p class="text-sm text-slate-500 mt-1">点击侧边栏参考文献区域的<strong>导入 .bib</strong>。所有条目立即显示，可按作者、标题或键名搜索。</p>
+                <p class="text-sm text-slate-500 mt-1">点击侧边栏参考文献区域的<strong>导入 .bib</strong>。所有条目立即显示，可按作者、标题或键名搜索。第一次接触 BibTeX？请看下方 <a href="#bib" class="text-brand-teal font-medium hover:underline">什么是 .bib 文件？</a> 一节，了解从哪里获取，以及如何手动添加。</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
@@ -305,6 +343,120 @@
               <p class="text-slate-500 mt-2 text-xs">
                 <span class="text-brand-amber">1.</span> <em>Donoghue v Stevenson</em> [1932] AC 562
               </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- WHAT IS .BIB -->
+        <section id="bib" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">什么是 .bib 文件？</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            <strong>.bib 文件</strong>（也叫 BibTeX 文件）是一份纯文本格式的文献库——书籍、期刊文章、判例、法条、网页都可以放进去。每条记录有一个唯一的键，比如 <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">@hartLaw1961</code>，你只要在论文里引用这个键，LexTyp 就会按照你选定的引用样式自动生成正确格式的脚注或行内引用。
+          </p>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8">
+            <h4 class="font-semibold text-slate-800 mb-3">一条典型的条目</h4>
+            <pre class="font-mono text-xs sm:text-sm text-slate-700 bg-white border border-slate-200 rounded-lg p-4 overflow-x-auto leading-relaxed">@book{hartLaw1961,
+  author    = {Hart, H. L. A.},
+  title     = {The Concept of Law},
+  publisher = {Oxford University Press},
+  address   = {Oxford},
+  year      = {1961},
+}</pre>
+            <ul class="text-sm text-slate-500 mt-4 space-y-1.5">
+              <li><strong class="text-slate-700">@book</strong> ——条目类型。常用类型还有 <code>@article</code>（期刊文章）、<code>@inproceedings</code>（会议论文）、<code>@phdthesis</code>（学位论文）、<code>@misc</code>（其他/网页）、<code>@incollection</code>（论文集中的一篇）、<code>@inbook</code>。</li>
+              <li><strong class="text-slate-700">hartLaw1961</strong> ——引用键。插入引用时使用，应当简短且唯一。常用约定为<em>作者+年份</em>。</li>
+              <li><strong class="text-slate-700">author / title / publisher / year</strong> ——字段名。不同条目类型支持不同的字段，但这几项基本通用。</li>
+            </ul>
+          </div>
+
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">从哪里获取</h3>
+          <p class="text-slate-600 mb-4 leading-relaxed">
+            通常你不需要手写 <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.bib</code>。多数学术数据库和文献管理工具都能直接导出 BibTeX——在文献页找一下<strong>引用</strong>或<strong>导出</strong>按钮即可。
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-8">
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-cyan-50 text-brand-teal flex items-center justify-center text-xs font-bold">DB</span>
+                学术数据库
+              </h4>
+              <p class="text-sm text-slate-500 mb-2">在文章页或检索结果页查找：</p>
+              <ul class="text-xs text-slate-500 space-y-1 list-disc pl-5">
+                <li><strong>Google Scholar</strong>——引号图标 → <em>BibTeX</em></li>
+                <li><strong>JSTOR</strong>——Cite this Item → Export → BibTeX</li>
+                <li><strong>IEEE Xplore</strong>——Cite This → BibTeX</li>
+                <li><strong>Westlaw / LexisNexis</strong>——Email/Download → BibTeX</li>
+                <li><strong>SSRN</strong>——Download Citation → BibTeX</li>
+                <li><strong>arXiv</strong>——右侧 Bibtex 链接</li>
+                <li><strong>知网（CNKI）</strong>——导出参考文献（不直接支持 BibTeX 时可借助 Zotero 转换）</li>
+              </ul>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-amber-50 text-brand-amber flex items-center justify-center text-xs font-bold">RM</span>
+                文献管理工具
+              </h4>
+              <p class="text-sm text-slate-500 mb-2">如果使用文献管理软件，可整体或按文件夹导出为 BibTeX：</p>
+              <ul class="text-xs text-slate-500 space-y-1 list-disc pl-5">
+                <li><strong>Zotero</strong>——文件 → 导出文献库 → BibTeX</li>
+                <li><strong>Mendeley</strong>——File → Export → BibTeX</li>
+                <li><strong>JabRef</strong>——本身就以 BibTeX 为原生格式</li>
+                <li><strong>EndNote</strong>——使用 BibTeX 样式导出</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">如何添加到 LexTyp</h3>
+          <ol class="space-y-2 mb-6 list-decimal pl-5 text-slate-600">
+            <li>在 LexTyp 中打开一篇文档（每篇文档维护自己的文献库）。</li>
+            <li>切换到侧边栏的<strong>参考文献</strong>面板。</li>
+            <li>点击<strong>导入 .bib</strong>，选择文件。所有条目立即出现，可用 <kbd>/citation</kbd> 直接插入。</li>
+            <li>也可在同一面板内手动新增或编辑条目——当某些来源不在数据库里（手稿、内部文件、特殊判例）时尤其方便。</li>
+          </ol>
+          <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 text-sm text-cyan-900 mb-8">
+            <strong>每篇文档都有自己的文献库。</strong>
+            LexTyp 把 <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">.bib</code> 条目存入 <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">.lextyp</code> 项目压缩包中，所以每篇论文都自带文献。也可以在工作区文件夹里保留一份"主 .bib"，每次新建论文时再导入一次。
+          </div>
+
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">手动添加条目</h3>
+          <p class="text-slate-600 mb-4 leading-relaxed">
+            如果某条文献在数据库里找不到（一封私人通信、一份草稿章节、某条未被规范收录的法规），直接在 LexTyp 的<strong>+ 添加文献</strong>表单中输入更省事。需要的字段视类型而定：
+          </p>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden text-sm">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="px-4 py-2.5 text-left font-semibold text-slate-700">类型</th>
+                  <th class="px-4 py-2.5 text-left font-semibold text-slate-700">用于</th>
+                  <th class="px-4 py-2.5 text-left font-semibold text-slate-700">必填字段</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-600">
+                <tr><td class="px-4 py-2.5"><code>@book</code></td><td class="px-4 py-2.5">书籍、专著</td><td class="px-4 py-2.5"><code>author</code>、<code>title</code>、<code>publisher</code>、<code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@article</code></td><td class="px-4 py-2.5">期刊论文</td><td class="px-4 py-2.5"><code>author</code>、<code>title</code>、<code>journal</code>、<code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@incollection</code></td><td class="px-4 py-2.5">论文集中的一篇</td><td class="px-4 py-2.5"><code>author</code>、<code>title</code>、<code>booktitle</code>、<code>editor</code>、<code>publisher</code>、<code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@inproceedings</code></td><td class="px-4 py-2.5">会议论文</td><td class="px-4 py-2.5"><code>author</code>、<code>title</code>、<code>booktitle</code>、<code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@phdthesis</code></td><td class="px-4 py-2.5">学位论文</td><td class="px-4 py-2.5"><code>author</code>、<code>title</code>、<code>school</code>、<code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@misc</code></td><td class="px-4 py-2.5">判例、网页等其他</td><td class="px-4 py-2.5"><code>author</code>、<code>title</code>、<code>year</code>（按需补充）</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- WORD COUNT -->
+        <section id="word-count" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">字数统计</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            状态栏右下角显示两个数字：从文档开头到光标位置的字数，以及全文总字数（包含通过 <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/include</code> 引入的子文档）。引用与 <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/contents</code> 目录块均不计入——你看到的就是评卷人会数出来的正文字数。
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">光标 / 总字数</h4>
+              <p class="text-sm text-slate-500"><code class="text-xs bg-slate-100 px-1 py-0.5 rounded">2,940 / 3,142 字</code> 表示当前光标位于全文 2,940 字的位置，全文共 3,142 字。光标处的数字会随着鼠标点击或方向键移动而更新——很适合检查某一段写到第几个字。</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">显示在封面页</h4>
+              <p class="text-sm text-slate-500">打开封面页对话框，把<strong>字数</strong>开关打开，并可选填上限（如 <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">3000</code>）。封面就会印上 <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">2940 / 3000</code>——每次编译时自动刷新。</p>
             </div>
           </div>
         </section>
@@ -552,6 +704,10 @@
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
               <strong>深夜写作用深色模式。</strong>
               在侧边栏设置中切换主题。偏好自动保存。
+            </div>
+            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900">
+              <strong>卡住时不妨先看示例模板。</strong>
+              在已打开工作区的空编辑器界面，点击<strong>打开示例模板</strong>。LexTyp 会向工作区放入一份完整的教学文档——封面、各类块、可用的引用——可阅读、修改或直接复制其中片段。熟悉之后随手删掉即可。
             </div>
           </div>
         </section>

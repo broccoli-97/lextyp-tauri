@@ -111,7 +111,10 @@
             <a href="#quick-start" class="block">Quick Start</a>
             <a href="#workspace" class="block">Workspace</a>
             <a href="#editor" class="block">The Editor</a>
+            <a href="#cover-page" class="block">Cover Pages</a>
             <a href="#citations" class="block">Citations</a>
+            <a href="#bib" class="block">What is a .bib file?</a>
+            <a href="#word-count" class="block">Word Count</a>
             <a href="#pdf" class="block">PDF Preview &amp; Export</a>
             <a href="#styles" class="block">Citation Styles</a>
             <a href="#example" class="block">Example Project</a>
@@ -166,7 +169,7 @@
                 <p class="text-slate-500 text-sm leading-relaxed">
                   Grab the installer for your OS from the
                   <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" class="text-brand-teal font-medium hover:underline">Releases page</a>.
-                  Open the app — that's it. Typst is automatically downloaded on first launch.
+                  Open the app — that's it. The Typst engine is bundled into LexTyp itself, so there's no separate runtime to install.
                 </p>
               </div>
             </div>
@@ -202,6 +205,11 @@
                 </p>
               </div>
             </div>
+          </div>
+
+          <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900 mt-8">
+            <strong>Want a worked example first?</strong>
+            With a workspace open, click <strong>Open the example template</strong> on the empty editor screen. LexTyp drops a complete tutorial document — cover page, every block type, a working bibliography, and explanatory copy — into your workspace as <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">Welcome to LexTyp.lextyp</code>. Edit it freely, or delete it once you've found your way around.
           </div>
         </section>
 
@@ -256,12 +264,42 @@
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 space-y-2">
             <p><strong>The slash menu</strong> is your power tool. Type <kbd>/</kbd> anywhere to pick a block:</p>
             <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-1 mt-2 list-disc pl-5">
+              <li><kbd>/cover</kbd> — title page with author, date &amp; word count</li>
               <li><kbd>/title</kbd>, <kbd>/section</kbd>, <kbd>/subsection</kbd> — headings H1–H4</li>
               <li><kbd>/paragraph</kbd>, <kbd>/bullet</kbd>, <kbd>/numbered</kbd> — text &amp; lists</li>
               <li><kbd>/citation</kbd> — insert a reference from your <code class="text-xs bg-amber-100 px-1 py-0.5 rounded">.bib</code></li>
               <li><kbd>/include</kbd> — pull in another <code class="text-xs bg-amber-100 px-1 py-0.5 rounded">.lextyp</code> (each include starts a new page)</li>
               <li><kbd>/contents</kbd> — auto-generated table of contents from your headings</li>
             </ul>
+          </div>
+        </section>
+
+        <!-- COVER PAGE -->
+        <section id="cover-page" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Cover Pages</h2>
+          <p class="text-slate-600 leading-relaxed mb-4">
+            Most academic submissions need a title page — title, author, supervisor, institution, date, sometimes a candidate number or module code. Type <kbd>/cover</kbd> at the top of your document and LexTyp inserts a cover-page block with all of those fields ready to fill in.
+          </p>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            The block in the editor is a clickable preview. Click it to open a dedicated editor with a live preview, three layout choices, and "Auto" toggles for date and word count — both update on every compile so you never need to remember to refresh them. Empty fields are dropped from the printed PDF, so the same block fits a sparse "title + author" cover and a full LSE-style title page.
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">Auto date</h4>
+              <p class="text-sm text-slate-500">When the chip is on, the cover prints today's month + year (or <em>2026 年 5 月</em> in Chinese mode) — ideal for drafts. Type a specific date into the field to override it; click the chip again to revert.</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">Auto word count</h4>
+              <p class="text-sm text-slate-500">Live count drawn from the body, including any <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">/include</code> sub-documents. Optionally enter a target like 3000 and the cover prints <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">2940 / 3000</code> — useful when you're writing to a strict limit.</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">Three layouts</h4>
+              <p class="text-sm text-slate-500"><strong>Classic</strong> places the title near the top and the date at the bottom of the page. <strong>Centered</strong> keeps everything in the vertical middle. <strong>Minimal</strong> sits compactly at the top — no full-page sandwich. Pick one from the dialog; the inline preview updates instantly.</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">Additional lines</h4>
+              <p class="text-sm text-slate-500">A free-form textarea for school-specific lines — candidate numbers, module codes, declaration text. One line per row; each renders centred under the rest of the metadata.</p>
+            </div>
           </div>
         </section>
 
@@ -277,7 +315,7 @@
               <div class="w-8 h-8 rounded-lg bg-brand-teal/10 text-brand-teal flex items-center justify-center flex-shrink-0 mt-0.5 text-sm font-bold">1</div>
               <div>
                 <h4 class="font-semibold text-slate-900">Import your .bib file</h4>
-                <p class="text-sm text-slate-500 mt-1">Click <strong>Import BibTeX</strong> in the sidebar's References section. All entries appear instantly, searchable by author, title, or key.</p>
+                <p class="text-sm text-slate-500 mt-1">Click <strong>Import BibTeX</strong> in the sidebar's References section. All entries appear instantly, searchable by author, title, or key. New to BibTeX? See <a href="#bib" class="text-brand-teal font-medium hover:underline">What is a .bib file?</a> below for where to get one and how to write one by hand.</p>
               </div>
             </div>
             <div class="flex items-start gap-4">
@@ -318,6 +356,119 @@
               <p class="text-slate-500 mt-2 text-xs">
                 <span class="text-brand-amber">1.</span> <em>Donoghue v Stevenson</em> [1932] AC 562
               </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- WHAT IS .BIB -->
+        <section id="bib" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">What is a .bib file?</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            A <strong>.bib file</strong> (also called a BibTeX file) is a plain-text database of your references — books, journal articles, cases, statutes, websites, anything you might cite. Each entry has a unique key like <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">@hartLaw1961</code> that you reference inside your paper. LexTyp turns those keys into properly formatted footnotes or in-text citations, in whichever style you've selected, automatically.
+          </p>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-8">
+            <h4 class="font-semibold text-slate-800 mb-3">A typical entry looks like this</h4>
+            <pre class="font-mono text-xs sm:text-sm text-slate-700 bg-white border border-slate-200 rounded-lg p-4 overflow-x-auto leading-relaxed">@book{hartLaw1961,
+  author    = {Hart, H. L. A.},
+  title     = {The Concept of Law},
+  publisher = {Oxford University Press},
+  address   = {Oxford},
+  year      = {1961},
+}</pre>
+            <ul class="text-sm text-slate-500 mt-4 space-y-1.5">
+              <li><strong class="text-slate-700">@book</strong> — the entry type. Common types: <code>@article</code>, <code>@inproceedings</code>, <code>@phdthesis</code>, <code>@misc</code>, <code>@incollection</code>, <code>@inbook</code>.</li>
+              <li><strong class="text-slate-700">hartLaw1961</strong> — the citation key. You'll use this when inserting citations. Make it short and unique (a typical convention is <em>authorYear</em>).</li>
+              <li><strong class="text-slate-700">author / title / publisher / year</strong> — fields. Different entry types accept different fields; the basics shown here are universal.</li>
+            </ul>
+          </div>
+
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">Where to get one</h3>
+          <p class="text-slate-600 mb-4 leading-relaxed">
+            You usually don't write a <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">.bib</code> file by hand. Most academic databases and reference managers can export BibTeX directly — look for a <strong>Cite</strong> or <strong>Export</strong> button near each search result.
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-8">
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-cyan-50 text-brand-teal flex items-center justify-center text-xs font-bold">DB</span>
+                Academic databases
+              </h4>
+              <p class="text-sm text-slate-500 mb-2">From the article or search-result page:</p>
+              <ul class="text-xs text-slate-500 space-y-1 list-disc pl-5">
+                <li><strong>Google Scholar</strong> — quote icon → <em>BibTeX</em></li>
+                <li><strong>JSTOR</strong> — Cite this Item → Export → BibTeX</li>
+                <li><strong>IEEE Xplore</strong> — Cite This → BibTeX</li>
+                <li><strong>Westlaw / LexisNexis</strong> — Email/Download → BibTeX</li>
+                <li><strong>SSRN</strong> — Download Citation → BibTeX</li>
+                <li><strong>arXiv</strong> — Bibtex link in the right-hand sidebar</li>
+              </ul>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2 flex items-center gap-2">
+                <span class="w-7 h-7 rounded-md bg-amber-50 text-brand-amber flex items-center justify-center text-xs font-bold">RM</span>
+                Reference managers
+              </h4>
+              <p class="text-sm text-slate-500 mb-2">If you keep references in a manager, export the whole library or a folder as BibTeX:</p>
+              <ul class="text-xs text-slate-500 space-y-1 list-disc pl-5">
+                <li><strong>Zotero</strong> — File → Export Library → BibTeX</li>
+                <li><strong>Mendeley</strong> — File → Export → BibTeX</li>
+                <li><strong>JabRef</strong> — its native format <em>is</em> BibTeX</li>
+                <li><strong>EndNote</strong> — Export with the BibTeX style</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">How to add it to LexTyp</h3>
+          <ol class="space-y-2 mb-6 list-decimal pl-5 text-slate-600">
+            <li>Open a document in LexTyp (each document has its own bibliography).</li>
+            <li>Switch to the <strong>References</strong> panel in the sidebar.</li>
+            <li>Click <strong>Import .bib</strong> and select your file. Every entry appears in the panel, ready to insert with <kbd>/citation</kbd>.</li>
+            <li>You can also add or edit individual entries from the same panel — useful when a database doesn't have what you need and you want to add a single book or case by hand.</li>
+          </ol>
+          <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 text-sm text-cyan-900 mb-8">
+            <strong>Bibliography is per-document.</strong>
+            LexTyp stores your <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">.bib</code> entries inside the <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">.lextyp</code> archive, so each paper carries its own references. You can keep one master <code class="text-xs bg-cyan-100 px-1 py-0.5 rounded">.bib</code> in your workspace folder and re-import it whenever you start a new paper.
+          </div>
+
+          <h3 class="text-xl font-semibold text-slate-900 mb-3">Writing one by hand</h3>
+          <p class="text-slate-600 mb-4 leading-relaxed">
+            If your source isn't on any database (a personal letter, a draft chapter, a UK statute that databases don't index nicely), it's faster to type the entry directly in LexTyp's <strong>+ Add reference</strong> form. The fields you'll need depend on the entry type:
+          </p>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden text-sm">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="px-4 py-2.5 text-left font-semibold text-slate-700">Type</th>
+                  <th class="px-4 py-2.5 text-left font-semibold text-slate-700">For</th>
+                  <th class="px-4 py-2.5 text-left font-semibold text-slate-700">Required fields</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-slate-600">
+                <tr><td class="px-4 py-2.5"><code>@book</code></td><td class="px-4 py-2.5">Books, monographs</td><td class="px-4 py-2.5"><code>author</code>, <code>title</code>, <code>publisher</code>, <code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@article</code></td><td class="px-4 py-2.5">Journal articles</td><td class="px-4 py-2.5"><code>author</code>, <code>title</code>, <code>journal</code>, <code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@incollection</code></td><td class="px-4 py-2.5">Chapter in an edited book</td><td class="px-4 py-2.5"><code>author</code>, <code>title</code>, <code>booktitle</code>, <code>editor</code>, <code>publisher</code>, <code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@inproceedings</code></td><td class="px-4 py-2.5">Conference papers</td><td class="px-4 py-2.5"><code>author</code>, <code>title</code>, <code>booktitle</code>, <code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@phdthesis</code></td><td class="px-4 py-2.5">Theses / dissertations</td><td class="px-4 py-2.5"><code>author</code>, <code>title</code>, <code>school</code>, <code>year</code></td></tr>
+                <tr><td class="px-4 py-2.5"><code>@misc</code></td><td class="px-4 py-2.5">Cases, websites, anything else</td><td class="px-4 py-2.5"><code>author</code>, <code>title</code>, <code>year</code> (more as needed)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- WORD COUNT -->
+        <section id="word-count" class="mb-20">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Word Count</h2>
+          <p class="text-slate-600 leading-relaxed mb-6">
+            The status bar (bottom-right) shows two numbers: the words from the start of the document up to your cursor, and the total words in the document — including any <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/include</code> sub-documents. Citations and the <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/contents</code> block don't count, so what you see is what an examiner counting your prose would tally.
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">Cursor / total</h4>
+              <p class="text-sm text-slate-500"><code class="text-xs bg-slate-100 px-1 py-0.5 rounded">2,940 / 3,142 words</code> means the cursor sits at the 2,940-word mark of a 3,142-word document. The cursor figure updates as you click around or use the arrow keys — handy for checking how much you've written before a particular section break.</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-5">
+              <h4 class="font-semibold text-slate-900 text-sm mb-2">On the cover page</h4>
+              <p class="text-sm text-slate-500">Open the cover-page block, turn the <strong>Word count</strong> chip on, and optionally type a target like <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">3000</code>. The cover then prints <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">2940 / 3000</code> on the title page — both numbers update on every compile.</p>
             </div>
           </div>
         </section>
@@ -582,6 +733,10 @@
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
               <strong>Dark mode for late-night sessions.</strong>
               Toggle the theme from the sidebar settings. Your preference is saved automatically.
+            </div>
+            <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-5 text-sm text-cyan-900">
+              <strong>Open the example template if you get stuck.</strong>
+              From the empty editor screen with a workspace open, click <strong>Open the example template</strong>. It drops a complete tutorial document into your workspace — cover page, every block type, working citations — that you can read, edit, or copy-paste from. Delete it once it's served its purpose.
             </div>
           </div>
         </section>
