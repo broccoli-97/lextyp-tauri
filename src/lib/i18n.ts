@@ -24,6 +24,10 @@ const translations = {
     "editor.noDocumentHint": "Create or open a document from the sidebar. OSCOLA citations are on by default — switch styles from the chip in the status bar.",
     "editor.outline": "Outline",
 
+    // Empty-state actions
+    "empty.openExample": "Open the example template",
+    "empty.openingExample": "Opening…",
+
     // PDF Preview
     "pdf.preview": "Preview",
     "pdf.error": "Error",
@@ -117,6 +121,56 @@ const translations = {
     // Update
     "update.available": "v{version} available — click to download",
 
+    // Word count
+    "words.label": "words",
+    "words.tooltip": "Words before the cursor / total words in the document",
+
+    // Cover page
+    "cover.tag": "COVER PAGE",
+    "cover.dialogSubtitle": "Title page metadata",
+    "cover.edit": "Edit",
+    "cover.preview": "Preview",
+    "cover.togglePreview": "Show or hide the preview",
+    "cover.close": "Close",
+    "cover.cancel": "Cancel",
+    "cover.save": "Save cover page",
+    "cover.resetDefaults": "Reset to defaults",
+    "cover.resetDefaultsHint": "Clear every field and revert to the built-in defaults",
+    "cover.optional": "Optional",
+    "cover.title": "Title",
+    "cover.titlePlaceholder": "Welcome to LexTyp",
+    "cover.subtitle": "Subtitle",
+    "cover.subtitlePlaceholder": "A guided tour of the editor",
+    "cover.author": "Author",
+    "cover.authorPlaceholder": "Your name",
+    "cover.supervisor": "Supervisor",
+    "cover.supervisorPlaceholder": "e.g. Dr A. Smith",
+    "cover.institution": "Institution",
+    "cover.institutionPlaceholder": "King's College London",
+    "cover.department": "Department",
+    "cover.departmentPlaceholder": "Department or programme",
+    "cover.date": "Date",
+    "cover.datePlaceholder": "e.g. May 2026",
+    "cover.dateAuto": "Auto",
+    "cover.dateAutoActive": "Updates to today's date on every compile",
+    "cover.dateAutoSet": "Set the date to today (and keep it auto-updated)",
+    "cover.wordCount": "Word count",
+    "cover.wordCountAuto": "Auto",
+    "cover.wordCountAutoActive": "Live total — updates as you type",
+    "cover.wordCountAutoSet": "Show the live word count on the cover page",
+    "cover.wordCountHidden": "Hidden",
+    "cover.targetPlaceholder": "No target",
+    "cover.additionalLines": "Additional lines",
+    "cover.additionalLinesHint": "One per line — e.g. candidate number, module code",
+    "cover.extra": "Extra lines",
+    "cover.extraPlaceholder": "Candidate number: 12345\nModule: Tort Law (LAW2003)",
+    "cover.layout": "Layout",
+    "cover.layoutClassic": "Classic",
+    "cover.layoutCentered": "Centered",
+    "cover.layoutMinimal": "Minimal",
+    "cover.previewEmpty": "Untitled cover page",
+    "cover.previewEmptyHint": "Click to add the title, author, and other details",
+
     // Document output
     "doc.references": "References",
   },
@@ -141,6 +195,10 @@ const translations = {
     "editor.noDocument": "开始撰写论文",
     "editor.noDocumentHint": "从侧边栏新建或打开文档。默认使用 OSCOLA 引注 — 可在状态栏的标签切换样式。",
     "editor.outline": "大纲",
+
+    // Empty-state actions
+    "empty.openExample": "打开示例模板",
+    "empty.openingExample": "正在打开…",
 
     // PDF Preview
     "pdf.preview": "预览",
@@ -234,6 +292,56 @@ const translations = {
 
     // Update
     "update.available": "v{version} 可用 — 点击下载",
+
+    // Word count
+    "words.label": "字",
+    "words.tooltip": "光标前字数 / 全文字数",
+
+    // Cover page
+    "cover.tag": "封面",
+    "cover.dialogSubtitle": "封面页元数据",
+    "cover.edit": "编辑",
+    "cover.preview": "预览",
+    "cover.togglePreview": "显示或隐藏预览",
+    "cover.close": "关闭",
+    "cover.cancel": "取消",
+    "cover.save": "保存封面",
+    "cover.resetDefaults": "恢复默认",
+    "cover.resetDefaultsHint": "清除所有字段并恢复为默认值",
+    "cover.optional": "可选",
+    "cover.title": "标题",
+    "cover.titlePlaceholder": "论文标题",
+    "cover.subtitle": "副标题",
+    "cover.subtitlePlaceholder": "副标题",
+    "cover.author": "作者",
+    "cover.authorPlaceholder": "作者姓名",
+    "cover.supervisor": "导师",
+    "cover.supervisorPlaceholder": "导师姓名",
+    "cover.institution": "学校",
+    "cover.institutionPlaceholder": "学校或机构名称",
+    "cover.department": "院系",
+    "cover.departmentPlaceholder": "院系或专业",
+    "cover.date": "日期",
+    "cover.datePlaceholder": "例如 2026 年 5 月",
+    "cover.dateAuto": "自动",
+    "cover.dateAutoActive": "编译时自动更新为今天",
+    "cover.dateAutoSet": "设为自动（每次编译都使用当天日期）",
+    "cover.wordCount": "字数",
+    "cover.wordCountAuto": "自动",
+    "cover.wordCountAutoActive": "实时字数 — 编辑时自动更新",
+    "cover.wordCountAutoSet": "在封面显示实时字数",
+    "cover.wordCountHidden": "隐藏",
+    "cover.targetPlaceholder": "无目标",
+    "cover.additionalLines": "其他信息",
+    "cover.additionalLinesHint": "每行一条，例如考生编号、课程代码等",
+    "cover.extra": "其他信息",
+    "cover.extraPlaceholder": "考生编号：12345\n课程：侵权法（LAW2003）",
+    "cover.layout": "排版",
+    "cover.layoutClassic": "经典",
+    "cover.layoutCentered": "居中",
+    "cover.layoutMinimal": "极简",
+    "cover.previewEmpty": "未命名封面",
+    "cover.previewEmptyHint": "点击此处填写标题、作者等信息",
 
     // Document output
     "doc.references": "参考文献",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/app-store";
+import { useWorkspaceStore } from "../stores/workspace-store";
 import { Circle, Loader2, AlertCircle, CheckCircle, Lightbulb, ArrowDownCircle, X } from "lucide-react";
 import { useT } from "../lib/i18n";
 
@@ -26,6 +27,9 @@ export function StatusBar() {
   const updateDismissed = useAppStore((s) => s.updateDismissed);
   const setUpdateInfo = useAppStore((s) => s.setUpdateInfo);
   const dismissUpdate = useAppStore((s) => s.dismissUpdate);
+  const cursorWordCount = useAppStore((s) => s.cursorWordCount);
+  const totalWordCount = useAppStore((s) => s.totalWordCount);
+  const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
 
   // --- Rotating tips ---
   const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIP_KEYS.length));
@@ -80,8 +84,16 @@ export function StatusBar() {
         </div>
       </div>
 
-      {/* Right side - Update + App info (citation style chip lives in the editor toolbar) */}
+      {/* Right side - Word count + Update + App info (citation style chip lives in the editor toolbar) */}
       <div className="flex items-center gap-3 shrink-0">
+        {activeDocumentPath && (
+          <WordCountReadout
+            cursor={cursorWordCount}
+            total={totalWordCount}
+            label={t("words.label")}
+            title={t("words.tooltip")}
+          />
+        )}
         {showUpdate && (
           <div className="group flex items-center">
             <a
@@ -114,3 +126,32 @@ export function StatusBar() {
   );
 }
 
+function WordCountReadout({
+  cursor,
+  total,
+  label,
+  title,
+}: {
+  cursor: number | null;
+  total: number;
+  label: string;
+  title: string;
+}) {
+  return (
+    <div
+      title={title}
+      className="flex items-baseline gap-1 px-2 py-0.5 text-[11px] text-[var(--text-tertiary)] tabular-nums select-none"
+    >
+      {cursor !== null ? (
+        <>
+          <span className="text-[var(--text-secondary)] font-medium">{cursor}</span>
+          <span className="opacity-60">/</span>
+          <span>{total}</span>
+        </>
+      ) : (
+        <span className="text-[var(--text-secondary)] font-medium">{total}</span>
+      )}
+      <span className="ml-1">{label}</span>
+    </div>
+  );
+}

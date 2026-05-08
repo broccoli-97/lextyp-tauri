@@ -12,11 +12,21 @@ import { getSlashMenuItems } from "../editor/slash-items";
 import { serializeToTypst } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
 import { t } from "../lib/i18n";
+import { formatAutoDate } from "../lib/date-format";
+import { useSettingsStore } from "../stores/settings-store";
+import {
+  clearIncludeCountCache,
+  countWordsAndCursor,
+  preloadIncludeCounts,
+  type CursorPosition,
+  type IncludeLoader,
+} from "../lib/word-count";
 import { useAppStore } from "../stores/app-store";
 import { useReferenceStore } from "../stores/reference-store";
 import { useWorkspaceStore, makeIncludeResolver } from "../stores/workspace-store";
 import { FloatingOutline } from "./FloatingOutline";
 import { CitationPicker } from "./CitationPicker";
+import { CoverPageDialog } from "./CoverPageDialog";
 import { DocumentPicker } from "./DocumentPicker";
 import { EditorSideMenu } from "./EditorSideMenu";
 import { EditorFormattingToolbar } from "./EditorFormattingToolbar";
@@ -252,11 +262,14 @@ export function Editor() {
   const setCompiling = useAppStore((s) => s.setCompiling);
   const setCompilationResult = useAppStore((s) => s.setCompilationResult);
   const setCompilationError = useAppStore((s) => s.setCompilationError);
+  const setWordCounts = useAppStore((s) => s.setWordCounts);
+  const cursorRef = useRef<CursorPosition | null>(null);
 
   const compileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [citationPickerOpen, setCitationPickerOpen] = useState(false);
   const [documentPickerOpen, setDocumentPickerOpen] = useState(false);
+  const [coverPageDialogBlock, setCoverPageDialogBlock] = useState<any | null>(null);
   const loadedPathRef = useRef<string | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
@@ -316,26 +329,6 @@ export function Editor() {
     return () => container.removeEventListener("keydown", onKeyDown, true);
   }, []);
 
-  // Load document blocks when active document changes
-  useEffect(() => {
-    if (!activeDocumentPath) return;
-
-    // Avoid re-loading if we already loaded this path
-    if (loadedPathRef.current === activeDocumentPath) return;
-    loadedPathRef.current = activeDocumentPath;
-
-    if (activeDocumentBlocks && activeDocumentBlocks.length > 0) {
-      try {
-        editor.replaceBlocks(editor.document, activeDocumentBlocks);
-      } catch (err) {
-        console.error("Failed to restore document blocks:", err);
-      }
-    } else {
-      // Empty document — clear editor
-      editor.replaceBlocks(editor.document, []);
-    }
-  }, [activeDocumentPath, activeDocumentBlocks, editor]);
-
   const openCitationPicker = useCallback(() => {
     setCitationPickerOpen(true);
   }, []);
@@ -354,6 +347,124 @@ export function Editor() {
 
   const setSourceMap = useAppStore((s) => s.setSourceMap);
 
+  /** Resolve the caret to (block id, raw-text char offset) by walking the
+   *  same accepted text nodes as `findOffsetTextNode` (citation atoms are
+   *  rejected so the offset stays in sync with the source-map model). */
+  const readCursorFromDOM = useCallback((): CursorPosition | null => {
+    const container = editorContainerRef.current;
+    if (!container) return null;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    const anchor = range.startContainer;
+    if (!container.contains(anchor)) return null;
+
+    let blockEl: HTMLElement | null = null;
+    let n: Node | null = anchor;
+    while (n) {
+      if (n instanceof HTMLElement && n.dataset.id) {
+        blockEl = n;
+        break;
+      }
+      n = n.parentNode;
+    }
+    if (!blockEl) return null;
+
+    const contentEl =
+      blockEl.querySelector<HTMLElement>(".bn-inline-content") ?? blockEl;
+
+    // If the caret sits outside an accepted text region (e.g. at the very
+    // edge of an empty block), treat it as offset 0 inside the block.
+    if (!contentEl.contains(anchor)) {
+      return { blockId: blockEl.dataset.id!, charOffset: 0 };
+    }
+
+    const walker = document.createTreeWalker(contentEl, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p: Node | null = node.parentNode;
+        while (p && p !== contentEl) {
+          if (p instanceof HTMLElement) {
+            const tag = p.dataset.inlineContentType;
+            if (tag && tag !== "text") return NodeFilter.FILTER_REJECT;
+          }
+          p = p.parentNode;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    let offset = 0;
+    let node = walker.nextNode() as Text | null;
+    while (node) {
+      if (node === anchor) {
+        return {
+          blockId: blockEl.dataset.id!,
+          charOffset: offset + range.startOffset,
+        };
+      }
+      offset += node.data.length;
+      node = walker.nextNode() as Text | null;
+    }
+    return { blockId: blockEl.dataset.id!, charOffset: offset };
+  }, []);
+
+  const includeLoader = useCallback<IncludeLoader>(async (path) => {
+    const resolver = makeIncludeResolver();
+    const result = await resolver(path);
+    return { blocks: result.blocks ?? [] };
+  }, []);
+
+  const recomputeCounts = useCallback(() => {
+    const { cursorWords, totalWords } = countWordsAndCursor(
+      editor.document as any,
+      cursorRef.current
+    );
+    setWordCounts(
+      cursorRef.current ? cursorWords : null,
+      totalWords
+    );
+  }, [editor, setWordCounts]);
+
+  /** Walk the current document for new include paths, load their counts,
+   *  then refresh totals. The synchronous `recomputeCounts` runs first so
+   *  the chip updates immediately (with stale include counts if any), then
+   *  again after the loader resolves. */
+  const refreshIncludeCounts = useCallback(() => {
+    preloadIncludeCounts(editor.document as any, includeLoader)
+      .then(recomputeCounts)
+      .catch(() => {
+        // Loader errors are already swallowed inside preloadIncludeCounts.
+      });
+  }, [editor, includeLoader, recomputeCounts]);
+
+  // Load document blocks when active document changes
+  useEffect(() => {
+    if (!activeDocumentPath) return;
+
+    // Avoid re-loading if we already loaded this path
+    if (loadedPathRef.current === activeDocumentPath) return;
+    loadedPathRef.current = activeDocumentPath;
+
+    if (activeDocumentBlocks && activeDocumentBlocks.length > 0) {
+      try {
+        editor.replaceBlocks(editor.document, activeDocumentBlocks);
+      } catch (err) {
+        console.error("Failed to restore document blocks:", err);
+      }
+    } else {
+      // Empty document — clear editor
+      editor.replaceBlocks(editor.document, []);
+    }
+
+    // Switching documents may bring in a different set of includes (or new
+    // versions of the same paths if the user edited an include in another
+    // tab). Wipe the cache and rebuild for this document.
+    cursorRef.current = null;
+    clearIncludeCountCache();
+    recomputeCounts();
+    refreshIncludeCounts();
+  }, [activeDocumentPath, activeDocumentBlocks, editor, recomputeCounts, refreshIncludeCounts]);
+
   const compileDocument = useCallback(async () => {
     try {
       const blocks = editor.document;
@@ -365,7 +476,8 @@ export function Editor() {
         formatter,
         true,
         makeIncludeResolver(),
-        t("doc.references")
+        t("doc.references"),
+        formatAutoDate(useSettingsStore.getState().locale)
       );
       setCompiling(true);
 
@@ -393,6 +505,13 @@ export function Editor() {
     // Mark dirty
     setDirty(true);
 
+    // Live word counts. The cursor offset shifts during typing, so refresh
+    // it before the count walk; include counts are picked up asynchronously
+    // (newly inserted /include blocks will surface after the loader resolves).
+    cursorRef.current = readCursorFromDOM() ?? cursorRef.current;
+    recomputeCounts();
+    refreshIncludeCounts();
+
     // Debounced compile (400ms)
     if (compileTimerRef.current) clearTimeout(compileTimerRef.current);
     compileTimerRef.current = setTimeout(compileDocument, 400);
@@ -402,7 +521,14 @@ export function Editor() {
     autoSaveTimerRef.current = setTimeout(() => {
       saveActiveDocument().catch(console.error);
     }, 2000);
-  }, [compileDocument, setDirty, saveActiveDocument]);
+  }, [
+    compileDocument,
+    setDirty,
+    saveActiveDocument,
+    readCursorFromDOM,
+    recomputeCounts,
+    refreshIncludeCounts,
+  ]);
 
   // Compile when the active document or citation rendering inputs change.
   // The PDF depends on bibliography entries and citation style in addition to
@@ -420,6 +546,21 @@ export function Editor() {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
   }, []);
+
+  // Track caret movement so the cursor word count tracks arrow-key navigation,
+  // mouse clicks, and any other selection change — not just edits. The native
+  // `selectionchange` event fires for every caret update; we filter to events
+  // that land inside this editor and ignore everything else.
+  useEffect(() => {
+    const onSelectionChange = () => {
+      const next = readCursorFromDOM();
+      if (!next) return;
+      cursorRef.current = next;
+      recomputeCounts();
+    };
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => document.removeEventListener("selectionchange", onSelectionChange);
+  }, [readCursorFromDOM, recomputeCounts]);
 
   const insertCitation = useCallback(
     (key: string) => {
@@ -497,18 +638,28 @@ export function Editor() {
     [editor]
   );
 
+  const openCoverPageDialog = useCallback((block: any) => {
+    setCoverPageDialogBlock(block);
+  }, []);
+
+  const closeCoverPageDialog = useCallback(() => {
+    setCoverPageDialogBlock(null);
+  }, []);
+
   useEffect(() => {
     (window as any).__lextyp_insertCitation = insertCitation;
     (window as any).__lextyp_openCitationPicker = openCitationPicker;
     (window as any).__lextyp_openDocumentPicker = openDocumentPicker;
+    (window as any).__lextyp_openCoverPageDialog = openCoverPageDialog;
     (window as any).__lextyp_jumpToBlock = jumpToBlock;
     return () => {
       delete (window as any).__lextyp_insertCitation;
       delete (window as any).__lextyp_openCitationPicker;
       delete (window as any).__lextyp_openDocumentPicker;
+      delete (window as any).__lextyp_openCoverPageDialog;
       delete (window as any).__lextyp_jumpToBlock;
     };
-  }, [insertCitation, openCitationPicker, openDocumentPicker, jumpToBlock]);
+  }, [insertCitation, openCitationPicker, openDocumentPicker, openCoverPageDialog, jumpToBlock]);
 
   return (
     <div className="h-full relative flex flex-col">
@@ -562,6 +713,12 @@ export function Editor() {
         currentDocumentPath={activeDocumentPath}
         onClose={closeDocumentPicker}
         onSelect={insertDocumentInclude}
+      />
+      <CoverPageDialog
+        open={coverPageDialogBlock !== null}
+        block={coverPageDialogBlock}
+        editor={editor}
+        onClose={closeCoverPageDialog}
       />
     </div>
   );

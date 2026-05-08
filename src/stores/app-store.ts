@@ -24,12 +24,18 @@ interface AppState {
   sourceMap: SourceMapEntry[];
   updateInfo: UpdateInfo | null;
   updateDismissed: boolean;
+  /** Words from the start of the document up to the caret. `null` while the
+   *  caret position is not known (e.g. before first focus). */
+  cursorWordCount: number | null;
+  /** Total words in the document, with documentInclude blocks expanded. */
+  totalWordCount: number;
   setCompiling: (v: boolean) => void;
   setCompilationResult: (pdfBase64: string, duration: number) => void;
   setCompilationError: (error: string, duration: number) => void;
   setSourceMap: (entries: SourceMapEntry[]) => void;
   setUpdateInfo: (info: UpdateInfo) => void;
   dismissUpdate: () => void;
+  setWordCounts: (cursor: number | null, total: number) => void;
   clear: () => void;
 }
 
@@ -41,6 +47,8 @@ export const useAppStore = create<AppState>((set) => ({
   sourceMap: [],
   updateInfo: null,
   updateDismissed: false,
+  cursorWordCount: null,
+  totalWordCount: 0,
   setCompiling: (v) => set({ compiling: v }),
   setCompilationResult: (pdfBase64, duration) =>
     set({ pdfBase64, lastDuration: duration, lastError: "", compiling: false }),
@@ -49,6 +57,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSourceMap: (sourceMap) => set({ sourceMap }),
   setUpdateInfo: (updateInfo) => set({ updateInfo }),
   dismissUpdate: () => set({ updateDismissed: true }),
+  setWordCounts: (cursor, total) =>
+    set({ cursorWordCount: cursor, totalWordCount: total }),
   clear: () =>
     set({
       compiling: false,
@@ -56,5 +66,7 @@ export const useAppStore = create<AppState>((set) => ({
       pdfBase64: "",
       lastDuration: 0,
       sourceMap: [],
+      cursorWordCount: null,
+      totalWordCount: 0,
     }),
 }));

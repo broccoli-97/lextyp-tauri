@@ -1,5 +1,6 @@
 import type { BibEntry, CitationHistoryEntry } from "../types/bib";
 import type { CitationFormatter } from "./citation/formatter";
+import { countWordsAndCursor, preloadIncludeCounts } from "./word-count";
 
 /**
  * Resolver that loads an included document's blocks and bibliography so the
@@ -24,6 +25,14 @@ interface SerializeContext {
    * Drives the auto-generated References section at the end of the document.
    */
   citedKeys: string[];
+  /** Total words in the document (with includes expanded). Computed once
+   *  before the body walk so cover pages with `wordCount: "auto"` can render
+   *  the value before the rest of the document is serialized. */
+  totalWords: number;
+  /** Today's date pre-formatted for the active locale. Resolved by the
+   *  caller (which knows the user's locale) so the serializer stays
+   *  locale-agnostic. Used for cover pages whose `date` prop is "auto". */
+  autoDate: string;
 }
 
 /**
@@ -40,7 +49,8 @@ export async function serializeToTypst(
   formatter?: CitationFormatter,
   trackBlocks = false,
   resolveInclude?: IncludeResolver,
-  bibliographyHeading = "References"
+  bibliographyHeading = "References",
+  autoDate = ""
 ): Promise<string> {
   const ctx: SerializeContext = {
     entries: entries ? [...entries] : [],
@@ -51,7 +61,20 @@ export async function serializeToTypst(
     resolveInclude,
     visited: new Set<string>(),
     citedKeys: [],
+    totalWords: 0,
+    autoDate,
   };
+
+  // Resolve every include and seed the word-count cache so cover pages with
+  // `wordCount: "auto"` see the same total the status bar shows. Skipped if
+  // there's no resolver — the count then only sees in-memory text.
+  if (resolveInclude) {
+    await preloadIncludeCounts(blocks, async (path) => {
+      const child = await resolveInclude(path);
+      return { blocks: child.blocks };
+    });
+  }
+  ctx.totalWords = countWordsAndCursor(blocks, null).totalWords;
 
   const preamble = buildPreamble(trackBlocks);
   const body = await serializeBody(blocks, ctx, trackBlocks);
@@ -157,6 +180,11 @@ async function serializeBody(
       continue;
     }
 
+    if (block?.type === "coverPage") {
+      output += serializeCoverPage(block, ctx);
+      continue;
+    }
+
     const trackId = trackOwnBlocks && block.id ? block.id : undefined;
     const blockContent = serializeBlock(block, ctx, trackId);
 
@@ -207,6 +235,134 @@ async function serializeInclude(
   const childBody = await serializeBody(child.blocks, ctx, false);
   ctx.visited.delete(path);
   return `#pagebreak(weak: true)\n${childBody}#pagebreak(weak: true)\n`;
+}
+
+/**
+ * Render a cover page block to centered Typst markup.
+ *
+ * Layout: `#v(1fr)` pushes the centered group to the page's vertical middle,
+ * a closing `#v(1fr)` and weak page break end the cover. Each metadata
+ * group is conditional — empty fields drop out entirely (including their
+ * vertical spacer) so a sparse cover doesn't leave large blank gaps.
+ *
+ * `wordCount` modes:
+ *   - "off"     → no word count line
+ *   - "auto"    → ctx.totalWords (live count)
+ *   - "<n>"     → user-specified manual override
+ */
+function serializeCoverPage(block: any, ctx: SerializeContext): string {
+  const props = block?.props ?? {};
+  const layout = String(props.layout ?? "classic");
+  const titleSize =
+    layout === "minimal" ? 18 : layout === "centered" ? 22 : 24;
+  const subtitleSize = layout === "minimal" ? 12 : 14;
+
+  // Spacers between metadata groups, sized per layout for visual balance.
+  const groupGap =
+    layout === "minimal" ? "0.6cm" : layout === "centered" ? "1.2cm" : "1.5cm";
+  const titleGap = layout === "minimal" ? "0.3cm" : "0.4cm";
+
+  const out: string[] = [];
+
+  // Vertical positioning differs by layout:
+  //   classic  — title near the top third, footer near bottom (1fr top, 2fr bottom)
+  //   centered — fully centered (1fr top, 1fr bottom)
+  //   minimal  — sits in the upper portion, no full-page sandwich
+  if (layout === "centered") {
+    out.push("#v(1fr)");
+  } else if (layout === "classic") {
+    out.push("#v(1fr)");
+  } else {
+    // minimal: a small top margin only
+    out.push("#v(2cm)");
+  }
+
+  out.push("#align(center)[");
+
+  if (props.title) {
+    out.push(
+      `  #text(size: ${titleSize}pt, weight: "bold")[${escapeTypst(String(props.title))}]`
+    );
+  }
+  if (props.subtitle) {
+    if (props.title) out.push(`  #v(${titleGap})`);
+    out.push(
+      `  #text(size: ${subtitleSize}pt, style: "italic")[${escapeTypst(String(props.subtitle))}]`
+    );
+  }
+
+  const orgLines: string[] = [];
+  if (props.institution) orgLines.push(escapeTypst(String(props.institution)));
+  if (props.department) orgLines.push(escapeTypst(String(props.department)));
+  if (orgLines.length) {
+    out.push(`  #v(${layout === "minimal" ? "0.8cm" : "2cm"})`);
+    out.push("  " + orgLines.join(" \\ "));
+  }
+
+  const authorLines: string[] = [];
+  if (props.author) authorLines.push(escapeTypst(String(props.author)));
+  if (props.supervisor) {
+    authorLines.push(`Supervisor: ${escapeTypst(String(props.supervisor))}`);
+  }
+  if (authorLines.length) {
+    out.push(`  #v(${groupGap})`);
+    out.push("  " + authorLines.join(" \\ "));
+  }
+
+  const dateLines: string[] = [];
+  const dateRaw = String(props.date ?? "");
+  const dateText = dateRaw === "auto" ? ctx.autoDate : dateRaw;
+  if (dateText) dateLines.push(escapeTypst(dateText));
+
+  const wcMode = String(props.wordCount ?? "off");
+  let wcText: string | null = null;
+  if (wcMode === "auto") {
+    wcText = `Word count: ${ctx.totalWords}`;
+  } else if (wcMode !== "off" && wcMode !== "" && /^\d+$/.test(wcMode)) {
+    // Numeric value is a target — print live count alongside it so a
+    // submitted PDF surfaces both "what was written" and "what was asked".
+    wcText = `Word count: ${ctx.totalWords} / ${wcMode}`;
+  }
+  if (wcText) dateLines.push(escapeTypst(wcText));
+
+  if (dateLines.length) {
+    // For classic, push the date block to the page bottom; otherwise just
+    // gap from the previous group.
+    if (layout === "classic") {
+      out.push("  #v(1fr)");
+    } else {
+      out.push(`  #v(${groupGap})`);
+    }
+    out.push("  " + dateLines.join(" \\ "));
+  }
+
+  if (props.extraLines) {
+    const extras = String(props.extraLines)
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+    if (extras.length) {
+      out.push(`  #v(${layout === "minimal" ? "0.5cm" : "1cm"})`);
+      out.push("  " + extras.map((l) => escapeTypst(l)).join(" \\ "));
+    }
+  }
+
+  out.push("]");
+
+  if (layout === "centered") {
+    out.push("#v(1fr)");
+  } else if (layout === "classic") {
+    // Classic uses the inner 1fr to push the date block down, so just a
+    // small bottom buffer keeps things off the very edge.
+    out.push("#v(2cm)");
+  } else {
+    // minimal — no bottom fr, content stays where it is in the page.
+  }
+
+  out.push("#pagebreak(weak: true)");
+  out.push("");
+
+  return out.join("\n");
 }
 
 function serializeBlock(

@@ -7,6 +7,7 @@ import {
 import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
 import { FileText, ListTree } from "lucide-react";
 import { CitationTag } from "../components/CitationTag";
+import { CoverPageCard } from "../components/CoverPageCard";
 
 // Custom inline content: Citation tag.
 //
@@ -68,6 +69,35 @@ export const DocumentInclude = createReactBlockSpec(
   }
 );
 
+// Custom block: Cover page — a centered first-page layout with editable
+// metadata fields (title, author, institution, date, word count, etc.).
+// Empty fields are dropped at compile time so users can pick the subset
+// their school's submission template requires. The block has no inline
+// content; its values live entirely in `props`.
+export const CoverPage = createReactBlockSpec(
+  {
+    type: "coverPage" as const,
+    propSchema: {
+      title: { default: "" },
+      subtitle: { default: "" },
+      author: { default: "" },
+      supervisor: { default: "" },
+      institution: { default: "" },
+      department: { default: "" },
+      date: { default: "auto" }, // "auto" | "" (hidden) | any user string
+      wordCount: { default: "off" }, // "off" | "auto" | numeric string
+      extraLines: { default: "" },
+      layout: { default: "classic", values: ["classic", "centered", "minimal"] },
+    },
+    content: "none",
+  },
+  {
+    render: (props) => (
+      <CoverPageCard block={props.block as any} editor={props.editor as any} />
+    ),
+  }
+);
+
 // Custom block: Table of contents — compiles to Typst's #outline() so the
 // PDF gets an auto-generated table of contents built from the document's
 // headings. Non-editable; shown in the editor as a simple placeholder card.
@@ -115,6 +145,7 @@ export const schema = BlockNoteSchema.create({
     checkListItem: defaultBlockSpecs.checkListItem,
     documentInclude: DocumentInclude(),
     tableOfContents: TableOfContents(),
+    coverPage: CoverPage(),
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

@@ -13,6 +13,17 @@ export function getSlashMenuItems(
 ): DefaultReactSuggestionItem[] {
   return [
     {
+      title: "Cover page",
+      subtext: "Centered title page for academic submissions",
+      aliases: ["cover", "coverpage", "title page", "frontmatter", "cover sheet"],
+      group: "Structure",
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(editor as any, {
+          type: "coverPage" as any,
+        });
+      },
+    },
+    {
       title: "Title",
       subtext: "Document title",
       aliases: ["title"],

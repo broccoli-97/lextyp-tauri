@@ -1786,3 +1786,574 @@ textarea {
   color: var(--text-tertiary);
   font-style: italic;
 }
+
+/* ───────── Cover page block ─────────
+   Inline render is a click-to-edit preview card. Visible content is the
+   cover's headings + metadata, not editable inputs — actual editing
+   happens in the dialog (CoverPageDialog.tsx). The card uses
+   `container-type: inline-size` so its inner type scale tracks the editor
+   pane width, not the viewport. */
+.cover-page-card {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin: 12px auto;
+  padding: clamp(20px, 5cqi, 36px) clamp(20px, 5cqi, 40px) clamp(24px, 6cqi, 44px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.cover-page-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: var(--shadow-sm);
+}
+
+.cover-page-card:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.cover-page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: clamp(12px, 3cqi, 24px);
+}
+
+.cover-page-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.cover-page-edit-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.cover-page-card:hover .cover-page-edit-hint,
+.cover-page-card:focus-visible .cover-page-edit-hint {
+  opacity: 1;
+}
+
+/* ───────── Cover preview (used in inline block + modal) ─────────
+   Pure read-only rendering. Mirrors the printed cover but in horizontal
+   card form, not page-shaped. Title in serif to hint at the PDF output. */
+.cover-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(4px, 1cqi, 10px);
+  padding: clamp(16px, 4cqi, 28px) clamp(8px, 2cqi, 16px);
+}
+
+.cover-preview-title {
+  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-size: clamp(20px, 6.5cqi, 30px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.cover-preview-subtitle {
+  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-size: clamp(13px, 3.5cqi, 17px);
+  font-style: italic;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.cover-preview-meta {
+  margin-top: clamp(10px, 2.5cqi, 18px);
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-size: clamp(12px, 2.8cqi, 14px);
+  color: var(--text-secondary);
+}
+
+.cover-preview-meta-part {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.cover-preview-meta-sep {
+  color: var(--text-tertiary);
+  margin-right: 2px;
+}
+
+.cover-preview-supervisor,
+.cover-preview-wordcount {
+  margin-top: 4px;
+  font-size: clamp(11.5px, 2.5cqi, 13px);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.cover-preview-extra {
+  margin-top: clamp(8px, 2cqi, 14px);
+  font-size: clamp(11px, 2.4cqi, 12.5px);
+  color: var(--text-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Empty state for the preview when no fields are filled. */
+.cover-preview-empty {
+  padding: clamp(24px, 6cqi, 48px) clamp(8px, 2cqi, 16px);
+  gap: 6px;
+}
+
+.cover-preview-empty-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+}
+
+.cover-preview-empty-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.cover-preview-empty-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ───────── Cover page dialog ─────────
+   Modal editor for the cover page block. Centered on the viewport with a
+   dim backdrop, scrollable form below a fixed-height preview pane. */
+.cover-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 14, 12, 0.32);
+  backdrop-filter: blur(6px);
+  animation: fade-in 140ms ease;
+}
+
+.cover-dialog {
+  width: 100%;
+  max-width: 620px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: var(--shadow-xl, 0 24px 64px -16px rgba(15, 14, 12, 0.32));
+  overflow: hidden;
+  animation: fade-in 180ms ease;
+}
+
+.cover-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+}
+
+.cover-dialog-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cover-dialog-logo {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-radius: var(--radius-md);
+  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  box-shadow: var(--shadow-xs);
+}
+
+.cover-dialog-titlegroup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.cover-dialog-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+}
+
+.cover-dialog-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.cover-dialog-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cover-dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-dialog-preview-wrap {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0;
+}
+
+/* The shared preview's container queries reference its own size — give it
+   a dedicated container context inside the modal too. */
+.cover-dialog-preview-wrap > .cover-preview {
+  container-type: inline-size;
+  padding: clamp(24px, 5cqi, 40px) clamp(16px, 4cqi, 32px);
+}
+
+.cover-dialog-form {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg-secondary);
+}
+
+.cover-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cover-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 520px) {
+  .cover-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cover-form-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cover-form-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.cover-form-required {
+  color: var(--error);
+  margin-left: 2px;
+}
+
+.cover-form-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.cover-form-input {
+  height: 34px;
+  font-size: 13px;
+}
+
+.cover-form-italic {
+  font-style: italic;
+}
+
+.cover-form-textarea {
+  min-height: 64px;
+  height: auto;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.cover-form-with-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cover-form-with-chip > .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Split word-count control: live count (read-only text) | / | target input.
+   Lives inside `.cover-form-with-chip` next to the Auto chip, mimicking
+   the design's "2940 / 3000  [Auto ●]" pattern. */
+.cover-wordcount-fields {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 34px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.cover-wordcount-fields:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.cover-wordcount-fields.is-disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+}
+
+.cover-wordcount-live {
+  color: var(--text-primary);
+  font-weight: 500;
+  min-width: 2ch;
+}
+
+.cover-wordcount-fields.is-disabled .cover-wordcount-live {
+  color: var(--text-tertiary);
+}
+
+.cover-wordcount-sep {
+  color: var(--text-tertiary);
+}
+
+.cover-wordcount-target {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+}
+
+.cover-wordcount-target::placeholder {
+  color: var(--text-tertiary);
+}
+
+.cover-wordcount-target:disabled {
+  cursor: not-allowed;
+}
+
+/* Auto chip — same shape as the date Auto chip from the previous design,
+   reused for both date and word-count. Active state uses accent-light to
+   match other tinted indicators in the app. */
+.cover-auto-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 11px;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.cover-auto-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+
+.cover-auto-chip:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.cover-auto-chip.is-active {
+  background: var(--accent-light);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--accent-dark);
+}
+
+.cover-auto-chip.is-active .cover-auto-chip-dot {
+  background: var(--accent);
+  opacity: 1;
+  animation: cover-auto-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes cover-auto-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ───────── Layout selector (3 mock cards) ───────── */
+.cover-layout-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.cover-layout-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.cover-layout-option:hover {
+  border-color: var(--border-hover);
+}
+
+.cover-layout-option.is-active {
+  background: var(--accent-light);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+.cover-layout-mock {
+  width: 100%;
+  height: 56px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  gap: 6px;
+}
+
+.cover-layout-option.is-active .cover-layout-mock {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.cover-mock {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.cover-mock-classic { justify-content: space-between; padding: 4px 0; }
+.cover-mock-centered { justify-content: center; }
+.cover-mock-minimal { justify-content: flex-start; padding-top: 6px; }
+
+.cover-mock-line {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.cover-mock-line-title { width: 60%; height: 3px; }
+.cover-mock-line-title-thin { width: 38%; height: 2px; }
+.cover-mock-line-meta { width: 36%; opacity: 0.55; }
+.cover-mock-line-foot { width: 50%; opacity: 0.4; }
+
+.cover-layout-option:not(.is-active) .cover-mock-line {
+  background: var(--text-tertiary);
+}
+
+.cover-layout-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.cover-layout-option.is-active .cover-layout-label {
+  color: var(--accent-dark);
+}
+
+/* ───────── Footer ───────── */
+.cover-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border-light);
+}
+
+.cover-dialog-footer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
