@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { Sparkles } from "lucide-react";
 import { Editor } from "./components/Editor";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
@@ -7,6 +8,7 @@ import { Sidebar } from "./components/Sidebar";
 import { useWorkspaceStore } from "./stores/workspace-store";
 import { useSettingsStore } from "./stores/settings-store";
 import { useT } from "./lib/i18n";
+import { welcomeTemplate } from "./lib/templates";
 
 const SIDEBAR_MIN = 220;
 const SIDEBAR_MAX = 380;
@@ -260,6 +262,24 @@ function App() {
 
 function EmptyState() {
   const t = useT();
+  const workspacePath = useWorkspaceStore((s) => s.workspacePath);
+  const createDocumentFromTemplate = useWorkspaceStore(
+    (s) => s.createDocumentFromTemplate
+  );
+  const [openingExample, setOpeningExample] = useState(false);
+
+  const handleOpenExample = useCallback(async () => {
+    if (!workspacePath || openingExample) return;
+    setOpeningExample(true);
+    try {
+      await createDocumentFromTemplate(workspacePath, welcomeTemplate);
+    } catch (err) {
+      console.error("Failed to open example template:", err);
+    } finally {
+      setOpeningExample(false);
+    }
+  }, [workspacePath, createDocumentFromTemplate, openingExample]);
+
   return (
     <div className="h-full flex flex-col items-center justify-center gap-4">
       <div className="w-16 h-20 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
@@ -275,6 +295,19 @@ function EmptyState() {
           {t("editor.noDocumentHint")}
         </p>
       </div>
+      {workspacePath && (
+        <button
+          type="button"
+          onClick={handleOpenExample}
+          disabled={openingExample}
+          className="btn btn-soft mt-2"
+        >
+          <Sparkles size={14} />
+          {openingExample
+            ? t("empty.openingExample")
+            : t("empty.openExample")}
+        </button>
+      )}
     </div>
   );
 }
