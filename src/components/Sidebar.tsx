@@ -249,7 +249,7 @@ export function Sidebar({
               <div className="relative" ref={newMenuRef}>
                 <button
                   onClick={() => setShowNewMenu(!showNewMenu)}
-                  className="icon-btn w-6 h-6 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                  className="icon-btn icon-btn-sm"
                   title={t("sidebar.new")}
                 >
                   <Plus size={14} />
@@ -266,7 +266,7 @@ export function Sidebar({
             {workspacePath && (
               <button
                 onClick={() => closeWorkspace().catch(console.error)}
-                className="icon-btn w-6 h-6 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                className="icon-btn icon-btn-sm"
                 title={t("sidebar.closeWorkspace")}
               >
                 <X size={14} />
@@ -274,7 +274,7 @@ export function Sidebar({
             )}
             <button
               onClick={onToggle}
-              className="icon-btn w-6 h-6 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+              className="icon-btn icon-btn-sm"
               title={t("sidebar.collapse")}
             >
               <ChevronsLeft size={14} />
@@ -380,11 +380,7 @@ function ActivityBarButton({
     <button
       onClick={onClick}
       title={title}
-      className={`w-[28px] h-[28px] flex items-center justify-center rounded-md transition-all cursor-pointer ${
-        active
-          ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-          : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-      }`}
+      className={`icon-btn ${active ? "is-active" : ""}`}
     >
       {icon}
     </button>

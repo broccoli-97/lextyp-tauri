@@ -298,10 +298,10 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
       <div className="h-full flex flex-col items-center pt-4">
         <button
           onClick={onToggleCollapse}
-          className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+          className="icon-btn"
           title={t("pdf.expand")}
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
         <div className="mt-2 flex flex-col items-center gap-2">
           <FileText size={16} className="text-[var(--text-tertiary)] rotate-90" />
@@ -389,18 +389,18 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
 
         <div className="flex items-center gap-1">
           {/* Zoom controls */}
-          <div className="flex items-center gap-0.5 mr-1 px-1.5 py-0.5 rounded-md bg-[var(--bg-tertiary)]">
+          <div className="flex items-center gap-0.5 mr-1 px-1 py-0.5 rounded-md bg-[var(--bg-tertiary)]">
             <button
               onClick={handleZoomOut}
               disabled={zoom <= ZOOM_MIN}
-              className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="icon-btn icon-btn-sm"
               title="Zoom out"
             >
-              <ZoomOut size={14} className="text-[var(--text-secondary)]" />
+              <ZoomOut size={14} />
             </button>
             <button
               onClick={handleZoomReset}
-              className="text-[11px] font-semibold text-[var(--text-primary)] w-10 text-center hover:bg-[var(--bg-hover)] rounded transition-colors tabular-nums"
+              className="h-6 px-1.5 text-[11px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-sm transition-colors tabular-nums"
               title="Reset zoom"
             >
               {zoomPercent}%
@@ -408,10 +408,10 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
             <button
               onClick={handleZoomIn}
               disabled={zoom >= ZOOM_MAX}
-              className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="icon-btn icon-btn-sm"
               title="Zoom in"
             >
-              <ZoomIn size={14} className="text-[var(--text-secondary)]" />
+              <ZoomIn size={14} />
             </button>
           </div>
 
@@ -428,7 +428,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
           {/* Collapse */}
           <button
             onClick={onToggleCollapse}
-            className="icon-btn w-7 h-7"
+            className="icon-btn icon-btn-sm"
             title={t("pdf.collapse")}
           >
             <ChevronRight size={14} />
@@ -579,7 +579,7 @@ function PdfToolbarSimple({
         {icon || <FileText size={14} className="text-[var(--text-tertiary)]" />}
         <span className={`text-[12px] font-medium ${labelColor || "text-[var(--text-secondary)]"}`}>{label}</span>
       </div>
-      <button onClick={onCollapse} className="icon-btn w-7 h-7" title={collapseTitle}>
+      <button onClick={onCollapse} className="icon-btn icon-btn-sm" title={collapseTitle}>
         <ChevronRight size={14} />
       </button>
     </div>

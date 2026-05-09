@@ -570,8 +570,10 @@ textarea {
   border-radius: var(--radius-md);
 }
 
-/* Icon button — square, transparent, 28×28. Distinct from .btn family
-   because it carries no text and lives in toolbars/headers. */
+/* Icon button — square, transparent, 28×28 by default. Distinct from
+   the .btn family because it carries no text and lives in toolbars,
+   panel headers, and activity bars. Compose with `.icon-btn-sm` for
+   the dense 24 px header variant or `.is-active` for selected state. */
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -579,10 +581,12 @@ textarea {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-md);
+  background: transparent;
   color: var(--text-tertiary);
   transition: background-color var(--transition-fast),
               color var(--transition-fast);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
@@ -592,6 +596,28 @@ textarea {
 
 .icon-btn:active {
   background: var(--bg-active);
+}
+
+.icon-btn:disabled,
+.icon-btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Selected variant — used by the activity bar's current tab and by any
+   other "this is on" affordance that lives in a chrome surface. */
+.icon-btn.is-active,
+.icon-btn.is-active:hover {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* Smaller variant for dense headers (sidebar header, PDF toolbar). 24 px
+   matches the Mac OS toolbar baseline and gives a tighter row. */
+.icon-btn-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
 }
 
 /* ═══════════════════════════════════════
