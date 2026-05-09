@@ -55,6 +55,13 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   const [zoom, setZoom] = useState(1.0);
   const [renderedZoom, setRenderedZoom] = useState(1.0);
   const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pointer-drag bookkeeping. We *don't* set `isDragging` or call
+  // `setPointerCapture` on pointerdown — that interferes with the second
+  // mousedown of a dblclick pair on some webviews and the dblclick handler
+  // never fires. Instead, capture is deferred until movement crosses a
+  // small threshold (the same pattern FileTreeItem already uses).
+  const dragArmedRef = useRef<{ pointerId: number; el: HTMLDivElement } | null>(null);
+  const pointerCapturedRef = useRef(false);
 
   const clampZoom = (z: number) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   const zoomPercent = Math.round(zoom * 100);
@@ -138,34 +145,56 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     return () => el.removeEventListener("wheel", handleWheel);
   }, [scheduleRender]);
 
-  // Drag panning — works whenever content overflows the container
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  // Drag panning. `pointerdown` only records the origin and arms a pending
+  // drag — pointer capture and `isDragging=true` are deferred until the
+  // pointer actually moves past a 4 px threshold. A plain click/dblclick
+  // therefore never enters dragging state, so the mousedown/mouseup/dblclick
+  // sequence is left untouched and the dblclick handler fires reliably.
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
     if (!el) return;
     if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
-    setIsDragging(true);
+    if (e.button !== 0) return;
+    dragArmedRef.current = { pointerId: e.pointerId, el };
+    pointerCapturedRef.current = false;
     dragStart.current = {
       x: e.clientX,
       y: e.clientY,
       scrollLeft: el.scrollLeft,
       scrollTop: el.scrollTop,
     };
-    el.setPointerCapture(e.pointerId);
   }, []);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollLeft = dragStart.current.scrollLeft - (e.clientX - dragStart.current.x);
-    el.scrollTop = dragStart.current.scrollTop - (e.clientY - dragStart.current.y);
-  }, [isDragging]);
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const armed = dragArmedRef.current;
+    if (!armed || armed.pointerId !== e.pointerId) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    if (!pointerCapturedRef.current) {
+      // Wait until the pointer has actually moved before promoting to a drag.
+      if (dx * dx + dy * dy < 16) return;
+      try {
+        armed.el.setPointerCapture(e.pointerId);
+        pointerCapturedRef.current = true;
+      } catch {
+        // Pointer capture can fail if the element is detached mid-event.
+      }
+      setIsDragging(true);
+    }
+    armed.el.scrollLeft = dragStart.current.scrollLeft - dx;
+    armed.el.scrollTop = dragStart.current.scrollTop - dy;
+  }, []);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    scrollRef.current?.releasePointerCapture(e.pointerId);
-  }, [isDragging]);
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const armed = dragArmedRef.current;
+    if (!armed || armed.pointerId !== e.pointerId) return;
+    if (pointerCapturedRef.current) {
+      try { armed.el.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      pointerCapturedRef.current = false;
+      setIsDragging(false);
+    }
+    dragArmedRef.current = null;
+  }, []);
 
   const pdfData = useMemo(() => {
     if (!pdfBase64) return null;
@@ -209,36 +238,56 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     }
   }, [pdfBase64]);
 
-  // Double-click on PDF → jump to the corresponding word in the editor
+  // Double-click on PDF → jump to the corresponding word in the editor.
+  // The source map is built by `query_source_map` after each compile and
+  // contains one entry per word (`__w`) plus one per block (`__track`).
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!sourceMap.length) return;
+      const jumpFn = (window as any).__lextyp_jumpToBlock as
+        | ((id: string, off: number) => void)
+        | undefined;
+      if (!jumpFn) {
+        console.warn("[PdfPreview] dblclick: no __lextyp_jumpToBlock registered");
+        return;
+      }
 
-      // Find the page element that was clicked (react-pdf sets data-page-number)
-      const pageEl = (e.target as HTMLElement).closest("[data-page-number]");
-      if (!pageEl) return;
+      // react-pdf sets data-page-number on the inner <div className="react-pdf__Page">.
+      const pageEl = (e.target as HTMLElement | null)?.closest?.(
+        "[data-page-number]"
+      ) as HTMLElement | null;
+      if (!pageEl) {
+        console.warn("[PdfPreview] dblclick: no [data-page-number] ancestor for", e.target);
+        return;
+      }
 
       const pageNum = parseInt(pageEl.getAttribute("data-page-number") ?? "0", 10);
       if (!pageNum) return;
 
-      // Get click position relative to the page element
+      if (!sourceMap.length) {
+        console.warn("[PdfPreview] dblclick: source map is empty — compile may not have completed");
+        return;
+      }
+
+      // Click position in points. `getBoundingClientRect` returns the
+      // visually-transformed rect, which already includes any css zoom scale.
       const pageRect = pageEl.getBoundingClientRect();
-      const clickXInPage = e.clientX - pageRect.left;
-      const clickYInPage = e.clientY - pageRect.top;
-
-      // Convert pixel position to Typst points
-      // The rendered page width in pixels corresponds to A4_WIDTH_PT
       const pxPerPt = pageRect.width / A4_WIDTH_PT;
-      const clickYPt = clickYInPage / pxPerPt;
-      const clickXPt = clickXInPage / pxPerPt;
+      const clickXPt = (e.clientX - pageRect.left) / pxPerPt;
+      const clickYPt = (e.clientY - pageRect.top) / pxPerPt;
 
-      // Find the nearest source-map marker (word) to the click
       const target = findNearestEntry(sourceMap, pageNum, clickXPt, clickYPt);
-      if (!target) return;
+      if (!target) {
+        console.warn(
+          "[PdfPreview] dblclick: no source-map entry on page",
+          pageNum,
+          "(map has",
+          sourceMap.length,
+          "entries)"
+        );
+        return;
+      }
 
-      // Jump to (block, character offset) in editor
-      const jumpFn = (window as any).__lextyp_jumpToBlock;
-      if (jumpFn) jumpFn(target.id, target.off);
+      jumpFn(target.id, target.off);
     },
     [sourceMap]
   );
