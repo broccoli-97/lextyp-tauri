@@ -2,6 +2,7 @@ import { useCallback, useState, useEffect, useRef } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { PencilLine, Sparkles } from "lucide-react";
 import { Editor } from "./components/Editor";
+import { EmptyState as EmptyStateShell } from "./components/EmptyState";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
@@ -271,32 +272,26 @@ function EmptyState() {
   }, [workspacePath, createDocumentFromTemplate, openingExample]);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-4">
-      <div className="w-16 h-20 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
-        <PencilLine size={22} className="text-[var(--text-tertiary)]" />
-      </div>
-      <div className="text-center">
-        <p className="text-[14px] font-medium text-[var(--text-secondary)]">
-          {t("editor.noDocument")}
-        </p>
-        <p className="text-[12px] text-[var(--text-tertiary)] mt-1">
-          {t("editor.noDocumentHint")}
-        </p>
-      </div>
-      {workspacePath && (
-        <button
-          type="button"
-          onClick={handleOpenExample}
-          disabled={openingExample}
-          className="btn btn-soft mt-2"
-        >
-          <Sparkles size={14} />
-          {openingExample
-            ? t("empty.openingExample")
-            : t("empty.openExample")}
-        </button>
-      )}
-    </div>
+    <EmptyStateShell
+      icon={<PencilLine size={22} />}
+      title={t("editor.noDocument")}
+      description={t("editor.noDocumentHint")}
+      cta={
+        workspacePath ? (
+          <button
+            type="button"
+            onClick={handleOpenExample}
+            disabled={openingExample}
+            className="btn btn-soft"
+          >
+            <Sparkles size={14} />
+            {openingExample
+              ? t("empty.openingExample")
+              : t("empty.openExample")}
+          </button>
+        ) : undefined
+      }
+    />
   );
 }
 

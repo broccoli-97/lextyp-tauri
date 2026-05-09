@@ -21,6 +21,7 @@ import { useReferenceStore } from "../stores/reference-store";
 import { getFormatter } from "../lib/citation/registry";
 import { filterBibEntries } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
+import { EmptyState } from "./EmptyState";
 import { FilesPanel } from "./FilesPanel";
 import { ReferencesPanel } from "./ReferencesPanel";
 import { SettingsPanel } from "./SettingsPanel";
@@ -304,25 +305,17 @@ export function Sidebar({
           {activeTab === "settings" ? (
             <SettingsPanel />
           ) : !workspacePath ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">
-              <div className="w-12 h-12 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center">
-                <FolderOpen size={24} className="text-[var(--text-tertiary)]" />
-              </div>
-              <div className="text-center">
-                <p className="text-[13px] font-medium text-[var(--text-primary)]">
-                  {t("sidebar.noWorkspace")}
-                </p>
-                <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
-                  {t("sidebar.noWorkspaceHint")}
-                </p>
-              </div>
-              <button
-                onClick={handleOpenWorkspace}
-                className="btn btn-primary btn-lg"
-              >
-                {t("sidebar.openWorkspace")}
-              </button>
-            </div>
+            <EmptyState
+              icon={<FolderOpen size={22} />}
+              title={t("sidebar.noWorkspace")}
+              description={t("sidebar.noWorkspaceHint")}
+              cta={
+                <button onClick={handleOpenWorkspace} className="btn btn-soft">
+                  <FolderOpen size={14} />
+                  {t("sidebar.openWorkspace")}
+                </button>
+              }
+            />
           ) : activeTab === "files" ? (
             <FilesPanel
               newItemInput={newItemInput}

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { BookOpen, Search, Plus, Pencil, Trash2, Quote, FileUp } from "lucide-react";
+import { EmptyState } from "./EmptyState";
 import { formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
 import { useReferenceStore } from "../stores/reference-store";
@@ -125,15 +126,11 @@ export function ReferencesPanel({
 
   if (!activeDocumentPath) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4">
-        <BookOpen size={24} className="text-[var(--text-tertiary)]" />
-        <p className="text-[12px] text-[var(--text-secondary)] text-center">
-          {t("refs.needDocument")}
-        </p>
-        <p className="text-[11px] text-[var(--text-tertiary)] text-center">
-          {t("refs.needDocumentHint")}
-        </p>
-      </div>
+      <EmptyState
+        icon={<BookOpen size={22} />}
+        title={t("refs.needDocument")}
+        description={t("refs.needDocumentHint")}
+      />
     );
   }
 
@@ -189,15 +186,12 @@ export function ReferencesPanel({
       {/* List body */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-2 pt-2">
         {entries.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-8">
-            <BookOpen size={20} className="text-[var(--text-tertiary)]" />
-            <p className="text-[12px] text-[var(--text-secondary)] text-center">
-              {t("refs.noRefs")}
-            </p>
-            <p className="text-[11px] text-[var(--text-tertiary)] text-center">
-              {t("refs.noRefsHint")}
-            </p>
-          </div>
+          <EmptyState
+            icon={<BookOpen size={22} />}
+            title={t("refs.noRefs")}
+            description={t("refs.noRefsHint")}
+            className="py-6"
+          />
         ) : (
           <>
             {/* Type filter pills with counts */}

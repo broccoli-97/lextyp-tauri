@@ -17,6 +17,7 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "../stores/app-store";
 import type { SourceMapEntry } from "../stores/app-store";
 import { useT } from "../lib/i18n";
+import { EmptyState } from "./EmptyState";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -318,33 +319,18 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     return (
       <div className="h-full flex flex-col">
         <PdfToolbarSimple label={t("pdf.preview")} onCollapse={onToggleCollapse} collapseTitle={t("pdf.collapse")} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8">
-          {compiling ? (
-            <div className="flex flex-col items-center gap-3 animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-[var(--accent-light)] flex items-center justify-center">
-                <Loader2 size={24} className="animate-spin text-[var(--accent)]" />
-              </div>
-              <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                {t("pdf.compiling")}
-              </span>
-            </div>
-          ) : (
-            <>
-              <div className="w-20 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-primary)]">
-                <FileText size={24} className="text-[var(--text-tertiary)]" />
-                <span className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">PDF</span>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                  {t("pdf.willAppear")}
-                </span>
-                <span className="text-[11px] text-[var(--text-tertiary)]">
-                  {t("pdf.startTyping")}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
+        {compiling ? (
+          <EmptyState
+            icon={<Loader2 size={22} className="animate-spin text-[var(--accent)]" />}
+            title={t("pdf.compiling")}
+          />
+        ) : (
+          <EmptyState
+            icon={<FileText size={22} />}
+            title={t("pdf.willAppear")}
+            description={t("pdf.startTyping")}
+          />
+        )}
       </div>
     );
   }
