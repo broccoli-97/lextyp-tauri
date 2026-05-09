@@ -127,9 +127,10 @@
   --editor-bg: #1A1714;
   --editor-border: #2E2A26;
 
-  /* Scrollbar */
-  --scrollbar-thumb: #3D3833;
-  --scrollbar-thumb-hover: #4A453F;
+  /* Scrollbar — must stay visibly distinct from --border-hover (#3D3833),
+     otherwise the thumb disappears whenever it overlaps a panel border. */
+  --scrollbar-thumb: #5A544D;
+  --scrollbar-thumb-hover: #6F6A62;
 }
 
 /* ─── Shared tokens ─── */
@@ -143,8 +144,16 @@
   --radius-xl: 12px;
   --radius-2xl: 16px;
 
-  /* Typography scale */
+  /* Typography scale.
+     `--font-serif` is the editor body face. `Newsreader` / `Source Serif 4`
+     were declared previously but aren't bundled and most installs don't have
+     them — so users silently fell through to Times, which the PDF preamble
+     also targets but renders very differently on screen. The cascade below
+     prefers resident high-quality serifs (Charter on macOS, Cambria on
+     Windows, Liberation Serif on Linux) before falling back to Times. */
   --font-ui: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: "Newsreader", "Iowan Old Style", "Charter", "Bitstream Charter",
+                Cambria, "Liberation Serif", "Times New Roman", Times, Georgia, serif;
   --font-editor: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
@@ -172,6 +181,14 @@ textarea {
   color: inherit;
 }
 
+/* Lucide icons ship with stroke-width: 2, which at 11–14 px renders as
+   visually heavy double-stroke smudges in chrome that uses tertiary-grey
+   colors. 1.5 is Lucide's recommended UI weight and stays sharp at small
+   sizes. The CSS property overrides the inline SVG attribute. */
+.lucide {
+  stroke-width: 1.5;
+}
+
 /* ═══════════════════════════════════════
    BlockNote Editor Overrides
    ═══════════════════════════════════════ */
@@ -181,7 +198,7 @@ textarea {
    serif do the work — what the writer sees is what compiles, modulo the
    editor's max content width. */
 .bn-editor {
-  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro", "Times New Roman", Times, Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-primary);
@@ -581,10 +598,10 @@ textarea {
 }
 
 .panel-section-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
 }
 
@@ -716,9 +733,9 @@ textarea {
 
 .slash-menu-group {
   padding: 8px 10px 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
@@ -767,10 +784,10 @@ textarea {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   color: var(--text-secondary);
@@ -906,7 +923,7 @@ textarea {
 
 .ref-style-desc {
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
   line-height: 1.3;
   overflow: hidden;
@@ -960,9 +977,10 @@ textarea {
 }
 
 .ref-pill-count {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .ref-pill:hover .ref-pill-count {
@@ -1014,15 +1032,15 @@ textarea {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  height: 16px;
+  height: 18px;
   padding: 0 6px;
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
 }
@@ -1036,7 +1054,7 @@ textarea {
   flex: 1;
   min-width: 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1044,8 +1062,7 @@ textarea {
 }
 
 .ref-card-title {
-  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro",
-               "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
@@ -1060,7 +1077,7 @@ textarea {
 .ref-card-source {
   margin-top: 3px;
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1074,7 +1091,7 @@ textarea {
 
 .ref-card-preview {
   margin-top: 8px;
-  font-family: "Newsreader", "Source Serif 4", "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 11.5px;
   line-height: 1.55;
@@ -1091,7 +1108,7 @@ textarea {
 .ref-card-field {
   display: flex;
   gap: 8px;
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -1111,7 +1128,7 @@ textarea {
 
 .ref-card-field-value.is-mono {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 10.5px;
 }
 
 .ref-card-actions {
@@ -1132,7 +1149,7 @@ textarea {
   padding: 0 4px;
   margin-bottom: 6px;
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -1356,13 +1373,13 @@ textarea {
      no matter the label length (BOOK / ARTICLE / STATUTE …). */
   width: 64px;
   margin-top: 2px;
-  padding: 3px 0;
+  padding: 4px 0;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: var(--radius-sm);
   background: var(--accent-light);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   line-height: 1;
   color: var(--accent-dark);
   text-transform: uppercase;
@@ -1377,7 +1394,7 @@ textarea {
 
 .palette-title {
   display: block;
-  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro", "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 14px;
   line-height: 1.3;
   color: var(--text-primary);
@@ -1407,7 +1424,7 @@ textarea {
 }
 
 .palette-empty-title {
-  font-family: "Newsreader", "Source Serif 4", "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 14px;
   color: var(--text-secondary);
   margin-bottom: 4px;
@@ -1421,7 +1438,7 @@ textarea {
   padding: 8px 16px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-light);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -1435,15 +1452,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
-  height: 17px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 3px;
   box-shadow: 0 1px 0 var(--border-hover);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
   color: var(--text-secondary);
 }
@@ -1483,7 +1500,7 @@ textarea {
 .editor-toolbar-divider {
   width: 1px;
   height: 18px;
-  background: var(--border);
+  background: var(--border-hover);
   flex-shrink: 0;
 }
 
@@ -1567,19 +1584,19 @@ textarea {
 
 .editor-toolbar-style-name {
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-primary);
   line-height: 1;
 }
 
 .editor-toolbar-style-edn {
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-tertiary);
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
 }
@@ -1629,7 +1646,7 @@ textarea {
   font-size: 11px;
   font-weight: 600;
   background-color: var(--accent-light);
-  color: var(--accent);
+  color: var(--accent-dark);
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
@@ -1710,13 +1727,13 @@ textarea {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-dark);
 }
 
 .lextyp-citation-card-type {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
@@ -1766,9 +1783,9 @@ textarea {
 }
 
 .lextyp-citation-card-field-name {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-tertiary);
   align-self: start;
@@ -1828,9 +1845,9 @@ textarea {
 }
 
 .cover-page-tag {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
@@ -1841,7 +1858,7 @@ textarea {
   gap: 4px;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-tertiary);
   background: var(--bg-tertiary);
@@ -1867,7 +1884,7 @@ textarea {
 }
 
 .cover-preview-title {
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: clamp(20px, 6.5cqi, 30px);
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -1876,7 +1893,7 @@ textarea {
 }
 
 .cover-preview-subtitle {
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: clamp(13px, 3.5cqi, 17px);
   font-style: italic;
   color: var(--text-secondary);
@@ -1890,7 +1907,7 @@ textarea {
   justify-content: center;
   align-items: baseline;
   gap: 4px 8px;
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: clamp(12px, 2.8cqi, 14px);
   color: var(--text-secondary);
 }
@@ -2005,7 +2022,7 @@ textarea {
   background: var(--accent);
   color: var(--text-inverse);
   border-radius: var(--radius-md);
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -2019,9 +2036,9 @@ textarea {
 }
 
 .cover-dialog-tag {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
@@ -2106,7 +2123,7 @@ textarea {
 }
 
 .cover-form-hint {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-tertiary);
   font-style: italic;
 }

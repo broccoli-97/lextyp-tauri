@@ -376,7 +376,7 @@ function ActivityBarButton({
       title={title}
       className={`w-[28px] h-[28px] flex items-center justify-center rounded-md transition-all cursor-pointer ${
         active
-          ? "bg-[var(--accent-light)] text-[var(--accent)] shadow-sm"
+          ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
           : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
       }`}
     >

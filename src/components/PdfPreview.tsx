@@ -84,12 +84,14 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     numPages > 0 ? numPages * pageHeight + (numPages - 1) * PAGE_GAP : 0;
   const visualTotalHeight = Math.round(totalPagesHeight * cssScale);
 
-  // Schedule a high-res re-render after zoom stops changing
+  // Schedule a high-res re-render after zoom stops changing. 80ms keeps the
+  // user from sitting on a CSS-bilinear-scaled bitmap for very long while
+  // still coalescing a wheel burst into one rasterization pass.
   const scheduleRender = useCallback((newZoom: number) => {
     if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
     renderTimerRef.current = setTimeout(() => {
       setRenderedZoom(newZoom);
-    }, 200);
+    }, 80);
   }, []);
 
   // Cleanup timer
@@ -254,7 +256,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
         </button>
         <div className="mt-2 flex flex-col items-center gap-2">
           <FileText size={16} className="text-[var(--text-tertiary)] rotate-90" />
-          <span className="text-[9px] text-[var(--text-tertiary)] writing-mode-vertical rotate-180" style={{ writingMode: "vertical-rl" }}>
+          <span className="text-[11px] text-[var(--text-tertiary)] writing-mode-vertical rotate-180" style={{ writingMode: "vertical-rl" }}>
             {t("pdf.preview")}
           </span>
         </div>
@@ -281,7 +283,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
             <>
               <div className="w-20 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-primary)]">
                 <FileText size={24} className="text-[var(--text-tertiary)]" />
-                <span className="text-[9px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">PDF</span>
+                <span className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">PDF</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <span className="text-[13px] font-medium text-[var(--text-secondary)]">
@@ -445,6 +447,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
                   left: 0,
                   transform: cssScale !== 1 ? `scale(${cssScale})` : undefined,
                   transformOrigin: "top left",
+                  willChange: cssScale !== 1 ? "transform" : undefined,
                   display: "flex",
                   flexDirection: "column",
                   gap: PAGE_GAP,

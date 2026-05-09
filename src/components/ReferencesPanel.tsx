@@ -241,7 +241,7 @@ export function ReferencesPanel({
                         {s.toUpperCase()}
                       </span>
                       {getStyleDescription(s) && (
-                        <span className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+                        <span className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
                           {getStyleDescription(s)}
                         </span>
                       )}
@@ -259,10 +259,10 @@ export function ReferencesPanel({
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8">
             <BookOpen size={20} className="text-[var(--text-tertiary)]" />
-            <p className="text-[11px] text-[var(--text-tertiary)] text-center">
+            <p className="text-[12px] text-[var(--text-secondary)] text-center">
               {t("refs.noRefs")}
             </p>
-            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+            <p className="text-[11px] text-[var(--text-tertiary)] text-center">
               {t("refs.noRefsHint")}
             </p>
           </div>
@@ -371,7 +371,7 @@ export function ReferencesPanel({
                                 className="flex items-center gap-1.5 flex-wrap"
                                 onClick={(ev) => ev.stopPropagation()}
                               >
-                                <span className="text-[10.5px] text-[var(--error)]">
+                                <span className="text-[11px] text-[var(--error)]">
                                   {t("refs.deleteConfirm")}
                                 </span>
                                 <button

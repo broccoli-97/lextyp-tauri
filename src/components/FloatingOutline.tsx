@@ -80,7 +80,7 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
         <div className="p-3 max-h-[50vh] overflow-auto animate-fade-in">
           <div className="flex items-center gap-1.5 mb-2.5 pb-2 border-b border-[var(--border-light)]">
             <List size={12} className="text-[var(--text-secondary)]" />
-            <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)] tracking-wider">
+            <span className="text-[11px] font-bold uppercase text-[var(--text-secondary)] tracking-wide">
               {t("editor.outline")}
             </span>
           </div>
@@ -103,7 +103,7 @@ export function FloatingOutline({ editor }: FloatingOutlineProps) {
                 onMouseLeave={() => setHoveredIndex(null)}
                 className={`block w-full text-left py-1.5 px-2 rounded-md transition-all duration-150 truncate ${
                   hoveredIndex === index
-                    ? "bg-[var(--accent-light)] text-[var(--accent)]"
+                    ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                 }`}
                 style={{

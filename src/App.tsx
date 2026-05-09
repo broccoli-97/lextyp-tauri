@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Sparkles } from "lucide-react";
+import { PencilLine, Sparkles } from "lucide-react";
 import { Editor } from "./components/Editor";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
@@ -283,9 +283,7 @@ function EmptyState() {
   return (
     <div className="h-full flex flex-col items-center justify-center gap-4">
       <div className="w-16 h-20 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
-        <span className="text-[24px] text-[var(--text-tertiary)]">
-          {"\u270E"}
-        </span>
+        <PencilLine size={22} className="text-[var(--text-tertiary)]" />
       </div>
       <div className="text-center">
         <p className="text-[14px] font-medium text-[var(--text-secondary)]">
