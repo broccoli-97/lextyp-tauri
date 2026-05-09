@@ -1,9 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../stores/app-store";
 import { useWorkspaceStore } from "../stores/workspace-store";
-import { Circle, Loader2, AlertCircle, CheckCircle, ArrowDownCircle, X } from "lucide-react";
+import { Circle, Loader2, AlertCircle, CheckCircle, Lightbulb, ArrowDownCircle, X } from "lucide-react";
 import { useT } from "../lib/i18n";
+
+const TIP_KEYS = [
+  "tip.slash",
+  "tip.citationStyle",
+  "tip.pdfDoubleClick",
+  "tip.collapsePanel",
+  "tip.outline",
+  "tip.darkMode",
+  "tip.bold",
+  "tip.bibImport",
+] as const;
+
+const TIP_INTERVAL = 15_000; // rotate every 15 seconds
 
 export function StatusBar() {
   const t = useT();
@@ -17,6 +30,16 @@ export function StatusBar() {
   const cursorWordCount = useAppStore((s) => s.cursorWordCount);
   const totalWordCount = useAppStore((s) => s.totalWordCount);
   const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
+
+  // --- Rotating tips ---
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIP_KEYS.length));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTipIndex((i) => (i + 1) % TIP_KEYS.length);
+    }, TIP_INTERVAL);
+    return () => clearInterval(timer);
+  }, []);
 
   // --- Silent background update check ---
   useEffect(() => {
@@ -45,13 +68,18 @@ export function StatusBar() {
 
   return (
     <div className="h-8 border-t border-[var(--border)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-tertiary)]">
-      {/* Left side — compile status only. The previous rotating-tips
-          carousel competed with the four other widgets on this 32px bar
-          for a tutorial benefit that wears off after the first session. */}
+      {/* Left side - Status + rotating tip */}
       <div className="flex items-center gap-2 min-w-0">
         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full shrink-0 ${statusConfig.bg}`}>
           <span className={statusConfig.color}>{statusConfig.icon}</span>
           <span className={`text-[11px] font-medium ${statusConfig.color}`}>{statusConfig.text}</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+          <Lightbulb size={11} className="text-[var(--text-tertiary)] shrink-0" />
+          <span className="text-[11px] text-[var(--text-tertiary)] truncate">
+            {t(TIP_KEYS[tipIndex])}
+          </span>
         </div>
       </div>
 

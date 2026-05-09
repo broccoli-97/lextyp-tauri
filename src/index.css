@@ -27,10 +27,14 @@
   --bg-active: rgba(0, 0, 0, 0.06);
   --bg-sunken: #F0EEEA;
 
-  /* Text — strong hierarchy through opacity */
+  /* Text — strong hierarchy through opacity.
+     Ladder is Stone-900 / 600 / 500 / ~350 — tertiary used to sit at Stone-400
+     (#A8A29E) but read as washed-out at chrome icon sizes (~2.5:1 against
+     panel surfaces). Stone-500 lifts contrast to ~5:1 without crossing into
+     secondary territory. */
   --text-primary: #1C1917;
   --text-secondary: #57534E;
-  --text-tertiary: #A8A29E;
+  --text-tertiary: #78716C;
   --text-muted: #C4BBB2;
   --text-inverse: #FAFAF8;
 
@@ -86,10 +90,11 @@
   --bg-active: rgba(255, 255, 255, 0.08);
   --bg-sunken: #131110;
 
-  /* Text */
+  /* Text — mirrors the light-mode lift on tertiary (one Stone step brighter)
+     so chrome captions/icons stay legible against the dark panels. */
   --text-primary: #F5F1ED;
   --text-secondary: #A8A29E;
-  --text-tertiary: #6B6560;
+  --text-tertiary: #7A736D;
   --text-muted: #4A453F;
   --text-inverse: #171412;
 
@@ -582,7 +587,11 @@ textarea {
   height: 28px;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--text-tertiary);
+  /* Resting color is `--text-secondary`, not tertiary. Tertiary is the
+     "decoration" tier (status dot, tip lightbulb, file-tree chevrons);
+     icon-btn is the actionable tier and needs a stronger weight so the
+     row doesn't read as a wash of pale strokes. */
+  color: var(--text-secondary);
   transition: background-color var(--transition-fast),
               color var(--transition-fast);
   cursor: pointer;

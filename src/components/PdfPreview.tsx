@@ -247,27 +247,18 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
       const jumpFn = (window as any).__lextyp_jumpToBlock as
         | ((id: string, off: number) => void)
         | undefined;
-      if (!jumpFn) {
-        console.warn("[PdfPreview] dblclick: no __lextyp_jumpToBlock registered");
-        return;
-      }
+      if (!jumpFn) return;
 
       // react-pdf sets data-page-number on the inner <div className="react-pdf__Page">.
       const pageEl = (e.target as HTMLElement | null)?.closest?.(
         "[data-page-number]"
       ) as HTMLElement | null;
-      if (!pageEl) {
-        console.warn("[PdfPreview] dblclick: no [data-page-number] ancestor for", e.target);
-        return;
-      }
+      if (!pageEl) return;
 
       const pageNum = parseInt(pageEl.getAttribute("data-page-number") ?? "0", 10);
       if (!pageNum) return;
 
-      if (!sourceMap.length) {
-        console.warn("[PdfPreview] dblclick: source map is empty — compile may not have completed");
-        return;
-      }
+      if (!sourceMap.length) return;
 
       // Click position in points. `getBoundingClientRect` returns the
       // visually-transformed rect, which already includes any css zoom scale.
@@ -277,16 +268,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
       const clickYPt = (e.clientY - pageRect.top) / pxPerPt;
 
       const target = findNearestEntry(sourceMap, pageNum, clickXPt, clickYPt);
-      if (!target) {
-        console.warn(
-          "[PdfPreview] dblclick: no source-map entry on page",
-          pageNum,
-          "(map has",
-          sourceMap.length,
-          "entries)"
-        );
-        return;
-      }
+      if (!target) return;
 
       jumpFn(target.id, target.off);
     },
