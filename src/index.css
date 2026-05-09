@@ -926,85 +926,6 @@ textarea {
   color: var(--text-tertiary);
 }
 
-/* Style card — the dominant control under the toolbar. Click expands the
-   dropdown of available styles in the same surface. */
-.ref-style-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--transition-fast),
-              background-color var(--transition-fast),
-              box-shadow var(--transition-fast);
-}
-
-.ref-style-card:hover {
-  border-color: var(--border-hover);
-  background: var(--bg-hover);
-}
-
-.ref-style-card.is-open {
-  border-color: var(--accent);
-  background: var(--bg-elevated);
-  box-shadow: var(--shadow-focus);
-}
-
-.ref-style-icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--accent-light);
-  color: var(--accent);
-}
-
-.ref-style-meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ref-style-name {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-primary);
-  line-height: 1.15;
-}
-
-.ref-style-desc {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  color: var(--text-tertiary);
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ref-style-chevron {
-  flex-shrink: 0;
-  color: var(--text-tertiary);
-  transition: transform var(--transition-fast), color var(--transition-fast);
-}
-
-.ref-style-card.is-open .ref-style-chevron {
-  transform: rotate(180deg);
-  color: var(--accent);
-}
-
 /* Type pills — segmented filter under the search. Each carries a count
    that shrinks slightly inside the active pill to keep the label dominant. */
 .ref-pill {
@@ -1538,7 +1459,7 @@ textarea {
 
 .editor-toolbar {
   flex-shrink: 0;
-  height: 44px;
+  height: 36px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-light);
 }
@@ -1571,8 +1492,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   background: transparent;
@@ -1587,7 +1508,7 @@ textarea {
 }
 
 .editor-toolbar-btn-text {
-  width: 28px;
+  width: 26px;
   padding: 0;
   font-family: var(--font-ui);
   font-size: 11px;
@@ -1604,7 +1525,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
+  height: 24px;
   padding: 0 6px 0 9px;
   border-radius: var(--radius-md);
   background: transparent;

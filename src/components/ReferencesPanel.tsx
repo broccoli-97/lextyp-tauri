@@ -1,10 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { BookOpen, Search, ChevronDown, Plus, Pencil, Trash2, Quote, FileUp } from "lucide-react";
-import {
-  getOrderedStyleNames,
-  getStyleDescription,
-  PRIMARY_STYLES,
-} from "../lib/citation/registry";
+import { BookOpen, Search, Plus, Pencil, Trash2, Quote, FileUp } from "lucide-react";
 import { formatCitationPreview, formatEntryMeta } from "../lib/citation-search";
 import { useT } from "../lib/i18n";
 import { useReferenceStore } from "../stores/reference-store";
@@ -18,10 +13,6 @@ interface ReferencesPanelProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   citationStyle: string;
-  setCitationStyle: (s: string) => void;
-  styleDropdownOpen: boolean;
-  setStyleDropdownOpen: (v: boolean) => void;
-  styleDropdownRef: React.RefObject<HTMLDivElement | null>;
   formatter: CitationFormatter;
   activeDocumentPath: string | null;
   onInsertCitation: (key: string) => void;
@@ -65,10 +56,6 @@ export function ReferencesPanel({
   searchQuery,
   setSearchQuery,
   citationStyle,
-  setCitationStyle,
-  styleDropdownOpen,
-  setStyleDropdownOpen,
-  styleDropdownRef,
   formatter,
   activeDocumentPath,
   onInsertCitation,
@@ -163,9 +150,10 @@ export function ReferencesPanel({
 
   return (
     <>
-      {/* Toolbar: import + add → search → style card. The trio is the
-          information density at the top of the panel — every action a user
-          starts with happens here. */}
+      {/* Toolbar: import + add → search. The citation-style picker that
+          previously lived here as a big card has moved to its sole home
+          on the editor toolbar (StyleChip). The current style is shown
+          inline with the count above the cards below. */}
       <div className="shrink-0 px-2 pt-2 pb-2 space-y-2 border-b border-[var(--border-light)]">
         <div className="flex gap-1.5">
           <button
@@ -194,62 +182,6 @@ export function ReferencesPanel({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-        )}
-
-        {entries.length > 0 && (
-          <div className="relative" ref={styleDropdownRef}>
-            <label className="panel-section-label block px-1 mb-1">
-              {t("refs.style")}
-            </label>
-            <button
-              onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
-              className={`ref-style-card ${styleDropdownOpen ? "is-open" : ""}`}
-            >
-              <span className="ref-style-icon">
-                <Quote size={14} />
-              </span>
-              <span className="ref-style-meta">
-                <span className="ref-style-name">{citationStyle.toUpperCase()}</span>
-                {getStyleDescription(citationStyle) && (
-                  <span className="ref-style-desc">
-                    {getStyleDescription(citationStyle)}
-                  </span>
-                )}
-              </span>
-              <ChevronDown size={12} className="ref-style-chevron" />
-            </button>
-            {styleDropdownOpen && (
-              <div className="menu-surface absolute top-full left-0 right-0 mt-1 overflow-hidden z-50 animate-fade-in">
-                {getOrderedStyleNames().map((s, i) => (
-                  <div key={s}>
-                    {i === PRIMARY_STYLES.length && (
-                      <div className="my-0.5 border-t border-[var(--border-light)]" />
-                    )}
-                    <button
-                      onClick={() => {
-                        setCitationStyle(s);
-                        setStyleDropdownOpen(false);
-                      }}
-                      className={`menu-item flex-col items-start ${
-                        citationStyle === s
-                          ? "bg-[var(--accent-light)] text-[var(--accent-dark)]"
-                          : ""
-                      }`}
-                    >
-                      <span className="font-semibold tracking-wide text-[11px]">
-                        {s.toUpperCase()}
-                      </span>
-                      {getStyleDescription(s) && (
-                        <span className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
-                          {getStyleDescription(s)}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -291,12 +223,20 @@ export function ReferencesPanel({
               </div>
             )}
 
-            {/* Counter row */}
+            {/* Combined counter + active-style indicator. The style is
+                read-only here; users change it via the editor toolbar's
+                StyleChip (the dropdown there is the canonical picker). */}
             <div className="ref-counter">
               <span>
                 <strong>{displayedEntries.length}</strong>
                 {" / "}
                 {entries.length} {t("refs.references")}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Quote size={10} className="text-[var(--text-tertiary)]" />
+                <span className="font-semibold tracking-wide text-[var(--text-secondary)]">
+                  {citationStyle.toUpperCase()}
+                </span>
               </span>
             </div>
 

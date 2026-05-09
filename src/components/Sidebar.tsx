@@ -4,15 +4,15 @@ import {
   FilePlus,
   FolderPlus,
   BookOpen,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
-  Sparkles,
   FolderOpen,
+  LogOut,
   Plus,
   FileUp,
   FolderTree,
   Settings,
-  X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
@@ -54,18 +54,18 @@ export function Sidebar({
   const searchQuery = useReferenceStore((s) => s.searchQuery);
   const setSearchQuery = useReferenceStore((s) => s.setSearchQuery);
   const citationStyle = useReferenceStore((s) => s.citationStyle);
-  const setCitationStyle = useReferenceStore((s) => s.setCitationStyle);
   const setFromRaw = useReferenceStore((s) => s.setFromRaw);
 
   const t = useT();
   const [activeTab, setActiveTab] = useState<SidebarTab>("files");
   const [showNewMenu, setShowNewMenu] = useState(false);
-  const [styleDropdownOpen, setStyleDropdownOpen] = useState(false);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [newItemInput, setNewItemInput] = useState<"document" | "folder" | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const newMenuRef = useRef<HTMLDivElement>(null);
   const newMenuPortalRef = useRef<HTMLDivElement>(null);
-  const styleDropdownRef = useRef<HTMLDivElement>(null);
+  const workspaceMenuRef = useRef<HTMLDivElement>(null);
+  const workspaceMenuPortalRef = useRef<HTMLDivElement>(null);
   const newItemInputRef = useRef<HTMLInputElement>(null);
   const formatter = useMemo(() => getFormatter(citationStyle), [citationStyle]);
 
@@ -82,7 +82,7 @@ export function Sidebar({
 
   // Close dropdowns on outside click
   useEffect(() => {
-    if (!showNewMenu && !styleDropdownOpen) return;
+    if (!showNewMenu && !showWorkspaceMenu) return;
     const handle = (e: MouseEvent) => {
       if (
         showNewMenu &&
@@ -93,16 +93,17 @@ export function Sidebar({
         setShowNewMenu(false);
       }
       if (
-        styleDropdownOpen &&
-        styleDropdownRef.current &&
-        !styleDropdownRef.current.contains(e.target as Node)
+        showWorkspaceMenu &&
+        workspaceMenuRef.current &&
+        !workspaceMenuRef.current.contains(e.target as Node) &&
+        (!workspaceMenuPortalRef.current || !workspaceMenuPortalRef.current.contains(e.target as Node))
       ) {
-        setStyleDropdownOpen(false);
+        setShowWorkspaceMenu(false);
       }
     };
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
-  }, [showNewMenu, styleDropdownOpen]);
+  }, [showNewMenu, showWorkspaceMenu]);
 
   // Focus new item input
   useEffect(() => {
@@ -234,15 +235,40 @@ export function Sidebar({
 
       {/* Panel content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-3 h-11 shrink-0 border-b border-[var(--border-light)]">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] flex items-center justify-center shadow-sm shrink-0">
-              <Sparkles size={10} className="text-white" />
-            </div>
-            <span className="text-[12px] font-semibold text-[var(--text-primary)] tracking-tight truncate">
-              {workspaceName || "LexTyp"}
-            </span>
+        {/* Header — 36 px tall to match the editor and PDF toolbars; the
+            workspace name doubles as the trigger for switch/close so the
+            close-workspace X button (and the standalone footer below) can
+            both go away. */}
+        <div className="flex items-center justify-between pl-2 pr-1 h-9 shrink-0 border-b border-[var(--border-light)]">
+          <div className="relative min-w-0 flex-1" ref={workspaceMenuRef}>
+            {workspacePath ? (
+              <button
+                onClick={() => setShowWorkspaceMenu((v) => !v)}
+                className="flex items-center gap-1 max-w-full px-1.5 py-1 rounded-sm text-[12px] font-semibold text-[var(--text-primary)] tracking-tight hover:bg-[var(--bg-hover)] transition-colors"
+                title={workspaceName ?? undefined}
+              >
+                <span className="truncate">{workspaceName}</span>
+                <ChevronDown size={12} className="shrink-0 text-[var(--text-tertiary)]" />
+              </button>
+            ) : (
+              <span className="px-1.5 text-[12px] font-semibold text-[var(--text-primary)] tracking-tight">
+                LexTyp
+              </span>
+            )}
+            {showWorkspaceMenu && workspacePath && (
+              <WorkspaceMenuDropdown
+                anchorRef={workspaceMenuRef}
+                portalRef={workspaceMenuPortalRef}
+                onSwitch={() => {
+                  setShowWorkspaceMenu(false);
+                  handleOpenWorkspace();
+                }}
+                onClose={() => {
+                  setShowWorkspaceMenu(false);
+                  closeWorkspace().catch(console.error);
+                }}
+              />
+            )}
           </div>
           <div className="flex items-center gap-0.5 shrink-0">
             {workspacePath && activeTab === "files" && (
@@ -262,15 +288,6 @@ export function Sidebar({
                   onOpenFile={() => { setShowNewMenu(false); openFile().catch(console.error); }}
                 />}
               </div>
-            )}
-            {workspacePath && (
-              <button
-                onClick={() => closeWorkspace().catch(console.error)}
-                className="icon-btn icon-btn-sm"
-                title={t("sidebar.closeWorkspace")}
-              >
-                <X size={14} />
-              </button>
             )}
             <button
               onClick={onToggle}
@@ -326,10 +343,6 @@ export function Sidebar({
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               citationStyle={citationStyle}
-              setCitationStyle={setCitationStyle}
-              styleDropdownOpen={styleDropdownOpen}
-              setStyleDropdownOpen={setStyleDropdownOpen}
-              styleDropdownRef={styleDropdownRef}
               formatter={formatter}
               activeDocumentPath={activeDocumentPath}
               onInsertCitation={onInsertCitation}
@@ -338,26 +351,6 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 px-2 py-1.5 border-t border-[var(--border-light)] bg-[var(--bg-secondary)]">
-          {!workspacePath ? (
-            <button
-              onClick={handleOpenWorkspace}
-              className="sidebar-row-btn sidebar-row-btn-accent"
-            >
-              <FolderOpen size={14} className="sidebar-row-icon" />
-              <span className="truncate">{t("sidebar.openWorkspace")}</span>
-            </button>
-          ) : activeTab === "files" ? (
-            <button
-              onClick={handleOpenWorkspace}
-              className="sidebar-row-btn"
-            >
-              <FolderOpen size={14} className="sidebar-row-icon" />
-              <span className="truncate">{t("sidebar.switchWorkspace")}</span>
-            </button>
-          ) : null}
-        </div>
       </div>
     </div>
   );
@@ -441,6 +434,60 @@ function NewMenuDropdown({
       >
         <FileUp size={14} className="shrink-0" />
         {t("sidebar.openFile")}
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+/* ─── Workspace dropdown — opened from clicking the workspace name in
+   the header. Houses the actions that previously lived in the sidebar
+   footer (Switch workspace) and the standalone X button (Close
+   workspace). ─── */
+
+function WorkspaceMenuDropdown({
+  anchorRef,
+  portalRef,
+  onSwitch,
+  onClose,
+}: {
+  anchorRef: React.RefObject<HTMLDivElement | null>;
+  portalRef: React.RefObject<HTMLDivElement | null>;
+  onSwitch: () => void;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPos({ top: rect.bottom + 4, left: rect.left });
+  }, [anchorRef]);
+
+  if (!pos) return null;
+
+  return createPortal(
+    <div
+      ref={portalRef}
+      style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+      className="menu-surface w-[200px] py-1 animate-fade-in"
+    >
+      <button
+        onClick={onSwitch}
+        className="menu-item whitespace-nowrap"
+      >
+        <FolderOpen size={14} className="shrink-0" />
+        {t("sidebar.switchWorkspace")}
+      </button>
+      <div className="my-0.5 border-t border-[var(--border-light)]" />
+      <button
+        onClick={onClose}
+        className="menu-item menu-item-danger whitespace-nowrap"
+      >
+        <LogOut size={14} className="shrink-0" />
+        {t("sidebar.closeWorkspace")}
       </button>
     </div>,
     document.body

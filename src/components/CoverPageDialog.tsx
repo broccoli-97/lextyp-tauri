@@ -87,16 +87,15 @@ export function CoverPageDialog({ open, block, editor, onClose }: Props) {
       }}
     >
       <div className="cover-dialog" role="dialog" aria-modal="true">
+        {/* Header — single line with the dialog name on the left and the
+            preview-toggle + close button on the right. The earlier
+            decorative L logo + tag + subtitle stripe was three pieces of
+            chrome conveying one fact ("you're in the cover-page editor"),
+            which is already obvious from the modal context. */}
         <div className="cover-dialog-header">
-          <div className="cover-dialog-header-left">
-            <div className="cover-dialog-logo" aria-hidden="true">
-              L
-            </div>
-            <div className="cover-dialog-titlegroup">
-              <div className="cover-dialog-tag">{t("cover.tag")}</div>
-              <div className="cover-dialog-subtitle">
-                {t("cover.dialogSubtitle")}
-              </div>
+          <div className="cover-dialog-titlegroup">
+            <div className="cover-dialog-subtitle">
+              {t("cover.dialogSubtitle")}
             </div>
           </div>
           <div className="cover-dialog-header-right">
@@ -112,11 +111,11 @@ export function CoverPageDialog({ open, block, editor, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="icon-btn"
+              className="icon-btn icon-btn-sm"
               title={t("cover.close")}
               aria-label={t("cover.close")}
             >
-              <X size={15} />
+              <X size={14} />
             </button>
           </div>
         </div>

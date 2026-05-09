@@ -376,7 +376,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border-light)] bg-[var(--bg-secondary)] shrink-0">
+      <div className="flex items-center justify-between px-3 h-9 border-b border-[var(--border-light)] bg-[var(--bg-secondary)] shrink-0">
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-[var(--accent)]" />
           <span className="text-[12px] font-medium text-[var(--text-primary)]">{t("pdf.preview")}</span>
@@ -574,7 +574,7 @@ function PdfToolbarSimple({
   collapseTitle: string;
 }) {
   return (
-    <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
+    <div className="flex items-center justify-between px-3 h-9 border-b border-[var(--border-light)] bg-[var(--bg-secondary)] shrink-0">
       <div className="flex items-center gap-2">
         {icon || <FileText size={14} className="text-[var(--text-tertiary)]" />}
         <span className={`text-[12px] font-medium ${labelColor || "text-[var(--text-secondary)]"}`}>{label}</span>
