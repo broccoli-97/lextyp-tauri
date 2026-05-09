@@ -189,6 +189,43 @@ textarea {
   stroke-width: 1.5;
 }
 
+/* ─── Pane resize handle ───────────────────────────────────────────────
+   The visual handle is a 1 px center divider in `--border`, but the
+   element itself is 8 px wide so it gives a comfortable hit-target.
+   Hover/active reveal the accent. The handle reads as the panel border
+   it sits on, not as a separate stripe. */
+.pane-resize-handle {
+  flex-shrink: 0;
+  position: relative;
+  width: 8px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color var(--transition-fast);
+}
+
+.pane-resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border);
+  transform: translateX(-0.5px);
+  transition: background-color var(--transition-fast), width var(--transition-fast);
+}
+
+.pane-resize-handle:hover::before,
+.pane-resize-handle.is-active::before {
+  background: var(--accent);
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+.pane-resize-handle.is-active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 /* ═══════════════════════════════════════
    BlockNote Editor Overrides
    ═══════════════════════════════════════ */
@@ -823,8 +860,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 30px;
-  padding: 0 6px 0 9px;
+  height: 32px;
+  padding: 0 8px 0 10px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -1814,7 +1851,9 @@ textarea {
   container-type: inline-size;
   position: relative;
   width: 100%;
-  max-width: 640px;
+  /* Match the editor column max so the cover page never floats inside its
+     own container looking un-centered against the body text below. */
+  max-width: 100%;
   margin: 12px auto;
   padding: clamp(20px, 5cqi, 36px) clamp(20px, 5cqi, 40px) clamp(24px, 6cqi, 44px);
   background: var(--bg-elevated);
@@ -2129,7 +2168,7 @@ textarea {
 }
 
 .cover-form-input {
-  height: 34px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -2166,7 +2205,7 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 0 10px;
-  height: 34px;
+  height: 32px;
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -2229,7 +2268,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 30px;
+  height: 32px;
   padding: 0 11px;
   background: var(--bg-tertiary);
   border: 1px solid transparent;

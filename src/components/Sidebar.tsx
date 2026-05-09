@@ -162,32 +162,35 @@ export function Sidebar({
     ? workspacePath.replace(/\\/g, "/").split("/").pop() || "Workspace"
     : null;
 
-  // Collapsed state — just show the activity bar icons
+  // Collapsed state — just show the activity bar icons. Same width and
+  // surface as the activity bar inside the expanded sidebar so toggling
+  // collapse doesn't snap the column wider.
   if (collapsed) {
     return (
-      <div className="w-[48px] bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col items-center pt-3 gap-1 shrink-0">
+      <div className="w-[44px] bg-[var(--bg-secondary)] border-r border-[var(--border)] flex flex-col items-center pt-2 gap-1 shrink-0">
         <button
           onClick={onToggle}
-          className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] mb-2"
+          className="icon-btn"
           title={t("sidebar.expand")}
         >
-          <ChevronsRight size={18} />
+          <ChevronsRight size={16} />
         </button>
+        <div className="h-1" />
         <ActivityBarButton
-          icon={<FolderTree size={18} />}
+          icon={<FolderTree size={16} />}
           active={activeTab === "files"}
           title={t("sidebar.files")}
           onClick={() => { setActiveTab("files"); onToggle(); }}
         />
         <ActivityBarButton
-          icon={<BookOpen size={18} />}
+          icon={<BookOpen size={16} />}
           active={activeTab === "references"}
           title={t("sidebar.references")}
           onClick={() => { setActiveTab("references"); onToggle(); }}
         />
         <div className="flex-1" />
         <ActivityBarButton
-          icon={<Settings size={18} />}
+          icon={<Settings size={16} />}
           active={activeTab === "settings"}
           title={t("settings.title")}
           onClick={() => { setActiveTab("settings"); onToggle(); }}
@@ -202,8 +205,11 @@ export function Sidebar({
       style={{ width }}
       className="h-full bg-[var(--bg-secondary)] flex shrink-0 select-none overflow-hidden"
     >
-      {/* Activity bar */}
-      <div className="w-[36px] shrink-0 bg-[var(--bg-tertiary)] flex flex-col items-center pt-3 gap-0.5 border-r border-[var(--border-light)]">
+      {/* Activity bar — same surface as the panel content; the divider is
+          carried by the right-edge `border-r` in --border (one shade darker
+          than --border-light). 44 px matches the collapsed sidebar so
+          toggling collapse never widens the column. */}
+      <div className="w-[44px] shrink-0 flex flex-col items-center pt-2 gap-0.5 border-r border-[var(--border)]">
         <ActivityBarButton
           icon={<FolderTree size={16} />}
           active={activeTab === "files"}

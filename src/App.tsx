@@ -195,15 +195,10 @@ function App() {
         {!sidebarCollapsed && (
           <div
             onMouseDown={startSidebarResize}
-            className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-              resizingPanel === "sidebar" ? "bg-[var(--accent)]" : ""
+            className={`pane-resize-handle ${
+              resizingPanel === "sidebar" ? "is-active" : ""
             }`}
-          >
-            <div className="absolute inset-y-0 -left-1 -right-1" />
-            {resizingPanel === "sidebar" && (
-              <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
-            )}
-          </div>
+          />
         )}
 
         {/* Main content area */}
@@ -224,15 +219,10 @@ function App() {
             <div
               ref={resizeRef}
               onMouseDown={startPdfResize}
-              className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-                resizingPanel === "pdf" ? "bg-[var(--accent)]" : ""
+              className={`pane-resize-handle ${
+                resizingPanel === "pdf" ? "is-active" : ""
               }`}
-            >
-              <div className="absolute inset-y-0 -left-1 -right-1" />
-              {resizingPanel === "pdf" && (
-                <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
-              )}
-            </div>
+            />
           )}
 
           {/* PDF Preview panel */}

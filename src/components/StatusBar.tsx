@@ -67,7 +67,7 @@ export function StatusBar() {
   const showUpdate = updateInfo?.has_update && !updateDismissed;
 
   return (
-    <div className="h-8 border-t border-[var(--border-light)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-secondary)]">
+    <div className="h-8 border-t border-[var(--border)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-tertiary)]">
       {/* Left side - Status */}
       <div className="flex items-center gap-2 min-w-0">
         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full shrink-0 ${statusConfig.bg}`}>
