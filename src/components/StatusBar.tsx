@@ -57,7 +57,7 @@ export function StatusBar() {
   }, [setUpdateInfo]);
 
   const statusConfig = compiling
-    ? { icon: <Loader2 size={12} className="animate-spin" />, text: t("status.compiling"), color: "text-[var(--accent)]", bg: "bg-[var(--accent-light)]" }
+    ? { icon: <Loader2 size={12} className="animate-spin" />, text: t("status.compiling"), color: "text-[var(--accent-dark)]", bg: "bg-[var(--accent-light)]" }
     : lastError
       ? { icon: <AlertCircle size={12} />, text: t("status.error"), color: "text-[var(--error)]", bg: "bg-[var(--error-light)]" }
       : lastDuration > 0
@@ -67,15 +67,14 @@ export function StatusBar() {
   const showUpdate = updateInfo?.has_update && !updateDismissed;
 
   return (
-    <div className="h-8 border-t border-[var(--border-light)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-secondary)]">
-      {/* Left side - Status */}
+    <div className="h-8 border-t border-[var(--border)] flex items-center justify-between px-4 shrink-0 bg-[var(--bg-tertiary)]">
+      {/* Left side - Status + rotating tip */}
       <div className="flex items-center gap-2 min-w-0">
         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full shrink-0 ${statusConfig.bg}`}>
           <span className={statusConfig.color}>{statusConfig.icon}</span>
           <span className={`text-[11px] font-medium ${statusConfig.color}`}>{statusConfig.text}</span>
         </div>
 
-        {/* Tip */}
         <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
           <Lightbulb size={11} className="text-[var(--text-tertiary)] shrink-0" />
           <span className="text-[11px] text-[var(--text-tertiary)] truncate">
@@ -101,10 +100,10 @@ export function StatusBar() {
               target="_blank"
               rel="noopener noreferrer"
               title={t("update.available").replace("{version}", updateInfo.latest_version)}
-              className="flex items-center px-1.5 py-0.5 rounded-full bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80 transition-opacity"
+              className="flex items-center px-1.5 py-0.5 rounded-full bg-[var(--accent-light)] text-[var(--accent-dark)] hover:opacity-80 transition-opacity"
             >
               <ArrowDownCircle size={11} className="shrink-0" />
-              <span className="overflow-hidden whitespace-nowrap text-[10px] font-medium max-w-0 group-hover:max-w-[260px] group-hover:ml-1 transition-[max-width,margin] duration-200 ease-out">
+              <span className="overflow-hidden whitespace-nowrap text-[11px] font-medium max-w-0 group-hover:max-w-[260px] group-hover:ml-1 transition-[max-width,margin] duration-200 ease-out">
                 {t("update.available").replace("{version}", updateInfo.latest_version)}
               </span>
             </a>
@@ -118,7 +117,7 @@ export function StatusBar() {
             </button>
           </div>
         )}
-        <span className="text-[10px] text-[var(--text-tertiary)]">
+        <span className="text-[11px] text-[var(--text-tertiary)] tabular-nums">
           LexTyp v{__APP_VERSION__}
         </span>
       </div>

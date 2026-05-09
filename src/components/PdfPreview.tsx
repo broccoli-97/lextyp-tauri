@@ -17,6 +17,7 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "../stores/app-store";
 import type { SourceMapEntry } from "../stores/app-store";
 import { useT } from "../lib/i18n";
+import { EmptyState } from "./EmptyState";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
@@ -55,6 +56,13 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   const [zoom, setZoom] = useState(1.0);
   const [renderedZoom, setRenderedZoom] = useState(1.0);
   const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pointer-drag bookkeeping. We *don't* set `isDragging` or call
+  // `setPointerCapture` on pointerdown — that interferes with the second
+  // mousedown of a dblclick pair on some webviews and the dblclick handler
+  // never fires. Instead, capture is deferred until movement crosses a
+  // small threshold (the same pattern FileTreeItem already uses).
+  const dragArmedRef = useRef<{ pointerId: number; el: HTMLDivElement } | null>(null);
+  const pointerCapturedRef = useRef(false);
 
   const clampZoom = (z: number) => Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
   const zoomPercent = Math.round(zoom * 100);
@@ -84,12 +92,14 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     numPages > 0 ? numPages * pageHeight + (numPages - 1) * PAGE_GAP : 0;
   const visualTotalHeight = Math.round(totalPagesHeight * cssScale);
 
-  // Schedule a high-res re-render after zoom stops changing
+  // Schedule a high-res re-render after zoom stops changing. 80ms keeps the
+  // user from sitting on a CSS-bilinear-scaled bitmap for very long while
+  // still coalescing a wheel burst into one rasterization pass.
   const scheduleRender = useCallback((newZoom: number) => {
     if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
     renderTimerRef.current = setTimeout(() => {
       setRenderedZoom(newZoom);
-    }, 200);
+    }, 80);
   }, []);
 
   // Cleanup timer
@@ -136,34 +146,56 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     return () => el.removeEventListener("wheel", handleWheel);
   }, [scheduleRender]);
 
-  // Drag panning — works whenever content overflows the container
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  // Drag panning. `pointerdown` only records the origin and arms a pending
+  // drag — pointer capture and `isDragging=true` are deferred until the
+  // pointer actually moves past a 4 px threshold. A plain click/dblclick
+  // therefore never enters dragging state, so the mousedown/mouseup/dblclick
+  // sequence is left untouched and the dblclick handler fires reliably.
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
     if (!el) return;
     if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
-    setIsDragging(true);
+    if (e.button !== 0) return;
+    dragArmedRef.current = { pointerId: e.pointerId, el };
+    pointerCapturedRef.current = false;
     dragStart.current = {
       x: e.clientX,
       y: e.clientY,
       scrollLeft: el.scrollLeft,
       scrollTop: el.scrollTop,
     };
-    el.setPointerCapture(e.pointerId);
   }, []);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollLeft = dragStart.current.scrollLeft - (e.clientX - dragStart.current.x);
-    el.scrollTop = dragStart.current.scrollTop - (e.clientY - dragStart.current.y);
-  }, [isDragging]);
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const armed = dragArmedRef.current;
+    if (!armed || armed.pointerId !== e.pointerId) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    if (!pointerCapturedRef.current) {
+      // Wait until the pointer has actually moved before promoting to a drag.
+      if (dx * dx + dy * dy < 16) return;
+      try {
+        armed.el.setPointerCapture(e.pointerId);
+        pointerCapturedRef.current = true;
+      } catch {
+        // Pointer capture can fail if the element is detached mid-event.
+      }
+      setIsDragging(true);
+    }
+    armed.el.scrollLeft = dragStart.current.scrollLeft - dx;
+    armed.el.scrollTop = dragStart.current.scrollTop - dy;
+  }, []);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    scrollRef.current?.releasePointerCapture(e.pointerId);
-  }, [isDragging]);
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const armed = dragArmedRef.current;
+    if (!armed || armed.pointerId !== e.pointerId) return;
+    if (pointerCapturedRef.current) {
+      try { armed.el.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      pointerCapturedRef.current = false;
+      setIsDragging(false);
+    }
+    dragArmedRef.current = null;
+  }, []);
 
   const pdfData = useMemo(() => {
     if (!pdfBase64) return null;
@@ -207,36 +239,38 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     }
   }, [pdfBase64]);
 
-  // Double-click on PDF → jump to the corresponding word in the editor
+  // Double-click on PDF → jump to the corresponding word in the editor.
+  // The source map is built by `query_source_map` after each compile and
+  // contains one entry per word (`__w`) plus one per block (`__track`).
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (!sourceMap.length) return;
+      const jumpFn = (window as any).__lextyp_jumpToBlock as
+        | ((id: string, off: number) => void)
+        | undefined;
+      if (!jumpFn) return;
 
-      // Find the page element that was clicked (react-pdf sets data-page-number)
-      const pageEl = (e.target as HTMLElement).closest("[data-page-number]");
+      // react-pdf sets data-page-number on the inner <div className="react-pdf__Page">.
+      const pageEl = (e.target as HTMLElement | null)?.closest?.(
+        "[data-page-number]"
+      ) as HTMLElement | null;
       if (!pageEl) return;
 
       const pageNum = parseInt(pageEl.getAttribute("data-page-number") ?? "0", 10);
       if (!pageNum) return;
 
-      // Get click position relative to the page element
+      if (!sourceMap.length) return;
+
+      // Click position in points. `getBoundingClientRect` returns the
+      // visually-transformed rect, which already includes any css zoom scale.
       const pageRect = pageEl.getBoundingClientRect();
-      const clickXInPage = e.clientX - pageRect.left;
-      const clickYInPage = e.clientY - pageRect.top;
-
-      // Convert pixel position to Typst points
-      // The rendered page width in pixels corresponds to A4_WIDTH_PT
       const pxPerPt = pageRect.width / A4_WIDTH_PT;
-      const clickYPt = clickYInPage / pxPerPt;
-      const clickXPt = clickXInPage / pxPerPt;
+      const clickXPt = (e.clientX - pageRect.left) / pxPerPt;
+      const clickYPt = (e.clientY - pageRect.top) / pxPerPt;
 
-      // Find the nearest source-map marker (word) to the click
       const target = findNearestEntry(sourceMap, pageNum, clickXPt, clickYPt);
       if (!target) return;
 
-      // Jump to (block, character offset) in editor
-      const jumpFn = (window as any).__lextyp_jumpToBlock;
-      if (jumpFn) jumpFn(target.id, target.off);
+      jumpFn(target.id, target.off);
     },
     [sourceMap]
   );
@@ -247,14 +281,14 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
       <div className="h-full flex flex-col items-center pt-4">
         <button
           onClick={onToggleCollapse}
-          className="icon-btn hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+          className="icon-btn"
           title={t("pdf.expand")}
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
         <div className="mt-2 flex flex-col items-center gap-2">
           <FileText size={16} className="text-[var(--text-tertiary)] rotate-90" />
-          <span className="text-[9px] text-[var(--text-tertiary)] writing-mode-vertical rotate-180" style={{ writingMode: "vertical-rl" }}>
+          <span className="text-[11px] text-[var(--text-tertiary)] writing-mode-vertical rotate-180" style={{ writingMode: "vertical-rl" }}>
             {t("pdf.preview")}
           </span>
         </div>
@@ -267,33 +301,18 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     return (
       <div className="h-full flex flex-col">
         <PdfToolbarSimple label={t("pdf.preview")} onCollapse={onToggleCollapse} collapseTitle={t("pdf.collapse")} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-8">
-          {compiling ? (
-            <div className="flex flex-col items-center gap-3 animate-fade-in">
-              <div className="w-12 h-12 rounded-xl bg-[var(--accent-light)] flex items-center justify-center">
-                <Loader2 size={24} className="animate-spin text-[var(--accent)]" />
-              </div>
-              <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                {t("pdf.compiling")}
-              </span>
-            </div>
-          ) : (
-            <>
-              <div className="w-20 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-primary)]">
-                <FileText size={24} className="text-[var(--text-tertiary)]" />
-                <span className="text-[9px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">PDF</span>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                  {t("pdf.willAppear")}
-                </span>
-                <span className="text-[11px] text-[var(--text-tertiary)]">
-                  {t("pdf.startTyping")}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
+        {compiling ? (
+          <EmptyState
+            icon={<Loader2 size={22} className="animate-spin text-[var(--accent)]" />}
+            title={t("pdf.compiling")}
+          />
+        ) : (
+          <EmptyState
+            icon={<FileText size={22} />}
+            title={t("pdf.willAppear")}
+            description={t("pdf.startTyping")}
+          />
+        )}
       </div>
     );
   }
@@ -325,7 +344,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
+      <div className="flex items-center justify-between px-3 h-9 border-b border-[var(--border-light)] bg-[var(--bg-secondary)] shrink-0">
         <div className="flex items-center gap-2">
           <FileText size={14} className="text-[var(--accent)]" />
           <span className="text-[12px] font-medium text-[var(--text-primary)]">{t("pdf.preview")}</span>
@@ -338,18 +357,18 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
 
         <div className="flex items-center gap-1">
           {/* Zoom controls */}
-          <div className="flex items-center gap-0.5 mr-1 px-1.5 py-0.5 rounded-md bg-[var(--bg-tertiary)]">
+          <div className="flex items-center gap-0.5 mr-1 px-1 py-0.5 rounded-md bg-[var(--bg-tertiary)]">
             <button
               onClick={handleZoomOut}
               disabled={zoom <= ZOOM_MIN}
-              className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="icon-btn icon-btn-sm"
               title="Zoom out"
             >
-              <ZoomOut size={14} className="text-[var(--text-secondary)]" />
+              <ZoomOut size={14} />
             </button>
             <button
               onClick={handleZoomReset}
-              className="text-[11px] font-semibold text-[var(--text-primary)] w-10 text-center hover:bg-[var(--bg-hover)] rounded transition-colors tabular-nums"
+              className="h-6 px-1.5 text-[11px] font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-sm transition-colors tabular-nums"
               title="Reset zoom"
             >
               {zoomPercent}%
@@ -357,10 +376,10 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
             <button
               onClick={handleZoomIn}
               disabled={zoom >= ZOOM_MAX}
-              className="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="icon-btn icon-btn-sm"
               title="Zoom in"
             >
-              <ZoomIn size={14} className="text-[var(--text-secondary)]" />
+              <ZoomIn size={14} />
             </button>
           </div>
 
@@ -377,7 +396,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
           {/* Collapse */}
           <button
             onClick={onToggleCollapse}
-            className="icon-btn w-7 h-7"
+            className="icon-btn icon-btn-sm"
             title={t("pdf.collapse")}
           >
             <ChevronRight size={14} />
@@ -445,6 +464,7 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
                   left: 0,
                   transform: cssScale !== 1 ? `scale(${cssScale})` : undefined,
                   transformOrigin: "top left",
+                  willChange: cssScale !== 1 ? "transform" : undefined,
                   display: "flex",
                   flexDirection: "column",
                   gap: PAGE_GAP,
@@ -522,12 +542,12 @@ function PdfToolbarSimple({
   collapseTitle: string;
 }) {
   return (
-    <div className="flex items-center justify-between px-3 h-11 border-b border-[var(--border)] bg-[var(--bg-elevated)] shrink-0">
+    <div className="flex items-center justify-between px-3 h-9 border-b border-[var(--border-light)] bg-[var(--bg-secondary)] shrink-0">
       <div className="flex items-center gap-2">
         {icon || <FileText size={14} className="text-[var(--text-tertiary)]" />}
         <span className={`text-[12px] font-medium ${labelColor || "text-[var(--text-secondary)]"}`}>{label}</span>
       </div>
-      <button onClick={onCollapse} className="icon-btn w-7 h-7" title={collapseTitle}>
+      <button onClick={onCollapse} className="icon-btn icon-btn-sm" title={collapseTitle}>
         <ChevronRight size={14} />
       </button>
     </div>

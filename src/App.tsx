@@ -1,7 +1,8 @@
 import { useCallback, useState, useEffect, useRef } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Sparkles } from "lucide-react";
+import { PencilLine, Sparkles } from "lucide-react";
 import { Editor } from "./components/Editor";
+import { EmptyState as EmptyStateShell } from "./components/EmptyState";
 import { PdfPreview } from "./components/PdfPreview";
 import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
@@ -195,15 +196,10 @@ function App() {
         {!sidebarCollapsed && (
           <div
             onMouseDown={startSidebarResize}
-            className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-              resizingPanel === "sidebar" ? "bg-[var(--accent)]" : ""
+            className={`pane-resize-handle ${
+              resizingPanel === "sidebar" ? "is-active" : ""
             }`}
-          >
-            <div className="absolute inset-y-0 -left-1 -right-1" />
-            {resizingPanel === "sidebar" && (
-              <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
-            )}
-          </div>
+          />
         )}
 
         {/* Main content area */}
@@ -224,15 +220,10 @@ function App() {
             <div
               ref={resizeRef}
               onMouseDown={startPdfResize}
-              className={`w-1.5 bg-[var(--border-light)] hover:bg-[var(--accent)] cursor-col-resize transition-colors shrink-0 relative group ${
-                resizingPanel === "pdf" ? "bg-[var(--accent)]" : ""
+              className={`pane-resize-handle ${
+                resizingPanel === "pdf" ? "is-active" : ""
               }`}
-            >
-              <div className="absolute inset-y-0 -left-1 -right-1" />
-              {resizingPanel === "pdf" && (
-                <div className="absolute inset-y-0 left-0 right-0 bg-[var(--accent)]/20" />
-              )}
-            </div>
+            />
           )}
 
           {/* PDF Preview panel */}
@@ -281,34 +272,26 @@ function EmptyState() {
   }, [workspacePath, createDocumentFromTemplate, openingExample]);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-4">
-      <div className="w-16 h-20 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 bg-[var(--bg-secondary)]">
-        <span className="text-[24px] text-[var(--text-tertiary)]">
-          {"\u270E"}
-        </span>
-      </div>
-      <div className="text-center">
-        <p className="text-[14px] font-medium text-[var(--text-secondary)]">
-          {t("editor.noDocument")}
-        </p>
-        <p className="text-[12px] text-[var(--text-tertiary)] mt-1">
-          {t("editor.noDocumentHint")}
-        </p>
-      </div>
-      {workspacePath && (
-        <button
-          type="button"
-          onClick={handleOpenExample}
-          disabled={openingExample}
-          className="btn btn-soft mt-2"
-        >
-          <Sparkles size={14} />
-          {openingExample
-            ? t("empty.openingExample")
-            : t("empty.openExample")}
-        </button>
-      )}
-    </div>
+    <EmptyStateShell
+      icon={<PencilLine size={22} />}
+      title={t("editor.noDocument")}
+      description={t("editor.noDocumentHint")}
+      cta={
+        workspacePath ? (
+          <button
+            type="button"
+            onClick={handleOpenExample}
+            disabled={openingExample}
+            className="btn btn-soft"
+          >
+            <Sparkles size={14} />
+            {openingExample
+              ? t("empty.openingExample")
+              : t("empty.openExample")}
+          </button>
+        ) : undefined
+      }
+    />
   );
 }
 

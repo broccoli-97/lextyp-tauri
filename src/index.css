@@ -27,10 +27,14 @@
   --bg-active: rgba(0, 0, 0, 0.06);
   --bg-sunken: #F0EEEA;
 
-  /* Text — strong hierarchy through opacity */
+  /* Text — strong hierarchy through opacity.
+     Ladder is Stone-900 / 600 / 500 / ~350 — tertiary used to sit at Stone-400
+     (#A8A29E) but read as washed-out at chrome icon sizes (~2.5:1 against
+     panel surfaces). Stone-500 lifts contrast to ~5:1 without crossing into
+     secondary territory. */
   --text-primary: #1C1917;
   --text-secondary: #57534E;
-  --text-tertiary: #A8A29E;
+  --text-tertiary: #78716C;
   --text-muted: #C4BBB2;
   --text-inverse: #FAFAF8;
 
@@ -86,10 +90,11 @@
   --bg-active: rgba(255, 255, 255, 0.08);
   --bg-sunken: #131110;
 
-  /* Text */
+  /* Text — mirrors the light-mode lift on tertiary (one Stone step brighter)
+     so chrome captions/icons stay legible against the dark panels. */
   --text-primary: #F5F1ED;
   --text-secondary: #A8A29E;
-  --text-tertiary: #6B6560;
+  --text-tertiary: #7A736D;
   --text-muted: #4A453F;
   --text-inverse: #171412;
 
@@ -127,9 +132,10 @@
   --editor-bg: #1A1714;
   --editor-border: #2E2A26;
 
-  /* Scrollbar */
-  --scrollbar-thumb: #3D3833;
-  --scrollbar-thumb-hover: #4A453F;
+  /* Scrollbar — must stay visibly distinct from --border-hover (#3D3833),
+     otherwise the thumb disappears whenever it overlaps a panel border. */
+  --scrollbar-thumb: #5A544D;
+  --scrollbar-thumb-hover: #6F6A62;
 }
 
 /* ─── Shared tokens ─── */
@@ -143,8 +149,16 @@
   --radius-xl: 12px;
   --radius-2xl: 16px;
 
-  /* Typography scale */
+  /* Typography scale.
+     `--font-serif` is the editor body face. `Newsreader` / `Source Serif 4`
+     were declared previously but aren't bundled and most installs don't have
+     them — so users silently fell through to Times, which the PDF preamble
+     also targets but renders very differently on screen. The cascade below
+     prefers resident high-quality serifs (Charter on macOS, Cambria on
+     Windows, Liberation Serif on Linux) before falling back to Times. */
   --font-ui: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: "Newsreader", "Iowan Old Style", "Charter", "Bitstream Charter",
+                Cambria, "Liberation Serif", "Times New Roman", Times, Georgia, serif;
   --font-editor: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
@@ -172,6 +186,51 @@ textarea {
   color: inherit;
 }
 
+/* Lucide icons ship with stroke-width: 2, which at 11–14 px renders as
+   visually heavy double-stroke smudges in chrome that uses tertiary-grey
+   colors. 1.5 is Lucide's recommended UI weight and stays sharp at small
+   sizes. The CSS property overrides the inline SVG attribute. */
+.lucide {
+  stroke-width: 1.5;
+}
+
+/* ─── Pane resize handle ───────────────────────────────────────────────
+   The visual handle is a 1 px center divider in `--border`, but the
+   element itself is 8 px wide so it gives a comfortable hit-target.
+   Hover/active reveal the accent. The handle reads as the panel border
+   it sits on, not as a separate stripe. */
+.pane-resize-handle {
+  flex-shrink: 0;
+  position: relative;
+  width: 8px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color var(--transition-fast);
+}
+
+.pane-resize-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--border);
+  transform: translateX(-0.5px);
+  transition: background-color var(--transition-fast), width var(--transition-fast);
+}
+
+.pane-resize-handle:hover::before,
+.pane-resize-handle.is-active::before {
+  background: var(--accent);
+  width: 2px;
+  transform: translateX(-1px);
+}
+
+.pane-resize-handle.is-active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
 /* ═══════════════════════════════════════
    BlockNote Editor Overrides
    ═══════════════════════════════════════ */
@@ -181,7 +240,7 @@ textarea {
    serif do the work — what the writer sees is what compiles, modulo the
    editor's max content width. */
 .bn-editor {
-  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro", "Times New Roman", Times, Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-primary);
@@ -516,8 +575,10 @@ textarea {
   border-radius: var(--radius-md);
 }
 
-/* Icon button — square, transparent, 28×28. Distinct from .btn family
-   because it carries no text and lives in toolbars/headers. */
+/* Icon button — square, transparent, 28×28 by default. Distinct from
+   the .btn family because it carries no text and lives in toolbars,
+   panel headers, and activity bars. Compose with `.icon-btn-sm` for
+   the dense 24 px header variant or `.is-active` for selected state. */
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -525,10 +586,16 @@ textarea {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-md);
-  color: var(--text-tertiary);
+  background: transparent;
+  /* Resting color is `--text-secondary`, not tertiary. Tertiary is the
+     "decoration" tier (status dot, tip lightbulb, file-tree chevrons);
+     icon-btn is the actionable tier and needs a stronger weight so the
+     row doesn't read as a wash of pale strokes. */
+  color: var(--text-secondary);
   transition: background-color var(--transition-fast),
               color var(--transition-fast);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .icon-btn:hover {
@@ -538,6 +605,28 @@ textarea {
 
 .icon-btn:active {
   background: var(--bg-active);
+}
+
+.icon-btn:disabled,
+.icon-btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Selected variant — used by the activity bar's current tab and by any
+   other "this is on" affordance that lives in a chrome surface. */
+.icon-btn.is-active,
+.icon-btn.is-active:hover {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* Smaller variant for dense headers (sidebar header, PDF toolbar). 24 px
+   matches the Mac OS toolbar baseline and gives a tighter row. */
+.icon-btn-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
 }
 
 /* ═══════════════════════════════════════
@@ -581,10 +670,10 @@ textarea {
 }
 
 .panel-section-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
 }
 
@@ -716,9 +805,9 @@ textarea {
 
 .slash-menu-group {
   padding: 8px 10px 4px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
@@ -767,10 +856,10 @@ textarea {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   color: var(--text-secondary);
@@ -806,8 +895,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 30px;
-  padding: 0 6px 0 9px;
+  height: 32px;
+  padding: 0 8px 0 10px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -846,85 +935,6 @@ textarea {
   color: var(--text-tertiary);
 }
 
-/* Style card — the dominant control under the toolbar. Click expands the
-   dropdown of available styles in the same surface. */
-.ref-style-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--transition-fast),
-              background-color var(--transition-fast),
-              box-shadow var(--transition-fast);
-}
-
-.ref-style-card:hover {
-  border-color: var(--border-hover);
-  background: var(--bg-hover);
-}
-
-.ref-style-card.is-open {
-  border-color: var(--accent);
-  background: var(--bg-elevated);
-  box-shadow: var(--shadow-focus);
-}
-
-.ref-style-icon {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--accent-light);
-  color: var(--accent);
-}
-
-.ref-style-meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.ref-style-name {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-primary);
-  line-height: 1.15;
-}
-
-.ref-style-desc {
-  font-family: var(--font-ui);
-  font-size: 10.5px;
-  color: var(--text-tertiary);
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ref-style-chevron {
-  flex-shrink: 0;
-  color: var(--text-tertiary);
-  transition: transform var(--transition-fast), color var(--transition-fast);
-}
-
-.ref-style-card.is-open .ref-style-chevron {
-  transform: rotate(180deg);
-  color: var(--accent);
-}
-
 /* Type pills — segmented filter under the search. Each carries a count
    that shrinks slightly inside the active pill to keep the label dominant. */
 .ref-pill {
@@ -960,9 +970,10 @@ textarea {
 }
 
 .ref-pill-count {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .ref-pill:hover .ref-pill-count {
@@ -1014,15 +1025,15 @@ textarea {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  height: 16px;
+  height: 18px;
   padding: 0 6px;
   border-radius: var(--radius-sm);
   background: var(--bg-tertiary);
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
 }
@@ -1036,7 +1047,7 @@ textarea {
   flex: 1;
   min-width: 0;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1044,8 +1055,7 @@ textarea {
 }
 
 .ref-card-title {
-  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro",
-               "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 13px;
   font-weight: 500;
   line-height: 1.35;
@@ -1060,7 +1070,7 @@ textarea {
 .ref-card-source {
   margin-top: 3px;
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1074,7 +1084,7 @@ textarea {
 
 .ref-card-preview {
   margin-top: 8px;
-  font-family: "Newsreader", "Source Serif 4", "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-style: italic;
   font-size: 11.5px;
   line-height: 1.55;
@@ -1091,7 +1101,7 @@ textarea {
 .ref-card-field {
   display: flex;
   gap: 8px;
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
@@ -1111,7 +1121,7 @@ textarea {
 
 .ref-card-field-value.is-mono {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 10.5px;
 }
 
 .ref-card-actions {
@@ -1132,7 +1142,7 @@ textarea {
   padding: 0 4px;
   margin-bottom: 6px;
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -1356,13 +1366,13 @@ textarea {
      no matter the label length (BOOK / ARTICLE / STATUTE …). */
   width: 64px;
   margin-top: 2px;
-  padding: 3px 0;
+  padding: 4px 0;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: var(--radius-sm);
   background: var(--accent-light);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
   line-height: 1;
   color: var(--accent-dark);
   text-transform: uppercase;
@@ -1377,7 +1387,7 @@ textarea {
 
 .palette-title {
   display: block;
-  font-family: "Newsreader", "Source Serif 4", "Source Serif Pro", "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 14px;
   line-height: 1.3;
   color: var(--text-primary);
@@ -1407,7 +1417,7 @@ textarea {
 }
 
 .palette-empty-title {
-  font-family: "Newsreader", "Source Serif 4", "Times New Roman", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 14px;
   color: var(--text-secondary);
   margin-bottom: 4px;
@@ -1421,7 +1431,7 @@ textarea {
   padding: 8px 16px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-light);
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-tertiary);
 }
 
@@ -1435,15 +1445,15 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 16px;
-  height: 17px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 5px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 3px;
   box-shadow: 0 1px 0 var(--border-hover);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
   color: var(--text-secondary);
 }
@@ -1458,7 +1468,7 @@ textarea {
 
 .editor-toolbar {
   flex-shrink: 0;
-  height: 44px;
+  height: 36px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-light);
 }
@@ -1483,7 +1493,7 @@ textarea {
 .editor-toolbar-divider {
   width: 1px;
   height: 18px;
-  background: var(--border);
+  background: var(--border-hover);
   flex-shrink: 0;
 }
 
@@ -1491,8 +1501,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   background: transparent;
@@ -1507,7 +1517,7 @@ textarea {
 }
 
 .editor-toolbar-btn-text {
-  width: 28px;
+  width: 26px;
   padding: 0;
   font-family: var(--font-ui);
   font-size: 11px;
@@ -1524,7 +1534,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
+  height: 24px;
   padding: 0 6px 0 9px;
   border-radius: var(--radius-md);
   background: transparent;
@@ -1567,19 +1577,19 @@ textarea {
 
 .editor-toolbar-style-name {
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-primary);
   line-height: 1;
 }
 
 .editor-toolbar-style-edn {
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-tertiary);
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   line-height: 1;
   white-space: nowrap;
 }
@@ -1629,7 +1639,7 @@ textarea {
   font-size: 11px;
   font-weight: 600;
   background-color: var(--accent-light);
-  color: var(--accent);
+  color: var(--accent-dark);
   border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
@@ -1710,13 +1720,13 @@ textarea {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-dark);
 }
 
 .lextyp-citation-card-type {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
@@ -1766,9 +1776,9 @@ textarea {
 }
 
 .lextyp-citation-card-field-name {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-tertiary);
   align-self: start;
@@ -1797,7 +1807,9 @@ textarea {
   container-type: inline-size;
   position: relative;
   width: 100%;
-  max-width: 640px;
+  /* Match the editor column max so the cover page never floats inside its
+     own container looking un-centered against the body text below. */
+  max-width: 100%;
   margin: 12px auto;
   padding: clamp(20px, 5cqi, 36px) clamp(20px, 5cqi, 40px) clamp(24px, 6cqi, 44px);
   background: var(--bg-elevated);
@@ -1828,9 +1840,9 @@ textarea {
 }
 
 .cover-page-tag {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
@@ -1841,7 +1853,7 @@ textarea {
   gap: 4px;
   padding: 3px 8px;
   border-radius: 999px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-tertiary);
   background: var(--bg-tertiary);
@@ -1867,7 +1879,7 @@ textarea {
 }
 
 .cover-preview-title {
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: clamp(20px, 6.5cqi, 30px);
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -1876,7 +1888,7 @@ textarea {
 }
 
 .cover-preview-subtitle {
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: clamp(13px, 3.5cqi, 17px);
   font-style: italic;
   color: var(--text-secondary);
@@ -1890,7 +1902,7 @@ textarea {
   justify-content: center;
   align-items: baseline;
   gap: 4px 8px;
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: clamp(12px, 2.8cqi, 14px);
   color: var(--text-secondary);
 }
@@ -2005,7 +2017,7 @@ textarea {
   background: var(--accent);
   color: var(--text-inverse);
   border-radius: var(--radius-md);
-  font-family: "Times New Roman", Times, "Libertinus Serif", serif;
+  font-family: var(--font-serif);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -2019,9 +2031,9 @@ textarea {
 }
 
 .cover-dialog-tag {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   color: var(--text-tertiary);
   text-transform: uppercase;
 }
@@ -2106,13 +2118,13 @@ textarea {
 }
 
 .cover-form-hint {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-tertiary);
   font-style: italic;
 }
 
 .cover-form-input {
-  height: 34px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -2149,7 +2161,7 @@ textarea {
   align-items: center;
   gap: 6px;
   padding: 0 10px;
-  height: 34px;
+  height: 32px;
   background: var(--bg-primary);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -2212,7 +2224,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 30px;
+  height: 32px;
   padding: 0 11px;
   background: var(--bg-tertiary);
   border: 1px solid transparent;

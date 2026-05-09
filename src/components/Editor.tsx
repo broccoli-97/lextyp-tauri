@@ -667,7 +667,12 @@ export function Editor() {
         editor={editor}
         onInsertCitation={openCitationPicker}
       />
-      <div className="flex-1 min-h-0 overflow-auto" ref={editorContainerRef} onContextMenu={(e) => e.preventDefault()}>
+      {/* `relative` is required: flashCurrentLine appends an absolutely-
+          positioned overlay to this element with coordinates computed
+          relative to its scroll origin. Without a positioned ancestor
+          here, the overlay would resolve against the viewport (or some
+          ancestor) and land on the wrong row. */}
+      <div className="flex-1 min-h-0 overflow-auto relative" ref={editorContainerRef} onContextMenu={(e) => e.preventDefault()}>
         <div className={`editor-content-wrap editor-citations-${citationDisplay}`}>
           <BlockNoteView
             editor={editor}

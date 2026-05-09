@@ -1,17 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Bold,
   BookMarked,
   Check,
   ChevronDown,
-  Eye,
-  EyeOff,
   Italic,
   List,
   ListOrdered,
-  Pilcrow,
   Quote,
+  Superscript,
+  Type,
   Underline,
 } from "lucide-react";
 import type { BlockNoteEditor } from "@blocknote/core";
@@ -98,13 +97,6 @@ export function EditorTopToolbar({ editor, onInsertCitation }: EditorTopToolbarP
     focus();
   }
 
-  function setParagraph() {
-    const block = editor.getTextCursorPosition().block;
-    if (!block) return;
-    editor.updateBlock(block, { type: "paragraph", props: {} as any });
-    focus();
-  }
-
   function setList(kind: "bullet" | "numbered") {
     const block = editor.getTextCursorPosition().block;
     if (!block) return;
@@ -129,6 +121,9 @@ export function EditorTopToolbar({ editor, onInsertCitation }: EditorTopToolbarP
     <div className="editor-toolbar">
       <div className="editor-toolbar-inner">
         <div className="editor-toolbar-group">
+          {/* Headings only — clicking an already-active heading button
+              demotes the block back to a paragraph (see setHeading below),
+              so a dedicated Pilcrow paragraph button is redundant. */}
           <ToolbarTextBtn
             label="Heading 1"
             active={blockType === "heading-1"}
@@ -143,13 +138,6 @@ export function EditorTopToolbar({ editor, onInsertCitation }: EditorTopToolbarP
           >
             H2
           </ToolbarTextBtn>
-          <ToolbarBtn
-            label="Paragraph"
-            active={blockType === "paragraph"}
-            onClick={setParagraph}
-          >
-            <Pilcrow size={14} />
-          </ToolbarBtn>
         </div>
 
         <div className="editor-toolbar-divider" aria-hidden="true" />
@@ -193,39 +181,17 @@ export function EditorTopToolbar({ editor, onInsertCitation }: EditorTopToolbarP
         >
           <BookMarked size={14} />
         </ToolbarBtn>
-        <CitationDisplayToggle />
 
+        {/* StyleChip carries the citation-style picker AND the chip /
+            footnote display toggle — they're conceptually one menu (how
+            citations render). The earlier Eye / EyeOff button has moved
+            inside the chip's dropdown. */}
         <StyleChip />
       </div>
     </div>
   );
 }
 
-/**
- * Eye toggle that flips between `chip` and `footnote` rendering of citation
- * tags in the editor. Purely a display setting — the underlying document is
- * untouched.
- */
-function CitationDisplayToggle() {
-  const display = useReferenceStore((s) => s.citationDisplay);
-  const toggle = useReferenceStore((s) => s.toggleCitationDisplay);
-  const isFootnote = display === "footnote";
-  const label = isFootnote
-    ? "Citation display: footnote — show as chip"
-    : "Citation display: chip — show as footnote";
-  return (
-    <button
-      type="button"
-      className={`editor-toolbar-btn ${isFootnote ? "is-active" : ""}`}
-      title={label}
-      aria-label={label}
-      aria-pressed={isFootnote}
-      onClick={toggle}
-    >
-      {isFootnote ? <EyeOff size={14} /> : <Eye size={14} />}
-    </button>
-  );
-}
 
 interface BtnProps {
   label: string;
@@ -272,12 +238,21 @@ function ToolbarTextBtn({ label, active, onClick, children }: BtnProps) {
 function StyleChip() {
   const citationStyle = useReferenceStore((s) => s.citationStyle);
   const setCitationStyle = useReferenceStore((s) => s.setCitationStyle);
+  const display = useReferenceStore((s) => s.citationDisplay);
+  const toggleDisplay = useReferenceStore((s) => s.toggleCitationDisplay);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const anchorRef = useRef<HTMLButtonElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
 
   const editionLabel = STYLE_EDITION[citationStyle.toLowerCase()] ?? "";
+
+  const setDisplay = useCallback(
+    (mode: "chip" | "footnote") => {
+      if (display !== mode) toggleDisplay();
+    },
+    [display, toggleDisplay]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -294,7 +269,7 @@ function StyleChip() {
   useEffect(() => {
     if (!open || !anchorRef.current) return;
     const r = anchorRef.current.getBoundingClientRect();
-    const menuWidth = 180;
+    const menuWidth = 200;
     setPos({
       top: r.bottom + 6,
       left: Math.max(8, r.right - menuWidth),
@@ -332,8 +307,43 @@ function StyleChip() {
             left: pos.left,
             zIndex: 9999,
           }}
-          className="menu-surface w-[180px] py-1 animate-fade-in"
+          className="menu-surface w-[200px] py-1 animate-fade-in"
         >
+          {/* Display group — flips between in-line @key chips and
+              superscript-numbered footnote markers in the editor.
+              The PDF output is unaffected; this is purely how citations
+              render on screen. */}
+          <div className="px-3 pt-1.5 pb-1 text-[11px] font-bold uppercase tracking-wide text-[var(--text-tertiary)]">
+            Display
+          </div>
+          <button
+            type="button"
+            onClick={() => { setDisplay("chip"); setOpen(false); }}
+            className={`menu-item justify-between ${display === "chip" ? "text-[var(--accent-dark)] bg-[var(--accent-light)]" : ""}`}
+          >
+            <span className="inline-flex items-center gap-2">
+              <Type size={12} className="shrink-0" />
+              Inline chip
+            </span>
+            {display === "chip" && <Check size={12} className="shrink-0" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setDisplay("footnote"); setOpen(false); }}
+            className={`menu-item justify-between ${display === "footnote" ? "text-[var(--accent-dark)] bg-[var(--accent-light)]" : ""}`}
+          >
+            <span className="inline-flex items-center gap-2">
+              <Superscript size={12} className="shrink-0" />
+              Footnote marker
+            </span>
+            {display === "footnote" && <Check size={12} className="shrink-0" />}
+          </button>
+
+          <div className="my-1 border-t border-[var(--border-light)]" />
+
+          <div className="px-3 pt-1 pb-1 text-[11px] font-bold uppercase tracking-wide text-[var(--text-tertiary)]">
+            Style
+          </div>
           {ordered.map((name, i) => {
             const active = name === citationStyle;
             return (

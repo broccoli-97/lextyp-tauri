@@ -183,8 +183,8 @@ function UpdateStatus({ state, t }: { state: CheckState; t: (k: any) => string }
 function AboutItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[11px] text-[var(--text-tertiary)]">{label}</div>
-      <div className="text-[12px] text-[var(--text-secondary)]">{value}</div>
+      <div className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wide">{label}</div>
+      <div className="text-[12px] text-[var(--text-secondary)] mt-0.5">{value}</div>
     </div>
   );
 }

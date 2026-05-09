@@ -110,7 +110,7 @@ const translations = {
 
     // Status bar tips
     "tip.slash": "Type / to open the slash menu and insert headings, lists, or citations",
-    "tip.citationStyle": "Switch citation styles anytime from the chip in the status bar",
+    "tip.citationStyle": "Switch citation styles anytime from the chip in the editor toolbar",
     "tip.pdfDoubleClick": "Double-click the PDF preview to jump to that paragraph in the editor",
     "tip.collapsePanel": "Collapse the sidebar or PDF panel for distraction-free writing",
     "tip.outline": "Use the outline button at the bottom-left to navigate long documents",
@@ -282,7 +282,7 @@ const translations = {
 
     // Status bar tips
     "tip.slash": "输入 / 打开斜杠菜单，插入标题、列表或引用",
-    "tip.citationStyle": "可在状态栏的引注样式标签随时切换",
+    "tip.citationStyle": "可在编辑器工具栏的引注样式标签随时切换",
     "tip.pdfDoubleClick": "双击 PDF 预览可跳转到编辑器中的对应段落",
     "tip.collapsePanel": "收起侧边栏或 PDF 面板，获得无干扰的写作体验",
     "tip.outline": "使用左下角的大纲按钮浏览长文档",
