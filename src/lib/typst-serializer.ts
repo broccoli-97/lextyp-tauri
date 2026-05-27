@@ -1,13 +1,18 @@
 import type { BibEntry, CitationHistoryEntry } from "../types/bib";
+import type { BlockType } from "../editor/schema";
 import type { CitationFormatter } from "./citation/formatter";
 import { countWordsAndCursor, preloadIncludeCounts } from "./word-count";
 
 /**
  * Resolver that loads an included document's blocks and bibliography so the
  * serializer can inline them. Provided by the app at compile/save time.
+ *
+ * The serializer walks blocks structurally (matching on `type` and `content`)
+ * rather than relying on BlockNote's deep generics, so the public boundary
+ * is typed but internal walks stay generic.
  */
 export type IncludeResolver = (path: string) => Promise<{
-  blocks: any[];
+  blocks: BlockType[];
   entries: BibEntry[];
   citationStyle: string;
 }>;
@@ -44,7 +49,7 @@ interface SerializeContext {
  * recursively (with cycle detection).
  */
 export async function serializeToTypst(
-  blocks: any[],
+  blocks: BlockType[],
   entries?: BibEntry[],
   formatter?: CitationFormatter,
   trackBlocks = false,

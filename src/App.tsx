@@ -8,6 +8,7 @@ import { StatusBar } from "./components/StatusBar";
 import { Sidebar } from "./components/Sidebar";
 import { useWorkspaceStore } from "./stores/workspace-store";
 import { useSettingsStore } from "./stores/settings-store";
+import { useEditorBridge } from "./editor/EditorBridge";
 import { useT } from "./lib/i18n";
 import { welcomeTemplate } from "./lib/templates";
 
@@ -34,12 +35,25 @@ function App() {
   const activeDocumentPath = useWorkspaceStore((s) => s.activeDocumentPath);
   const saveActiveDocument = useWorkspaceStore((s) => s.saveActiveDocument);
   const isDirty = useWorkspaceStore((s) => s.isDirty);
+  const initialized = useWorkspaceStore((s) => s.initialized);
+  const initError = useWorkspaceStore((s) => s.initError);
+  const initFromStorage = useWorkspaceStore((s) => s.initFromStorage);
+  const dismissInitError = useWorkspaceStore((s) => s.dismissInitError);
   const theme = useSettingsStore((s) => s.theme);
 
   // Apply theme to document root
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  // Restore workspace + active document from localStorage. Lives here (not at
+  // module scope) so the call is gated on the React lifecycle and any error
+  // can surface in the UI instead of vanishing into console.error.
+  useEffect(() => {
+    if (!initialized) {
+      initFromStorage().catch(console.error);
+    }
+  }, [initialized, initFromStorage]);
 
   // Block browser-default shortcuts that do not apply in this Tauri app
   useEffect(() => {
@@ -168,10 +182,11 @@ function App() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty, saveActiveDocument]);
 
-  const handleInsertCitation = useCallback((key: string) => {
-    const fn = (window as any).__lextyp_insertCitation;
-    if (fn) fn(key);
-  }, []);
+  const bridge = useEditorBridge();
+  const handleInsertCitation = useCallback(
+    (key: string) => bridge.insertCitation(key),
+    [bridge]
+  );
 
   const startSidebarResize = useCallback(() => {
     setResizingPanel("sidebar");
@@ -244,6 +259,27 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Init-error toast: shown once after a stale workspace path couldn't
+          be restored on launch. Dismissible; the offending path is already
+          cleared from localStorage so the next launch starts clean. */}
+      {initError && (
+        <div className="absolute top-3 right-3 z-50 max-w-sm rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] shadow-lg px-3 py-2">
+          <div className="text-[12px] font-medium text-[var(--text-primary)]">
+            Couldn't reopen your last workspace
+          </div>
+          <div className="mt-1 text-[11px] text-[var(--text-tertiary)] break-words">
+            {initError}
+          </div>
+          <button
+            type="button"
+            onClick={dismissInitError}
+            className="mt-2 text-[11px] font-medium text-[var(--accent)] hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Full-width status bar — spans sidebar + editor + PDF panel */}
       <StatusBar />

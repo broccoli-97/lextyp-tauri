@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import { schema } from "../editor/schema";
+import { usePublishEditorBridge } from "../editor/EditorBridge";
 import { getSlashMenuItems } from "../editor/slash-items";
 import { serializeToTypst } from "../lib/typst-serializer";
 import { getFormatter } from "../lib/citation/registry";
@@ -267,6 +268,15 @@ export function Editor() {
 
   const compileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * Monotonic counter bumped on every compile dispatch. Each in-flight
+   * compile captures its epoch up-front; when the async call returns we
+   * compare against the current epoch and drop the result if a newer
+   * compile has since started. Without this, a slow compile that finishes
+   * *after* a faster one can overwrite the PDF and source map with stale
+   * output (the user-typer-switches-style scenario from the review).
+   */
+  const compileEpochRef = useRef(0);
   const [citationPickerOpen, setCitationPickerOpen] = useState(false);
   const [documentPickerOpen, setDocumentPickerOpen] = useState(false);
   const [coverPageDialogBlock, setCoverPageDialogBlock] = useState<any | null>(null);
@@ -466,6 +476,10 @@ export function Editor() {
   }, [activeDocumentPath, activeDocumentBlocks, editor, recomputeCounts, refreshIncludeCounts]);
 
   const compileDocument = useCallback(async () => {
+    // Bump epoch up-front and remember our slot; any compile that completes
+    // out-of-order against this counter is discarded below.
+    compileEpochRef.current += 1;
+    const myEpoch = compileEpochRef.current;
     try {
       const blocks = editor.document;
       const formatter = getFormatter(useReferenceStore.getState().citationStyle);
@@ -479,12 +493,14 @@ export function Editor() {
         t("doc.references"),
         formatAutoDate(useSettingsStore.getState().locale)
       );
+      if (myEpoch !== compileEpochRef.current) return;
       setCompiling(true);
 
       const result = await invoke<{ pdf_base64: string; duration_ms: number }>(
         "compile_typst",
         { content: source }
       );
+      if (myEpoch !== compileEpochRef.current) return;
       setCompilationResult(result.pdf_base64, result.duration_ms);
 
       // Query block positions from the compiled file
@@ -492,14 +508,31 @@ export function Editor() {
         const map = await invoke<
           { id: string; off: number; page: number; x: number; y: number }[]
         >("query_source_map");
+        if (myEpoch !== compileEpochRef.current) return;
         setSourceMap(map);
       } catch {
         // Non-critical — source map just won't be available
       }
     } catch (err: any) {
+      if (myEpoch !== compileEpochRef.current) return;
       setCompilationError(String(err), 0);
     }
   }, [editor, setCompiling, setCompilationResult, setCompilationError, setSourceMap]);
+
+  /**
+   * Single entry point for "ask the backend to compile soon". Both the
+   * keystroke debounce (`handleChange`) and the citation-style/entries
+   * dependency effect call this, so changing the debounce here changes
+   * both — and only one timer is ever pending.
+   */
+  const scheduleCompile = useCallback((delayMs: number) => {
+    if (compileTimerRef.current) clearTimeout(compileTimerRef.current);
+    compileTimerRef.current = setTimeout(() => {
+      compileDocument().catch(() => {
+        // Errors land in app-store.lastError via compileDocument itself.
+      });
+    }, delayMs);
+  }, [compileDocument]);
 
   const handleChange = useCallback(() => {
     // Mark dirty
@@ -512,9 +545,10 @@ export function Editor() {
     recomputeCounts();
     refreshIncludeCounts();
 
-    // Debounced compile (400ms)
-    if (compileTimerRef.current) clearTimeout(compileTimerRef.current);
-    compileTimerRef.current = setTimeout(compileDocument, 400);
+    // Debounced compile (400ms) — shares the same timer slot as style/entry
+    // changes so a fast typer who also switches citation style doesn't stack
+    // two in-flight compiles whose results would race.
+    scheduleCompile(400);
 
     // Debounced auto-save (2s)
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -522,7 +556,7 @@ export function Editor() {
       saveActiveDocument().catch(console.error);
     }, 2000);
   }, [
-    compileDocument,
+    scheduleCompile,
     setDirty,
     saveActiveDocument,
     readCursorFromDOM,
@@ -535,9 +569,8 @@ export function Editor() {
   // editor blocks, so those changes need to trigger a refresh as well.
   useEffect(() => {
     if (!activeDocumentPath) return;
-    const timer = setTimeout(compileDocument, 250);
-    return () => clearTimeout(timer);
-  }, [activeDocumentPath, citationStyle, entries, compileDocument]);
+    scheduleCompile(250);
+  }, [activeDocumentPath, citationStyle, entries, scheduleCompile]);
 
   // Cleanup timers
   useEffect(() => {
@@ -646,20 +679,24 @@ export function Editor() {
     setCoverPageDialogBlock(null);
   }, []);
 
+  const publishBridge = usePublishEditorBridge();
   useEffect(() => {
-    (window as any).__lextyp_insertCitation = insertCitation;
-    (window as any).__lextyp_openCitationPicker = openCitationPicker;
-    (window as any).__lextyp_openDocumentPicker = openDocumentPicker;
-    (window as any).__lextyp_openCoverPageDialog = openCoverPageDialog;
-    (window as any).__lextyp_jumpToBlock = jumpToBlock;
-    return () => {
-      delete (window as any).__lextyp_insertCitation;
-      delete (window as any).__lextyp_openCitationPicker;
-      delete (window as any).__lextyp_openDocumentPicker;
-      delete (window as any).__lextyp_openCoverPageDialog;
-      delete (window as any).__lextyp_jumpToBlock;
-    };
-  }, [insertCitation, openCitationPicker, openDocumentPicker, openCoverPageDialog, jumpToBlock]);
+    publishBridge({
+      insertCitation,
+      openCitationPicker,
+      openDocumentPicker,
+      openCoverPageDialog,
+      jumpToBlock,
+    });
+    return () => publishBridge(null);
+  }, [
+    publishBridge,
+    insertCitation,
+    openCitationPicker,
+    openDocumentPicker,
+    openCoverPageDialog,
+    jumpToBlock,
+  ]);
 
   return (
     <div className="h-full relative flex flex-col">

@@ -7,12 +7,15 @@ import "@mantine/core/styles.css";
 import "@blocknote/mantine/style.css";
 
 import App from "./App";
+import { EditorBridgeProvider } from "./editor/EditorBridge";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <MantineProvider>
-      <App />
+      <EditorBridgeProvider>
+        <App />
+      </EditorBridgeProvider>
     </MantineProvider>
   </React.StrictMode>
 );

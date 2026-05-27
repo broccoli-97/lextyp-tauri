@@ -1,4 +1,6 @@
-use std::sync::Mutex;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -13,6 +15,8 @@ use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
 use typst::{Library, LibraryExt, World};
 use typst_kit::fonts::{FontSearcher, FontSlot, Fonts};
+
+use crate::workspace_guard::WorkspaceRoot;
 
 #[derive(Serialize)]
 pub struct CompileResult {
@@ -31,9 +35,11 @@ pub struct SourceMapEntry {
 
 /// Shared font state that persists across compilations.
 /// Fonts are expensive to discover and load, so we do it once at startup.
+/// Wrapped in `Arc` so a clone can be moved into `spawn_blocking` without
+/// re-walking system font dirs or duplicating font slot caches.
 pub struct FontState {
-    book: LazyHash<FontBook>,
-    fonts: Vec<FontSlot>,
+    book: Arc<LazyHash<FontBook>>,
+    fonts: Arc<Vec<FontSlot>>,
 }
 
 impl FontState {
@@ -43,21 +49,21 @@ impl FontState {
             .include_embedded_fonts(true)
             .search();
         Self {
-            book: LazyHash::new(fonts.book),
-            fonts: fonts.fonts,
+            book: Arc::new(LazyHash::new(fonts.book)),
+            fonts: Arc::new(fonts.fonts),
         }
     }
 }
 
 /// Shared library state (Typst standard library).
 pub struct LibraryState {
-    library: LazyHash<Library>,
+    library: Arc<LazyHash<Library>>,
 }
 
 impl LibraryState {
     pub fn new() -> Self {
         Self {
-            library: LazyHash::new(Library::default()),
+            library: Arc::new(LazyHash::new(Library::default())),
         }
     }
 }
@@ -76,19 +82,35 @@ impl LastDocument {
 }
 
 /// A minimal World implementation for in-memory Typst compilation.
-struct LexTypWorld<'a> {
-    library: &'a LazyHash<Library>,
-    book: &'a LazyHash<FontBook>,
-    fonts: &'a [FontSlot],
+///
+/// Owns `Arc`-wrapped handles to the long-lived font and library state so
+/// the world is `Send + 'static` and can move into `tokio::task::spawn_blocking`.
+///
+/// The asset cache + optional workspace root together form the virtual
+/// filesystem. Typst calls `World::file()` for every `#image("…")`,
+/// `#read(…)`, or `@preview/` import — previously this returned `NotFound`
+/// unconditionally, blocking any document with figures or imports. The
+/// resolver now:
+///   1. Checks an in-memory cache (already-loaded assets, future package data).
+///   2. Falls back to a disk read rooted at `workspace_root`, with a
+///      canonicalisation check so a `..` path in the document can't escape.
+struct LexTypWorld {
+    library: Arc<LazyHash<Library>>,
+    book: Arc<LazyHash<FontBook>>,
+    fonts: Arc<Vec<FontSlot>>,
     source: Source,
+    workspace_root: Option<PathBuf>,
+    assets: Mutex<HashMap<String, Bytes>>,
 }
 
-impl<'a> LexTypWorld<'a> {
+impl LexTypWorld {
     fn new(
         content: String,
-        library: &'a LazyHash<Library>,
-        book: &'a LazyHash<FontBook>,
-        fonts: &'a [FontSlot],
+        library: Arc<LazyHash<Library>>,
+        book: Arc<LazyHash<FontBook>>,
+        fonts: Arc<Vec<FontSlot>>,
+        workspace_root: Option<PathBuf>,
+        prefilled_assets: HashMap<String, Bytes>,
     ) -> Self {
         let id = FileId::new(None, VirtualPath::new("/main.typ"));
         let source = Source::new(id, content);
@@ -97,17 +119,36 @@ impl<'a> LexTypWorld<'a> {
             book,
             fonts,
             source,
+            workspace_root,
+            assets: Mutex::new(prefilled_assets),
         }
+    }
+
+    /// Load a virtual-path key from disk, validating it lives inside the
+    /// workspace root. Returns `None` when no workspace is configured or
+    /// the path escapes the root.
+    fn load_from_workspace(&self, key: &str) -> Option<Bytes> {
+        let root = self.workspace_root.as_ref()?;
+        // Strip a leading slash so a `/figures/foo.png` lookup resolves
+        // relative to the workspace, not the OS root.
+        let trimmed = key.trim_start_matches('/');
+        let candidate = root.join(trimmed);
+        let canonical = std::fs::canonicalize(&candidate).ok()?;
+        if !canonical.starts_with(root) {
+            return None;
+        }
+        let bytes = std::fs::read(&canonical).ok()?;
+        Some(Bytes::new(bytes))
     }
 }
 
-impl World for LexTypWorld<'_> {
+impl World for LexTypWorld {
     fn library(&self) -> &LazyHash<Library> {
-        self.library
+        &self.library
     }
 
     fn book(&self) -> &LazyHash<FontBook> {
-        self.book
+        &self.book
     }
 
     fn main(&self) -> FileId {
@@ -125,6 +166,21 @@ impl World for LexTypWorld<'_> {
     }
 
     fn file(&self, id: FileId) -> typst::diag::FileResult<Bytes> {
+        let key = id.vpath().as_rootless_path().to_string_lossy().into_owned();
+
+        if let Ok(cache) = self.assets.lock() {
+            if let Some(bytes) = cache.get(&key) {
+                return Ok(bytes.clone());
+            }
+        }
+
+        if let Some(bytes) = self.load_from_workspace(&key) {
+            if let Ok(mut cache) = self.assets.lock() {
+                cache.insert(key, bytes.clone());
+            }
+            return Ok(bytes);
+        }
+
         Err(typst::diag::FileError::NotFound(
             id.vpath().as_rootless_path().into(),
         ))
@@ -184,26 +240,44 @@ pub async fn compile_typst(
     font_state: State<'_, FontState>,
     library_state: State<'_, LibraryState>,
     last_doc: State<'_, LastDocument>,
+    workspace: State<'_, WorkspaceRoot>,
 ) -> Result<CompileResult, String> {
     let start = Instant::now();
 
-    let world = LexTypWorld::new(
-        content,
-        &library_state.library,
-        &font_state.book,
-        &font_state.fonts,
-    );
+    // Clone the Arc handles so the heavy compile can move onto a blocking
+    // thread without keeping the async runtime busy. Typst is CPU-bound and
+    // synchronous — running it on the async runtime would block other
+    // commands (and the next compile dispatch) for the duration of the pass.
+    let library = library_state.library.clone();
+    let book = font_state.book.clone();
+    let fonts = font_state.fonts.clone();
+    let workspace_root = workspace.get();
 
-    // Compile to a paged document
-    let result = typst::compile::<PagedDocument>(&world);
+    // `(document, pdf_bytes)` come out of the blocking task; we then return
+    // to the async path to base64-encode and stash the document for source-
+    // map queries.
+    let (document, pdf_bytes) = tokio::task::spawn_blocking(move || {
+        let world = LexTypWorld::new(
+            content,
+            library,
+            book,
+            fonts,
+            workspace_root,
+            HashMap::new(),
+        );
 
-    let document = result
-        .output
-        .map_err(|errors| format_diagnostics(&world, &errors))?;
+        let result = typst::compile::<PagedDocument>(&world);
+        let document = result
+            .output
+            .map_err(|errors| format_diagnostics(&world, &errors))?;
 
-    // Export to PDF in memory
-    let pdf_bytes = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default())
-        .map_err(|errors| format_diagnostics(&world, &errors))?;
+        let pdf_bytes = typst_pdf::pdf(&document, &typst_pdf::PdfOptions::default())
+            .map_err(|errors| format_diagnostics(&world, &errors))?;
+
+        Ok::<_, String>((document, pdf_bytes))
+    })
+    .await
+    .map_err(|e| format!("compile task panicked: {}", e))??;
 
     // Store document for source-map queries
     if let Ok(mut guard) = last_doc.doc.lock() {

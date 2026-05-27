@@ -12,6 +12,7 @@ import { t } from "../lib/i18n";
 import { formatAutoDate } from "../lib/date-format";
 import { useSettingsStore } from "./settings-store";
 import type { ProjectTemplate } from "../lib/templates";
+import type { BlockNoteEditorType, BlockType } from "../editor/schema";
 
 interface WorkspaceState {
   // Workspace
@@ -22,14 +23,21 @@ interface WorkspaceState {
   // Active document
   activeDocumentPath: string | null;
   activeDocumentMeta: DocumentMeta | null;
-  activeDocumentBlocks: any[] | null;
+  activeDocumentBlocks: BlockType[] | null;
   isDirty: boolean;
 
   // Editor instance (set by Editor on mount)
-  editorInstance: any | null;
+  editorInstance: BlockNoteEditorType | null;
+
+  /** True once the localStorage restore has been attempted (success or fail). */
+  initialized: boolean;
+  /** Path that we tried to restore but couldn't (e.g. ejected drive). */
+  initError: string | null;
 
   // Actions
-  setEditorInstance: (editor: any) => void;
+  setEditorInstance: (editor: BlockNoteEditorType | null) => void;
+  initFromStorage: () => Promise<void>;
+  dismissInitError: () => void;
   openWorkspace: (path: string) => Promise<void>;
   closeWorkspace: () => Promise<void>;
   refreshFileTree: () => Promise<void>;
@@ -65,9 +73,12 @@ export function makeIncludeResolver(): IncludeResolver {
       meta: DocumentMeta;
     }>("load_project", { path });
 
-    let blocks: any[] = [];
+    let blocks: BlockType[] = [];
     try {
-      blocks = JSON.parse(result.document_json || "[]");
+      // The persisted JSON is a typed boundary — once parsed the rest of the
+      // app can treat it as BlockType[] safely (the editor will surface any
+      // shape mismatch as a render error rather than corrupting the file).
+      blocks = JSON.parse(result.document_json || "[]") as BlockType[];
     } catch {
       blocks = [];
     }
@@ -81,8 +92,8 @@ export function makeIncludeResolver(): IncludeResolver {
 }
 
 /** Serialize the current editor document to Typst source. */
-async function buildTypstSource(editorInstance: any): Promise<string> {
-  const blocks = editorInstance.document;
+async function buildTypstSource(editorInstance: BlockNoteEditorType): Promise<string> {
+  const blocks = editorInstance.document as BlockType[];
   const refStore = useReferenceStore.getState();
   const formatter = getFormatter(refStore.citationStyle);
   return serializeToTypst(
@@ -105,8 +116,44 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeDocumentBlocks: null,
   isDirty: false,
   editorInstance: null,
+  initialized: false,
+  initError: null,
 
   setEditorInstance: (editor) => set({ editorInstance: editor }),
+
+  initFromStorage: async () => {
+    if (get().initialized) return;
+    const savedPath = localStorage.getItem(WORKSPACE_KEY);
+    if (!savedPath) {
+      set({ initialized: true });
+      return;
+    }
+    try {
+      await get().openWorkspace(savedPath);
+      const savedDoc = localStorage.getItem(ACTIVE_DOC_KEY);
+      if (savedDoc) {
+        try {
+          await get().openDocument(savedDoc);
+        } catch (err) {
+          // The workspace is fine, the saved document just isn't there
+          // anymore (deleted externally, etc.). Drop the stale pointer so
+          // we don't keep failing on every launch.
+          localStorage.removeItem(ACTIVE_DOC_KEY);
+          console.error("Failed to reopen saved document:", err);
+        }
+      }
+      set({ initialized: true });
+    } catch (err) {
+      // Saved workspace path is stale (USB ejected, folder deleted, …).
+      // Clear it so the next launch starts clean, and surface the error so
+      // App can render a "couldn't reopen" notice.
+      localStorage.removeItem(WORKSPACE_KEY);
+      localStorage.removeItem(ACTIVE_DOC_KEY);
+      set({ initialized: true, initError: String(err) });
+    }
+  },
+
+  dismissInitError: () => set({ initError: null }),
 
   openWorkspace: async (path) => {
     // Set the Rust-side workspace root FIRST. Every other filesystem command
@@ -163,9 +210,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       meta: DocumentMeta;
     }>("load_project", { path });
 
-    let blocks: any[] = [];
+    let blocks: BlockType[] = [];
     try {
-      blocks = JSON.parse(result.document_json);
+      blocks = JSON.parse(result.document_json) as BlockType[];
     } catch {
       blocks = [];
     }
@@ -513,17 +560,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 }));
 
-// Restore workspace and active document on module load
-const savedPath = localStorage.getItem(WORKSPACE_KEY);
-if (savedPath) {
-  useWorkspaceStore
-    .getState()
-    .openWorkspace(savedPath)
-    .then(() => {
-      const savedDoc = localStorage.getItem(ACTIVE_DOC_KEY);
-      if (savedDoc) {
-        return useWorkspaceStore.getState().openDocument(savedDoc);
-      }
-    })
-    .catch(console.error);
-}
+// Workspace restore moved out of module scope and into `initFromStorage`,
+// which `App.tsx` calls on mount. Doing this here ran fs commands before
+// React even rendered, made errors invisible, and broke under Strict Mode's
+// double-mount.

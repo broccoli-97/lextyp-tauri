@@ -16,6 +16,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { useAppStore } from "../stores/app-store";
 import type { SourceMapEntry } from "../stores/app-store";
+import { useEditorBridge } from "../editor/EditorBridge";
 import { useT } from "../lib/i18n";
 import { EmptyState } from "./EmptyState";
 // Bundle the PDF.js worker locally via Vite's `?url` so the editor works
@@ -245,16 +246,12 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
     }
   }, [pdfBase64]);
 
+  const bridge = useEditorBridge();
   // Double-click on PDF → jump to the corresponding word in the editor.
   // The source map is built by `query_source_map` after each compile and
   // contains one entry per word (`__w`) plus one per block (`__track`).
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      const jumpFn = (window as any).__lextyp_jumpToBlock as
-        | ((id: string, off: number) => void)
-        | undefined;
-      if (!jumpFn) return;
-
       // react-pdf sets data-page-number on the inner <div className="react-pdf__Page">.
       const pageEl = (e.target as HTMLElement | null)?.closest?.(
         "[data-page-number]"
@@ -276,9 +273,9 @@ export function PdfPreview({ collapsed, onToggleCollapse, panelWidth, isResizing
       const target = findNearestEntry(sourceMap, pageNum, clickXPt, clickYPt);
       if (!target) return;
 
-      jumpFn(target.id, target.off);
+      bridge.jumpToBlock(target.id, target.off);
     },
-    [sourceMap]
+    [sourceMap, bridge]
   );
 
   // Collapsed state

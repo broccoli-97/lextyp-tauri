@@ -2,6 +2,7 @@ import { Pencil } from "lucide-react";
 import { useT } from "../lib/i18n";
 import { useSettingsStore } from "../stores/settings-store";
 import { useAppStore } from "../stores/app-store";
+import { useEditorBridge } from "../editor/EditorBridge";
 import { formatAutoDate } from "../lib/date-format";
 import { CoverPagePreview, type CoverPageData } from "./CoverPagePreview";
 
@@ -14,21 +15,17 @@ interface Props {
  * Inline cover-page block render.
  *
  * Read-only preview surface. Clicking the card (or pressing Enter while
- * focused) opens the full editor dialog through the shared
- * `__lextyp_openCoverPageDialog` window function — same pattern the
- * citation/document pickers use to bridge BlockNote block render
- * components and React state living in the Editor.
+ * focused) hands the block back to the Editor through the EditorBridge
+ * context, which opens the full editing dialog.
  */
 export function CoverPageCard({ block, editor: _editor }: Props) {
   const t = useT();
   const locale = useSettingsStore((s) => s.locale);
   const totalWords = useAppStore((s) => s.totalWordCount);
+  const bridge = useEditorBridge();
   const props = block.props;
 
-  const openDialog = () => {
-    const fn = (window as any).__lextyp_openCoverPageDialog;
-    if (fn) fn(block);
-  };
+  const openDialog = () => bridge.openCoverPageDialog(block);
 
   return (
     <div
