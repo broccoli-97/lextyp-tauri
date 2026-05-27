@@ -1,6 +1,7 @@
 mod project;
 mod typst;
 mod update;
+mod workspace_guard;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -11,6 +12,7 @@ pub fn run() {
         .manage(typst::FontState::new())
         .manage(typst::LibraryState::new())
         .manage(typst::LastDocument::new())
+        .manage(workspace_guard::WorkspaceRoot::new())
         .invoke_handler(tauri::generate_handler![
             typst::compile_typst,
             typst::query_source_map,
@@ -23,6 +25,8 @@ pub fn run() {
             project::rename_item,
             project::delete_item,
             update::check_update,
+            workspace_guard::set_workspace_root,
+            workspace_guard::clear_workspace_root,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

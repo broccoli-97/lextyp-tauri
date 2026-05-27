@@ -2,9 +2,25 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Read as _, Write as _};
 use std::path::Path;
+use tauri::State;
+
+use crate::workspace_guard::{validate, PathKind, WorkspaceRoot};
+
+/// Bumped whenever the on-disk shape of a `.lextyp` archive changes in a way
+/// that older code can't read transparently. Old files (no field, or lower
+/// version) are migrated in memory on load; newer files are rejected with a
+/// typed error so the UI can ask the user to upgrade.
+pub const CURRENT_SCHEMA_VERSION: u32 = 1;
+
+fn default_schema_version() -> u32 {
+    // Files written before this field existed are treated as v1.
+    1
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DocumentMeta {
+    #[serde(default = "default_schema_version")]
+    pub schema_version: u32,
     pub title: String,
     pub citation_style: String,
     pub created_at: String,
@@ -48,7 +64,9 @@ pub fn save_project(
     typst_source: String,
     bib_content: Option<String>,
     meta_json: String,
+    workspace: State<'_, WorkspaceRoot>,
 ) -> Result<(), String> {
+    let path = validate(&workspace, &path, PathKind::MayBeNew)?;
     let file = fs::File::create(&path).map_err(|e| e.to_string())?;
     let mut zip = zip::ZipWriter::new(file);
 
@@ -86,7 +104,11 @@ pub fn save_project(
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn load_project(path: String) -> Result<ProjectData, String> {
+pub fn load_project(
+    path: String,
+    workspace: State<'_, WorkspaceRoot>,
+) -> Result<ProjectData, String> {
+    let path = validate(&workspace, &path, PathKind::MustExist)?;
     let file = fs::File::open(&path).map_err(|e| e.to_string())?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
 
@@ -118,11 +140,24 @@ pub fn load_project(path: String) -> Result<ProjectData, String> {
     }
 
     // Parse meta or use defaults
-    let meta = if let Some(json) = meta_json {
-        serde_json::from_str::<DocumentMeta>(&json).unwrap_or_else(|_| default_meta(&path))
+    let mut meta = if let Some(json) = meta_json {
+        serde_json::from_str::<DocumentMeta>(&json)
+            .unwrap_or_else(|_| default_meta(path.as_path()))
     } else {
-        default_meta(&path)
+        default_meta(path.as_path())
     };
+
+    // Reject newer-than-supported schemas so a user opening a future file in
+    // an older build doesn't silently lose fields on the next save.
+    if meta.schema_version > CURRENT_SCHEMA_VERSION {
+        return Err(format!(
+            "incompatible-schema: file uses schema v{}, this build supports up to v{}",
+            meta.schema_version, CURRENT_SCHEMA_VERSION
+        ));
+    }
+    // Migrate older versions in memory. The chain is empty today (we're at v1),
+    // but the slot is in place so the first migration is a one-line add.
+    meta = migrate_meta(meta);
 
     Ok(ProjectData {
         document_json,
@@ -131,13 +166,24 @@ pub fn load_project(path: String) -> Result<ProjectData, String> {
     })
 }
 
-fn default_meta(path: &str) -> DocumentMeta {
-    let title = Path::new(path)
+/// In-memory migration of a `DocumentMeta` from `meta.schema_version` up to
+/// `CURRENT_SCHEMA_VERSION`. Each step takes and returns an owned value so
+/// migrations stay pure and testable.
+fn migrate_meta(meta: DocumentMeta) -> DocumentMeta {
+    let mut m = meta;
+    // Future shape: while m.schema_version < CURRENT_SCHEMA_VERSION { ... }
+    m.schema_version = CURRENT_SCHEMA_VERSION;
+    m
+}
+
+fn default_meta(path: &Path) -> DocumentMeta {
+    let title = path
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("Untitled")
         .to_owned();
     DocumentMeta {
+        schema_version: CURRENT_SCHEMA_VERSION,
         title,
         citation_style: "oscola".to_owned(),
         created_at: String::new(),
@@ -151,12 +197,15 @@ fn default_meta(path: &str) -> DocumentMeta {
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn list_workspace(path: String) -> Result<Vec<FileTreeEntry>, String> {
-    let root = Path::new(&path);
-    if !root.is_dir() {
-        return Err(format!("Not a directory: {}", path));
+pub fn list_workspace(
+    path: String,
+    workspace: State<'_, WorkspaceRoot>,
+) -> Result<Vec<FileTreeEntry>, String> {
+    let path = validate(&workspace, &path, PathKind::MustExist)?;
+    if !path.is_dir() {
+        return Err(format!("Not a directory: {}", path.display()));
     }
-    read_directory(root)
+    read_directory(&path)
 }
 
 fn read_directory(dir: &Path) -> Result<Vec<FileTreeEntry>, String> {
@@ -241,14 +290,25 @@ fn read_meta_from_zip(path: &Path) -> (String, String) {
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn create_folder(path: String) -> Result<(), String> {
+pub fn create_folder(
+    path: String,
+    workspace: State<'_, WorkspaceRoot>,
+) -> Result<(), String> {
+    let path = validate(&workspace, &path, PathKind::MayBeNew)?;
     fs::create_dir_all(&path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn create_document(path: String, title: String, created_at: String) -> Result<(), String> {
+pub fn create_document(
+    path: String,
+    title: String,
+    created_at: String,
+    workspace: State<'_, WorkspaceRoot>,
+) -> Result<(), String> {
+    let path = validate(&workspace, &path, PathKind::MayBeNew)?;
     let meta = DocumentMeta {
+        schema_version: CURRENT_SCHEMA_VERSION,
         title,
         citation_style: "oscola".to_owned(),
         created_at: created_at.clone(),
@@ -280,23 +340,33 @@ pub fn create_document(path: String, title: String, created_at: String) -> Resul
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn rename_item(old_path: String, new_path: String) -> Result<(), String> {
+pub fn rename_item(
+    old_path: String,
+    new_path: String,
+    workspace: State<'_, WorkspaceRoot>,
+) -> Result<(), String> {
+    let old_path = validate(&workspace, &old_path, PathKind::MustExist)?;
+    let new_path = validate(&workspace, &new_path, PathKind::MayBeNew)?;
     fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn delete_item(path: String) -> Result<(), String> {
-    let p = Path::new(&path);
-    if p.is_dir() {
-        fs::remove_dir_all(p).map_err(|e| e.to_string())
+pub fn delete_item(path: String, workspace: State<'_, WorkspaceRoot>) -> Result<(), String> {
+    let path = validate(&workspace, &path, PathKind::MustExist)?;
+    if path.is_dir() {
+        fs::remove_dir_all(&path).map_err(|e| e.to_string())
     } else {
-        fs::remove_file(p).map_err(|e| e.to_string())
+        fs::remove_file(&path).map_err(|e| e.to_string())
     }
 }
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn read_bib_file(path: String) -> Result<String, String> {
+pub fn read_bib_file(
+    path: String,
+    workspace: State<'_, WorkspaceRoot>,
+) -> Result<String, String> {
+    let path = validate(&workspace, &path, PathKind::MustExist)?;
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }

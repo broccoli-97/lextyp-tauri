@@ -18,8 +18,14 @@ import { useAppStore } from "../stores/app-store";
 import type { SourceMapEntry } from "../stores/app-store";
 import { useT } from "../lib/i18n";
 import { EmptyState } from "./EmptyState";
+// Bundle the PDF.js worker locally via Vite's `?url` so the editor works
+// offline and doesn't leak every launch to a third-party CDN. The worker
+// version must match react-pdf's bundled pdfjs-dist; that's why we import
+// from `pdfjs-dist/build/...` (the same package react-pdf depends on) rather
+// than pinning to a separate copy.
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 /** A4 aspect ratio: height / width */
 const A4_RATIO = 297 / 210;

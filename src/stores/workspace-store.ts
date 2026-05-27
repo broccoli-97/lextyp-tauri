@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
-import type { DocumentMeta, FileTreeEntry } from "../types/workspace";
+import { CURRENT_SCHEMA_VERSION, type DocumentMeta, type FileTreeEntry } from "../types/workspace";
 import { useReferenceStore } from "./reference-store";
 import { useAppStore } from "./app-store";
 import { serializeToTypst, type IncludeResolver } from "../lib/typst-serializer";
@@ -109,6 +109,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setEditorInstance: (editor) => set({ editorInstance: editor }),
 
   openWorkspace: async (path) => {
+    // Set the Rust-side workspace root FIRST. Every other filesystem command
+    // validates its path against this root, so it must be in place before we
+    // call list_workspace (and before any future invoke from the new tree).
+    await invoke("set_workspace_root", { path });
     const tree = await invoke<FileTreeEntry[]>("list_workspace", { path });
     set({ workspacePath: path, fileTree: tree });
     localStorage.setItem(WORKSPACE_KEY, path);
@@ -125,6 +129,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       expandedFolders: new Set<string>(),
     });
     localStorage.removeItem(WORKSPACE_KEY);
+    try {
+      await invoke("clear_workspace_root");
+    } catch {
+      // Non-critical — the next openWorkspace will overwrite it.
+    }
   },
 
   refreshFileTree: async () => {
@@ -195,11 +204,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const now = new Date().toISOString();
       const meta: DocumentMeta = {
         ...(state.activeDocumentMeta || {
+          schema_version: CURRENT_SCHEMA_VERSION,
           title: "Untitled",
           citation_style: "oscola",
           created_at: now,
           modified_at: now,
         }),
+        schema_version: CURRENT_SCHEMA_VERSION,
         citation_style: refStore.citationStyle,
         modified_at: now,
       };
@@ -276,6 +287,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const now = new Date().toISOString();
     const meta: DocumentMeta = {
+      schema_version: CURRENT_SCHEMA_VERSION,
       title,
       citation_style: template.citationStyle,
       created_at: now,
@@ -416,6 +428,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       filters: [{ name: "LexTyp Document", extensions: ["lextyp"] }],
     });
     if (!selected) return;
+    // If the user picked a file outside the active workspace, treat the
+    // picker as an explicit re-scoping action: switch the workspace to the
+    // file's parent so subsequent fs commands stay inside the guarded root.
+    const picked = (selected as string).replace(/\\/g, "/");
+    const parent = picked.substring(0, picked.lastIndexOf("/"));
+    const currentRoot = get().workspacePath?.replace(/\\/g, "/") ?? "";
+    if (parent && !picked.startsWith(currentRoot + "/")) {
+      await get().openWorkspace(parent);
+    }
     await get().openDocument(selected as string);
   },
 
@@ -430,6 +451,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
     if (!dest) return;
 
+    // Mirror openFile: re-scope the workspace if the user saved outside it.
+    const destNorm = dest.replace(/\\/g, "/");
+    const destParent = destNorm.substring(0, destNorm.lastIndexOf("/"));
+    const currentRoot = get().workspacePath?.replace(/\\/g, "/") ?? "";
+    if (destParent && !destNorm.startsWith(currentRoot + "/")) {
+      await invoke("set_workspace_root", { path: destParent });
+      const tree = await invoke<FileTreeEntry[]>("list_workspace", { path: destParent });
+      set({ workspacePath: destParent, fileTree: tree });
+      localStorage.setItem(WORKSPACE_KEY, destParent);
+    }
+
     const blocks = editorInstance.document;
     const documentJson = JSON.stringify(blocks);
     const typstSource = await buildTypstSource(editorInstance);
@@ -442,6 +474,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       .pop()
       ?.replace(/\.lextyp$/, "") || "Untitled";
     const meta: DocumentMeta = {
+      schema_version: CURRENT_SCHEMA_VERSION,
       title,
       citation_style: refStore.citationStyle,
       created_at: activeDocumentMeta?.created_at || now,
