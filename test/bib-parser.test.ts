@@ -51,7 +51,7 @@ describe("parseBibtex", () => {
     );
     expect(fuller.fields.journal).toBe("Harvard Law Review");
     expect(fuller.fields.volume).toBe("71");
-    expect(fuller.fields.pages).toBe("630--672");
+    expect(fuller.fields.pages).toBe("630–672");
   });
 
   it("parses case fields correctly", () => {
@@ -65,7 +65,7 @@ describe("parseBibtex", () => {
     const f = allEntries.find((e) => e.key === "finnis1980")!;
     expect(f.fields.editor).toBe("P.M.S. Hacker and Joseph Raz");
     expect(f.fields.booktitle).toBe("Law, Morality, and Society");
-    expect(f.fields.pages).toBe("115--137");
+    expect(f.fields.pages).toBe("115–137");
   });
 
   it("parses phdthesis fields correctly", () => {

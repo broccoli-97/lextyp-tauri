@@ -15,7 +15,7 @@ describe("Chicago formatter", () => {
 
     it("formats an article", () => {
       expect(fmt.formatCitation(fuller, "", [], 1)).toBe(
-        'Lon L. Fuller, "Positivism and Fidelity to Law: A Reply to Professor Hart,"  _Harvard Law Review_ 71 (1958): 630--672'
+        'Lon L. Fuller, "Positivism and Fidelity to Law: A Reply to Professor Hart,"  _Harvard Law Review_ 71 (1958): 630–672'
       );
     });
 

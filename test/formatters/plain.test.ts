@@ -29,7 +29,7 @@ describe("Plain formatter", () => {
 
     it("formats an article", () => {
       expect(fmt.formatBibliography(fuller, 2)).toBe(
-        "[2] Lon L. Fuller. _Positivism and Fidelity to Law: A Reply to Professor Hart_. Harvard Law Review, 71:630--672, 1958."
+        "[2] Lon L. Fuller. _Positivism and Fidelity to Law: A Reply to Professor Hart_. Harvard Law Review, 71:630–672, 1958."
       );
     });
 

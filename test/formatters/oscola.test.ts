@@ -15,7 +15,7 @@ describe("OSCOLA formatter", () => {
 
     it("formats an article", () => {
       expect(fmt.formatCitation(fuller, "", [], 1)).toBe(
-        "Lon L. Fuller, 'Positivism and Fidelity to Law: A Reply to Professor Hart' (1958) 71 _Harvard Law Review_ 630--672"
+        "Lon L. Fuller, 'Positivism and Fidelity to Law: A Reply to Professor Hart' (1958) 71 _Harvard Law Review_ 630–672"
       );
     });
 
@@ -39,7 +39,7 @@ describe("OSCOLA formatter", () => {
 
     it("formats an incollection", () => {
       expect(fmt.formatCitation(finnis, "", [], 1)).toBe(
-        "John Finnis, 'The Authority of Law in the Predicament of Contemporary Social Theory' in P.M.S. Hacker and Joseph Raz (ed), _Law, Morality, and Society_ (Clarendon Press 1980) 115--137"
+        "John Finnis, 'The Authority of Law in the Predicament of Contemporary Social Theory' in P.M.S. Hacker and Joseph Raz (ed), _Law, Morality, and Society_ (Clarendon Press 1980) 115–137"
       );
     });
 

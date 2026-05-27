@@ -43,7 +43,7 @@ describe("APA formatter", () => {
 
     it("formats an article", () => {
       expect(fmt.formatBibliography(fuller, 1)).toBe(
-        "Lon L. Fuller (1958). Positivism and Fidelity to Law: A Reply to Professor Hart. _Harvard Law Review_, _71_, 630--672."
+        "Lon L. Fuller (1958). Positivism and Fidelity to Law: A Reply to Professor Hart. _Harvard Law Review_, _71_, 630–672."
       );
     });
 

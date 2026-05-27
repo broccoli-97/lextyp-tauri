@@ -35,7 +35,7 @@ describe("IEEE formatter", () => {
 
     it("formats an article", () => {
       expect(fmt.formatBibliography(fuller, 2)).toBe(
-        '[2] Lon L. Fuller, "Positivism and Fidelity to Law: A Reply to Professor Hart," _Harvard Law Review_, vol. 71, pp. 630--672, 1958.'
+        '[2] Lon L. Fuller, "Positivism and Fidelity to Law: A Reply to Professor Hart," _Harvard Law Review_, vol. 71, pp. 630–672, 1958.'
       );
     });
 
