@@ -141,8 +141,7 @@ pub fn load_project(
 
     // Parse meta or use defaults
     let mut meta = if let Some(json) = meta_json {
-        serde_json::from_str::<DocumentMeta>(&json)
-            .unwrap_or_else(|_| default_meta(path.as_path()))
+        serde_json::from_str::<DocumentMeta>(&json).unwrap_or_else(|_| default_meta(path.as_path()))
     } else {
         default_meta(path.as_path())
     };
@@ -290,10 +289,7 @@ fn read_meta_from_zip(path: &Path) -> (String, String) {
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn create_folder(
-    path: String,
-    workspace: State<'_, WorkspaceRoot>,
-) -> Result<(), String> {
+pub fn create_folder(path: String, workspace: State<'_, WorkspaceRoot>) -> Result<(), String> {
     let path = validate(&workspace, &path, PathKind::MayBeNew)?;
     fs::create_dir_all(&path).map_err(|e| e.to_string())
 }
@@ -363,10 +359,7 @@ pub fn delete_item(path: String, workspace: State<'_, WorkspaceRoot>) -> Result<
 
 #[tauri::command]
 #[allow(clippy::needless_pass_by_value)]
-pub fn read_bib_file(
-    path: String,
-    workspace: State<'_, WorkspaceRoot>,
-) -> Result<String, String> {
+pub fn read_bib_file(path: String, workspace: State<'_, WorkspaceRoot>) -> Result<String, String> {
     let path = validate(&workspace, &path, PathKind::MustExist)?;
     fs::read_to_string(&path).map_err(|e| e.to_string())
 }

@@ -70,8 +70,9 @@ pub fn validate(root: &WorkspaceRoot, path: &str, kind: PathKind) -> Result<Path
 
     let p = Path::new(path);
     let canonical = match kind {
-        PathKind::MustExist => std::fs::canonicalize(p)
-            .map_err(|e| format!("invalid path '{}': {}", path, e))?,
+        PathKind::MustExist => {
+            std::fs::canonicalize(p).map_err(|e| format!("invalid path '{}': {}", path, e))?
+        }
         PathKind::MayBeNew => {
             let parent = p
                 .parent()
