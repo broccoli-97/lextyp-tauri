@@ -112,6 +112,7 @@ pub fn set_workspace_root(path: String, state: State<'_, WorkspaceRoot>) -> Resu
 }
 
 #[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
 pub fn clear_workspace_root(state: State<'_, WorkspaceRoot>) {
     state.clear();
 }
