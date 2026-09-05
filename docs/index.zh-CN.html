@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LexTyp — 引用格式无忧的学术写作工具</title>
-  <meta name="description" content="LexTyp 是一款免费、跨平台的学术文档编辑器，支持引用格式一键切换、Typst PDF 编译和实时预览。" />
+  <title>LexTyp — 专为法学生打造的免引用烦恼论文编辑器 (支持 OSCOLA)</title>
+  <meta name="description" content="专为法学生与 OSCOLA 使用者打造的「免引用烦恼」论文/作业编辑器，告别繁复注脚与格式内耗，专注法学内容创作。" />
   <link rel="icon" href="icon.png" type="image/png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -74,12 +74,15 @@
       <div class="mb-8 flex justify-center">
         <img src="icon.png" alt="LexTyp" class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl glow" />
       </div>
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm font-medium mb-6">
+        <span>⚖️ 专为法学生与 OSCOLA 使用者打造</span>
+      </div>
       <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6">
-        专注写作，引用<br />
+        专注法学创作，引用<br />
         <span class="gradient-text">自动格式化。</span>
       </h1>
       <p class="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-        不再纠结脚注格式。选择引用样式、导入参考文献，即时生成出版级 PDF。免费开源。
+        专为法学生量身定制的「免引用烦恼」论文与作业编辑器。告别繁琐注脚、页码（pinpoint）与 ibid 规则，让你彻底远离格式内耗，专注法学内容创作。
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
         <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
@@ -125,8 +128,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <h3 class="font-semibold text-lg text-slate-900 mb-2">引用格式自由切换</h3>
-          <p class="text-slate-500 text-sm leading-relaxed">OSCOLA、Harvard、APA、Chicago、IEEE——一键切换。导入 .bib 文件，再也不用手动排版脚注。</p>
+          <h3 class="font-semibold text-lg text-slate-900 mb-2">深度支持 OSCOLA 与免格式引用</h3>
+          <p class="text-slate-500 text-sm leading-relaxed">原生支持判例（cases）、法条（legislation）、精准页码（pinpoint）及 ibid 等复杂 OSCOLA 规范。亦可一键切换 Harvard、APA、Chicago、IEEE，彻底告别手动排版。</p>
         </div>
 
         <!-- 封面页 -->
@@ -210,7 +213,7 @@
               <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
               </span>
-              <span class="text-slate-300"><strong class="text-white">OSCOLA</strong> &mdash; 牛津大学法律引用标准，英国法学期刊和论文的通用格式。</span>
+              <span class="text-slate-300"><strong class="text-white">OSCOLA</strong> &mdash; 牛津大学法律引用标准，法学生作业、论文、期刊及毕业论文的专用格式。</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="mt-1 w-5 h-5 rounded-full bg-brand-teal/20 text-brand-teal flex items-center justify-center flex-shrink-0">

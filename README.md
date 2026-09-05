@@ -1,18 +1,23 @@
 # LexTyp
 
-A citation format-free academic document editor. Import your references, pick a citation style, and get a publication-ready PDF -- live, as you type. Built with Tauri v2, React 19, and BlockNote.
+> **A citation-free essay & coursework editor tailored for law students and OSCOLA users. Focus on legal writing and research, not citation headaches.**
+>
+> **专为法学生与 OSCOLA 使用者打造的「免引用烦恼」论文/作业编辑器：告别繁琐注脚与格式内耗，专注法学内容创作。**
+
+LexTyp is a modern desktop editor engineered to eliminate the frustration of legal citation and footnote formatting. Whether you are drafting a legal essay, dissertation, case note, or coursework, simply import your `.bib` references and write naturally. LexTyp automatically formats complex OSCOLA conventions (cases with neutral citations, statutes, short forms, pinpoints, and *ibid*) and renders publication-ready PDFs in real time via Typst.
 
 <!-- TODO: add screenshot here -->
 <!-- ![LexTyp screenshot](docs/screenshot.png) -->
 
-## Features
+## Features / 核心特性
 
-- **Citation format-free** -- OSCOLA, APA, Harvard, Chicago, IEEE -- switch styles with one click. Import your `.bib` file and never hand-format a footnote again
-- **Live PDF preview** -- documents are compiled to PDF via the Typst engine in real time, side-by-side with the editor
-- **Source map navigation** -- click-to-scroll between editor and PDF preview
-- **Dark / Light theme** -- CSS custom-property-based theming
-- **i18n** -- English and Simplified Chinese (`zh-CN`)
-- **Cross-platform** -- runs on Windows, macOS, and Linux via Tauri
+- ⚖️ **Tailored for Law & OSCOLA (法学专属支持)** -- First-class, out-of-the-box support for OSCOLA citations (cases, legislation, books, journals, pinpoint citations, `(n X)` cross-references, and automatic `ibid`). Also supports one-click switching to Harvard, APA, Chicago, or IEEE.
+- ✍️ **Citation-Free Writing (免格式创作体验)** -- Insert `@citation` tags naturally as you type. Never hand-format a footnote or assemble a bibliography manually again.
+- ⚡ **Live PDF Preview (实时排版预览)** -- Millisecond-speed compilation via the built-in Typst engine side-by-side with your BlockNote editor.
+- 🎯 **Source Map Navigation (双向点击定位)** -- Click-to-scroll between the WYSIWYG editor and the rendered PDF page.
+- 🌓 **Dark / Light Theme (深浅色模式)** -- Thoughtfully crafted themes for late-night essay writing.
+- 🌐 **Bilingual Interface (中英双语)** -- Full English and Simplified Chinese (`zh-CN`) support.
+- 💻 **Cross-Platform & Offline (跨平台与本地优先)** -- Runs natively on Windows, macOS, and Linux via Tauri v2. Your drafts and notes stay 100% private and offline on your computer.
 
 ## File Format
 
