@@ -94,32 +94,47 @@ jobs:
       - name: Build Tauri app
         run: npm run tauri build
 
+      # A bundle that was never signed still carries the linker's ad-hoc
+      # signature on its executable. Gatekeeper reports that as "damaged" once
+      # the download is quarantined, and nothing built in CI is ever
+      # quarantined, so the bundle signature has to be checked explicitly.
+      # Tauri deletes the intermediate .app once the DMG is built, so check
+      # the copy inside the DMG, which is also the one users receive.
+      - name: Verify app signature (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/dmg" src-tauri/target/release/bundle/dmg/*.dmg
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/dmg/LexTyp.app"
+          hdiutil detach "$RUNNER_TEMP/dmg"
+
       - name: Collect artifacts (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p artifacts
-          cp src-tauri/target/release/bundle/deb/*.deb artifacts/ 2>/dev/null || true
+          cp src-tauri/target/release/bundle/deb/*.deb artifacts/
 
       - name: Collect artifacts (macOS)
         if: matrix.os == 'macos-latest'
         run: |
           mkdir -p artifacts
-          cp src-tauri/target/release/bundle/dmg/*.dmg artifacts/ 2>/dev/null || true
+          cp src-tauri/target/release/bundle/dmg/*.dmg artifacts/
 
       - name: Collect artifacts (Windows)
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts
-          Copy-Item -Path "src-tauri\target\release\bundle\msi\*.msi" -Destination artifacts -ErrorAction SilentlyContinue
-          Copy-Item -Path "src-tauri\target\release\bundle\nsis\*.exe" -Destination artifacts -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Copy-Item -Path "src-tauri\target\release\bundle\msi\*.msi" -Destination artifacts
+          Copy-Item -Path "src-tauri\target\release\bundle\nsis\*.exe" -Destination artifacts
+          if (-not (Test-Path "artifacts\*.msi")) { throw "No .msi bundle was produced" }
+          if (-not (Test-Path "artifacts\*.exe")) { throw "No NSIS .exe bundle was produced" }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.label }}
           path: artifacts/*
-          if-no-files-found: warn
+          if-no-files-found: error
 
   publish:
     name: Publish Release
