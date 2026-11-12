@@ -85,7 +85,7 @@
         专为法学生量身定制的「免引用烦恼」论文与作业编辑器。告别繁琐注脚、页码（pinpoint）与 ibid 规则，让你彻底远离格式内耗，专注法学内容创作。
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases/latest" target="_blank" rel="noopener"
            class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-8 py-3.5 rounded-xl transition-colors text-lg shadow-lg shadow-cyan-500/25">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
@@ -288,7 +288,7 @@
         无需注册，无试用期限。开源免费，非商业使用永久免费。
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-        <a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener"
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases/latest" target="_blank" rel="noopener"
            class="inline-flex items-center gap-2 bg-brand-teal hover:bg-cyan-500 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-lg shadow-lg shadow-cyan-500/25">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
@@ -296,20 +296,45 @@
           下载最新版本
         </a>
       </div>
+      <!-- 每个卡片默认指向 release 页面；下方脚本会把它改成安装包本身的直链。 -->
       <div class="grid sm:grid-cols-3 gap-4 text-sm">
-        <div class="bg-slate-100 rounded-xl px-5 py-4">
-          <div class="font-semibold text-slate-700 mb-1">Windows</div>
-          <div class="text-slate-400">.msi / .exe 安装包</div>
-        </div>
-        <div class="bg-slate-100 rounded-xl px-5 py-4">
-          <div class="font-semibold text-slate-700 mb-1">macOS</div>
-          <div class="text-slate-400">.dmg（Apple Silicon 和 Intel）</div>
-        </div>
-        <div class="bg-slate-100 rounded-xl px-5 py-4">
-          <div class="font-semibold text-slate-700 mb-1">Linux</div>
-          <div class="text-slate-400">.deb 安装包</div>
-        </div>
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases/latest" data-asset="-setup.exe" target="_blank" rel="noopener"
+           class="block bg-slate-100 hover:bg-slate-200 rounded-xl px-5 py-4 transition-colors">
+          <div class="flex items-center justify-center gap-1.5 font-semibold text-slate-700 mb-1">
+            <svg class="w-4 h-4 text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Windows
+          </div>
+          <div class="text-slate-500">.exe 安装包</div>
+        </a>
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases/latest" data-asset="aarch64.dmg" target="_blank" rel="noopener"
+           class="block bg-slate-100 hover:bg-slate-200 rounded-xl px-5 py-4 transition-colors">
+          <div class="flex items-center justify-center gap-1.5 font-semibold text-slate-700 mb-1">
+            <svg class="w-4 h-4 text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            macOS
+          </div>
+          <div class="text-slate-500">.dmg（Apple Silicon）</div>
+        </a>
+        <a href="https://github.com/broccoli-97/lextyp-tauri/releases/latest" data-asset=".deb" target="_blank" rel="noopener"
+           class="block bg-slate-100 hover:bg-slate-200 rounded-xl px-5 py-4 transition-colors">
+          <div class="flex items-center justify-center gap-1.5 font-semibold text-slate-700 mb-1">
+            <svg class="w-4 h-4 text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Linux
+          </div>
+          <div class="text-slate-500">.deb 安装包</div>
+        </a>
       </div>
+      <p class="mt-5 text-xs text-slate-400">
+        <span data-latest-version data-prefix="最新版本：" data-suffix="。"></span>需要 .msi 或旧版本？见<a href="https://github.com/broccoli-97/lextyp-tauri/releases" target="_blank" rel="noopener" class="underline hover:text-slate-600">全部版本</a>。
+      </p>
+      <p class="mt-6 text-sm text-slate-600 text-left bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+        <strong class="text-slate-800">macOS 首次打开。</strong>LexTyp 尚未经过 Apple 公证，首次打开会被系统拦截。请先尝试打开一次，然后前往<strong>系统设置 &rarr; 隐私与安全性</strong>，点击<strong>「仍要打开」</strong>。暂不支持 Intel 芯片的 Mac。
+      </p>
     </div>
   </section>
 
@@ -394,6 +419,28 @@
       );
       window.location.href = 'mailto:pacer97@163.com?subject=' + subject + '&body=' + body;
     });
+  </script>
+
+  <script>
+    // 把每个平台卡片指向最新版本中对应的安装包本身。
+    // 未启用 JS 或请求失败时，卡片保留指向 release 页面的回退链接。
+    fetch('https://api.github.com/repos/broccoli-97/lextyp-tauri/releases/latest')
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (release) {
+        var assets = release.assets || [];
+        Array.prototype.forEach.call(document.querySelectorAll('[data-asset]'), function (card) {
+          var suffix = card.getAttribute('data-asset');
+          var asset = assets.filter(function (a) { return a.name.slice(-suffix.length) === suffix; })[0];
+          if (!asset) return;
+          card.href = asset.browser_download_url;
+          card.removeAttribute('target');
+          card.removeAttribute('rel');
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('[data-latest-version]'), function (el) {
+          el.textContent = (el.getAttribute('data-prefix') || '') + release.tag_name + (el.getAttribute('data-suffix') || '');
+        });
+      })
+      .catch(function () { /* 保留指向 release 页面的回退链接 */ });
   </script>
 
   <!-- Footer -->
